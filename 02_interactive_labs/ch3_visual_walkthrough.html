@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Chapter 3 — Neural Networks from Scratch</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* ── Reset & Tokens ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:     #080E1B;
+  --bg2:    #0F1829;
+  --bg3:    #162035;
+  --accent: #00C9A7;
+  --accent2:#00A890;
+  --blue:   #8099FF;
+  --red:    #FF6B6B;
+  --gold:   #FFB44F;
+  --purple: #C084FC;
+  --text:   #E8EFF8;
+  --muted:  #6A8CAF;
+  --border: rgba(255,255,255,0.06);
+}
+html { scroll-behavior: smooth; }
+body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; overflow-x:hidden; }
+h1,h2,h3 { line-height:1.2; }
+
+/* ── Progress + Nav ── */
+#progress-bar { position:fixed; top:0; left:0; height:3px; background:linear-gradient(90deg,var(--accent),var(--blue)); width:0%; z-index:100; transition:width 0.1s linear; }
+.chapter-nav { position:fixed; top:16px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:99; background:rgba(8,14,27,0.85); backdrop-filter:blur(12px); border:1px solid var(--border); border-radius:50px; padding:6px 10px; }
+.nav-dot { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.15); cursor:pointer; transition:all 0.25s; border:none; }
+.nav-dot.active { background:var(--accent); transform:scale(1.3); }
+.nav-dot:hover { background:rgba(0,201,167,0.5); }
+
+/* ── Sections ── */
+.section { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 24px; position:relative; }
+.section-inner { width:100%; max-width:880px; display:flex; flex-direction:column; gap:36px; }
+
+/* ── Tags & typography ── */
+.sec-tag { display:inline-flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); padding:5px 12px; border:1px solid rgba(0,201,167,0.3); border-radius:20px; width:fit-content; }
+.sec-tag .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+.big-heading { font-size:clamp(30px,5.5vw,54px); font-weight:800; }
+.big-heading span { color:var(--accent); }
+.section-heading { font-size:clamp(22px,4vw,36px); font-weight:800; }
+.lead { font-size:17px; color:var(--muted); line-height:1.75; max-width:620px; }
+.divider { width:60px; height:3px; background:linear-gradient(90deg,var(--accent),transparent); border-radius:2px; }
+
+/* ── Cards ── */
+.card { background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:24px 28px; }
+.card-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.card-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:640px){ .card-row{ grid-template-columns:1fr; } .card-row-2{ grid-template-columns:1fr; } }
+
+/* ── Reveal ── */
+.reveal { opacity:0; transform:translateY(28px); transition:opacity 0.6s ease,transform 0.6s ease; }
+.reveal.visible { opacity:1; transform:translateY(0); }
+.reveal:nth-child(2){ transition-delay:0.08s; }
+.reveal:nth-child(3){ transition-delay:0.16s; }
+.reveal:nth-child(4){ transition-delay:0.24s; }
+
+/* ── Buttons ── */
+.btn { padding:11px 24px; border-radius:10px; border:none; font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; }
+.btn-primary { background:var(--accent); color:#0B1221; }
+.btn-primary:hover { background:var(--accent2); transform:translateY(-1px); }
+.btn-secondary { background:var(--bg3); color:var(--muted); border:1px solid var(--border); }
+.btn-secondary:hover { color:var(--text); border-color:rgba(0,201,167,0.3); }
+.btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+/* ── Scroll hint ── */
+.scroll-hint { position:absolute; bottom:28px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--muted); font-size:12px; animation:bob 2.5s ease-in-out infinite; }
+@keyframes bob { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(8px)} }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   S0: HERO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#s0::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 70% 60% at 50% 40%,rgba(0,201,167,0.08) 0%,transparent 65%); pointer-events:none; }
+.hero-badge { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent); border:1px solid rgba(0,201,167,0.35); padding:5px 14px; border-radius:4px; margin-bottom:24px; }
+
+/* Hero node graph */
+.hero-nodes { position:absolute; inset:0; pointer-events:none; opacity:0.12; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   S1: ARCHITECTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.layer-row { display:flex; gap:0; align-items:stretch; overflow-x:auto; }
+.layer-card { flex:1; min-width:160px; background:var(--bg3); border:1px solid var(--border); padding:20px 16px; text-align:center; display:flex; flex-direction:column; gap:8px; }
+.layer-card:first-child { border-radius:12px 0 0 12px; }
+.layer-card:last-child { border-radius:0 12px 12px 0; }
+.layer-arrow { display:flex; align-items:center; justify-content:center; padding:0 8px; color:rgba(0,201,167,0.3); font-size:20px; flex-shrink:0; }
+.layer-name { font-size:11px; font-family:'JetBrains Mono',monospace; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; }
+.layer-neurons { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:600; }
+.layer-act { font-size:10px; color:var(--muted); margin-top:2px; }
+.neuron-dots { display:flex; flex-direction:column; align-items:center; gap:5px; margin:6px 0; }
+.ndot { width:12px; height:12px; border-radius:50%; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   S2: FORWARD PASS CANVAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.canvas-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:8px; overflow:hidden; }
+#mlp-canvas { display:block; width:100%; border-radius:8px; }
+
+.fp-status { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); padding:10px 4px; min-height:36px; }
+.fp-status .hl { color:var(--accent); }
+
+/* Computation steps */
+.compute-row { display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; }
+.compute-label { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); padding-top:3px; white-space:nowrap; }
+.compute-val { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); line-height:1.8; }
+.compute-val .pos { color:var(--accent); }
+.compute-val .zero { color:var(--muted); opacity:0.4; }
+.compute-val .out { color:var(--gold); font-weight:600; font-size:13px; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   S3: ACTIVATION FUNCTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.act-selector { display:flex; gap:10px; flex-wrap:wrap; }
+.act-btn { padding:8px 20px; border-radius:8px; border:1px solid var(--border); background:var(--bg3); font-size:12px; font-weight:700; cursor:pointer; transition:all 0.2s; color:var(--muted); font-family:'Plus Jakarta Sans',sans-serif; }
+.act-btn:hover { color:var(--text); border-color:rgba(0,201,167,0.3); }
+.act-btn.active { background:rgba(0,201,167,0.1); border-color:var(--accent); color:var(--accent); }
+#act-canvas { display:block; width:100%; border-radius:8px; }
+.act-info { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:560px){ .act-info{ grid-template-columns:1fr; } }
+.act-formula { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px 16px; font-family:'JetBrains Mono',monospace; font-size:12px; }
+.act-formula .fname { color:var(--accent); font-weight:600; font-size:13px; margin-bottom:6px; }
+.act-formula .fexpr { color:var(--text); margin-bottom:4px; }
+.act-formula .fnote { font-size:10px; color:var(--muted); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   S4: BACKPROPAGATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.backprop-flow { display:flex; gap:0; align-items:center; overflow-x:auto; padding:8px 0; }
+.bp-node { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:90px; }
+.bp-box { width:70px; height:46px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; }
+.bp-label { font-size:10px; color:var(--muted); text-align:center; line-height:1.4; }
+.bp-arrow-fwd { color:rgba(0,201,167,0.4); font-size:18px; margin-bottom:12px; }
+.bp-arrow-bwd { color:rgba(255,107,107,0.5); font-size:18px; margin-bottom:12px; transform:rotate(180deg); display:block; }
+
+.chain-rule-box { background:var(--bg3); border:1px solid rgba(255,107,107,0.2); border-radius:12px; padding:20px 24px; }
+.chain-title { font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--red); margin-bottom:14px; }
+.chain-eq { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text); line-height:2.0; }
+.chain-eq .op { color:var(--red); }
+.chain-eq .var { color:var(--accent); }
+.chain-eq .comment { color:var(--muted); font-size:11px; }
+
+.gradient-steps { display:flex; flex-direction:column; gap:12px; }
+.gs-row { display:flex; align-items:center; gap:12px; }
+.gs-num { width:22px; height:22px; border-radius:50%; background:rgba(255,107,107,0.15); border:1px solid rgba(255,107,107,0.3); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--red); flex-shrink:0; }
+.gs-text { font-size:13px; color:var(--muted); }
+.gs-text strong { color:var(--text); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   S5: TRAINING LOOP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#loss-canvas { display:block; width:100%; border-radius:8px; }
+.train-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+@media(max-width:560px){ .train-stats{ grid-template-columns:1fr 1fr; } }
+.tstat { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center; }
+.tstat .ts-val { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:600; color:var(--accent); }
+.tstat .ts-lbl { font-size:10px; color:var(--muted); margin-top:3px; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   S6: WHAT'S NEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#s6::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 60% 50% at 50% 60%,rgba(0,201,167,0.07) 0%,transparent 65%); pointer-events:none; }
+.next-card { background:var(--bg2); border:1px solid rgba(0,201,167,0.2); border-radius:16px; padding:28px 32px; display:flex; gap:20px; align-items:center; }
+.next-badge { width:52px; height:52px; border-radius:14px; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; color:#0B1221; flex-shrink:0; }
+
+/* ── Footer ── */
+footer { background:#04080F; padding:28px 40px; text-align:center; font-size:12px; color:var(--muted); border-top:1px solid var(--border); }
+footer a { color:var(--accent); text-decoration:none; }
+
+/* ── chart btn style ── */
+.chart-btn { padding:8px 18px; border-radius:8px; border:1px solid var(--border); background:var(--bg3); font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; color:var(--muted); font-family:'Plus Jakarta Sans',sans-serif; }
+.chart-btn.active { background:rgba(0,201,167,0.1); border-color:var(--accent); color:var(--accent); }
+.chart-btn:hover { color:var(--text); border-color:rgba(0,201,167,0.3); }
+</style>
+</head>
+<body><div style="background:linear-gradient(135deg,#060d1e 0%,#0d2240 100%);color:#fff;padding:32px 40px 24px;font-family:'Segoe UI',Arial,sans-serif;border-bottom:4px solid #4fc3f7;margin-bottom:0;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div style="font-size:12px;color:#4fc3f7;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">JAWNVION LLC &nbsp;·&nbsp; LLM Engineering Series</div>
+      <div style="font-size:28px;font-weight:900;line-height:1.1;margin-bottom:6px;">17 Interactive Colab Labs</div>
+      <div style="font-size:14px;color:#8ab8d4;">Run in-browser &nbsp;·&nbsp; No setup required &nbsp;·&nbsp; Production LLM skills</div>
+    </div>
+    <div style="text-align:right;font-size:12px;color:#6090b0;line-height:1.8;">
+      <div>www.jawnvion.com</div>
+      <div>peter@jawnvion.com</div>
+      <div>© 2026 JAWNVION LLC</div>
+    </div>
+  </div>
+</div>
+
+
+<div id="progress-bar"></div>
+<nav class="chapter-nav">
+  <button class="nav-dot active" onclick="go('s0')" title="Intro"></button>
+  <button class="nav-dot" onclick="go('s1')" title="Architecture"></button>
+  <button class="nav-dot" onclick="go('s2')" title="Forward Pass"></button>
+  <button class="nav-dot" onclick="go('s3')" title="Activations"></button>
+  <button class="nav-dot" onclick="go('s4')" title="Backprop"></button>
+  <button class="nav-dot" onclick="go('s5')" title="Training"></button>
+  <button class="nav-dot" onclick="go('s6')" title="Next"></button>
+</nav>
+<script>function go(id){document.getElementById(id).scrollIntoView({behavior:"smooth"});}</script>
+
+<!-- ══════════ S0: HERO ══════════ -->
+<section class="section" id="s0">
+  <!-- Background node graph SVG -->
+  <svg class="hero-nodes" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid slice">
+    <!-- Input nodes -->
+    <circle cx="180" cy="180" r="14" fill="none" stroke="#8099FF" stroke-width="1.5"/>
+    <circle cx="180" cy="300" r="14" fill="none" stroke="#8099FF" stroke-width="1.5"/>
+    <circle cx="180" cy="420" r="14" fill="none" stroke="#8099FF" stroke-width="1.5"/>
+    <!-- Hidden nodes -->
+    <circle cx="450" cy="140" r="14" fill="none" stroke="#00C9A7" stroke-width="1.5"/>
+    <circle cx="450" cy="240" r="14" fill="none" stroke="#00C9A7" stroke-width="1.5"/>
+    <circle cx="450" cy="340" r="14" fill="none" stroke="#00C9A7" stroke-width="1.5"/>
+    <circle cx="450" cy="440" r="14" fill="none" stroke="#00C9A7" stroke-width="1.5"/>
+    <!-- Output node -->
+    <circle cx="720" cy="300" r="14" fill="none" stroke="#FFB44F" stroke-width="1.5"/>
+    <!-- Connections input->hidden -->
+    <line x1="194" y1="180" x2="436" y2="140" stroke="#8099FF" stroke-width="0.7"/>
+    <line x1="194" y1="180" x2="436" y2="240" stroke="#8099FF" stroke-width="0.7"/>
+    <line x1="194" y1="180" x2="436" y2="340" stroke="#8099FF" stroke-width="0.7"/>
+    <line x1="194" y1="180" x2="436" y2="440" stroke="#8099FF" stroke-width="0.7"/>
+    <line x1="194" y1="300" x2="436" y2="140" stroke="#8099FF" stroke-width="0.7"/>
+    <line x1="194" y1="300" x2="436" y2="240" stroke="#8099FF" stroke-width="0.7"/>
+    <line x1="194" y1="300" x2="436" y2="340" stroke="#8099FF" stroke-width="0.7"/>
+    <line x1="194" y1="300" x2="436" y2="440" stroke="#8099FF" stroke-width="0.7"/>
+    <line x1="194" y1="420" x2="436" y2="140" stroke="#8099FF" stroke-width="0.7"/>
+    <line x1="194" y1="420" x2="436" y2="240" stroke="#8099FF" stroke-width="0.7"/>
+    <line x1="194" y1="420" x2="436" y2="340" stroke="#8099FF" stroke-width="0.7"/>
+    <line x1="194" y1="420" x2="436" y2="440" stroke="#8099FF" stroke-width="0.7"/>
+    <!-- Connections hidden->output -->
+    <line x1="464" y1="140" x2="706" y2="300" stroke="#00C9A7" stroke-width="0.7"/>
+    <line x1="464" y1="240" x2="706" y2="300" stroke="#00C9A7" stroke-width="0.7"/>
+    <line x1="464" y1="340" x2="706" y2="300" stroke="#00C9A7" stroke-width="0.7"/>
+    <line x1="464" y1="440" x2="706" y2="300" stroke="#00C9A7" stroke-width="0.7"/>
+  </svg>
+
+  <div class="section-inner" style="text-align:center;align-items:center;position:relative;">
+    <div class="reveal">
+      <div class="hero-badge">JAWNVION LLC · AI Training Workbook · Chapter 3</div>
+    </div>
+    <h1 class="big-heading reveal">Build a Neural Network<br><span>from Scratch.</span></h1>
+    <p class="lead reveal" style="text-align:center;margin:0 auto;">
+      No PyTorch. No Keras. Just NumPy and calculus. In Chapter 3, you hand-code the forward pass, the backward pass, and the training loop for a real multi-layer perceptron — so nothing in deep learning is a black box again.
+    </p>
+    <div class="reveal" style="display:flex;gap:28px;justify-content:center;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--accent);">1</div>
+        <div style="font-size:12px;color:var(--muted);">Network Built</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--blue);">0</div>
+        <div style="font-size:12px;color:var(--muted);">ML Libraries Needed</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--gold);">100%</div>
+        <div style="font-size:12px;color:var(--muted);">Pure NumPy</div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll to explore</span>
+    <svg width="16" height="24" viewBox="0 0 16 24" fill="none"><path d="M8 5v14M3 14l5 5 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+</section>
+
+<!-- ══════════ S1: ARCHITECTURE ══════════ -->
+<section class="section" id="s1">
+  <div class="section-inner">
+    <div class="reveal"><div class="sec-tag"><span class="dot"></span>The Structure</div></div>
+    <h2 class="section-heading reveal"><span style="color:var(--accent);">The Multi-Layer</span><br>Perceptron (MLP)</h2>
+    <div class="divider reveal"></div>
+
+    <div class="card reveal">
+      <p style="font-size:15px;line-height:1.85;color:var(--muted);">
+        A neural network is a stack of mathematical layers. Each layer takes a vector of numbers, multiplies it by a matrix of <strong style="color:var(--text);">learned weights</strong>, adds a bias vector, then passes the result through a nonlinear <strong style="color:var(--text);">activation function</strong>. Stack two or more of these and you get an MLP — the building block behind every modern AI system.
+      </p>
+    </div>
+
+    <!-- Layer architecture diagram -->
+    <div class="reveal">
+      <div class="layer-row">
+        <div class="layer-card">
+          <div class="layer-name" style="color:var(--blue);">Input</div>
+          <div class="layer-neurons" style="color:var(--blue);">3</div>
+          <div class="neuron-dots">
+            <div class="ndot" style="background:rgba(128,153,255,0.6);"></div>
+            <div class="ndot" style="background:rgba(128,153,255,0.6);"></div>
+            <div class="ndot" style="background:rgba(128,153,255,0.6);"></div>
+          </div>
+          <div class="layer-act">Raw features<br>x = [x₁, x₂, x₃]</div>
+        </div>
+        <div class="layer-arrow">→</div>
+        <div class="layer-card">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px;">W₁ (4×3) · b₁ (4)</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">z₁ = W₁@x + b₁</div>
+        </div>
+        <div class="layer-arrow">→</div>
+        <div class="layer-card">
+          <div class="layer-name" style="color:var(--accent);">Hidden</div>
+          <div class="layer-neurons" style="color:var(--accent);">4</div>
+          <div class="neuron-dots">
+            <div class="ndot" style="background:rgba(0,201,167,0.7);"></div>
+            <div class="ndot" style="background:rgba(0,201,167,0.7);"></div>
+            <div class="ndot" style="background:rgba(0,201,167,0.7);"></div>
+            <div class="ndot" style="background:rgba(106,140,175,0.3);"></div>
+          </div>
+          <div class="layer-act">h₁ = ReLU(z₁)<br>Learns features</div>
+        </div>
+        <div class="layer-arrow">→</div>
+        <div class="layer-card">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px;">W₂ (1×4) · b₂ (1)</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">z₂ = W₂@h₁ + b₂</div>
+        </div>
+        <div class="layer-arrow">→</div>
+        <div class="layer-card">
+          <div class="layer-name" style="color:var(--gold);">Output</div>
+          <div class="layer-neurons" style="color:var(--gold);">1</div>
+          <div class="neuron-dots">
+            <div class="ndot" style="background:rgba(255,180,60,0.7);"></div>
+          </div>
+          <div class="layer-act">ŷ = σ(z₂)<br>Binary prediction</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-row reveal">
+      <div class="card" style="border-color:rgba(128,153,255,0.2);">
+        <div style="font-size:20px;margin-bottom:8px;">🧮</div>
+        <h3 style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:6px;">Weights &amp; Biases</h3>
+        <p style="font-size:12px;color:var(--muted);">W and b are the parameters the network learns. Randomly initialized, then iteratively nudged toward values that minimize loss. A 3→4→1 MLP has 3×4 + 4 + 4×1 + 1 = <strong style="color:var(--text);">21 parameters</strong>.</p>
+      </div>
+      <div class="card" style="border-color:rgba(0,201,167,0.2);">
+        <div style="font-size:20px;margin-bottom:8px;">⚡</div>
+        <h3 style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:6px;">Why Nonlinearity?</h3>
+        <p style="font-size:12px;color:var(--muted);">Without activation functions, stacking layers collapses to a single linear transformation — no matter how deep the network. ReLU breaks this and lets the network learn curved decision boundaries.</p>
+      </div>
+      <div class="card" style="border-color:rgba(255,180,60,0.2);">
+        <div style="font-size:20px;margin-bottom:8px;">🎯</div>
+        <h3 style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:6px;">Universal Approximator</h3>
+        <p style="font-size:12px;color:var(--muted);">A 2-layer MLP with enough hidden neurons can approximate <em style="color:var(--text);">any</em> continuous function. This is the Universal Approximation Theorem — the theoretical foundation for all of deep learning.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S2: FORWARD PASS ══════════ -->
+<section class="section" id="s2">
+  <div class="section-inner">
+    <div class="reveal"><div class="sec-tag"><span class="dot"></span>Interactive Demo</div></div>
+    <h2 class="section-heading reveal">The <span style="color:var(--accent);">Forward Pass</span> —<br>Numbers Flow Left to Right</h2>
+    <div class="divider reveal"></div>
+
+    <div class="card reveal">
+      <p style="font-size:15px;line-height:1.85;color:var(--muted);">
+        The <strong style="color:var(--text);">forward pass</strong> is just arithmetic. Feed an input vector, multiply by each weight matrix, add the bias, apply the activation — and you get a prediction. Every single token TinyLlama generates goes through millions of these operations in milliseconds.
+      </p>
+    </div>
+
+    <div class="reveal">
+      <div class="canvas-wrap">
+        <canvas id="mlp-canvas" width="840" height="380"></canvas>
+      </div>
+      <div id="fp-status" class="fp-status">Input: x = [<span style="color:var(--blue);">0.50</span>, <span style="color:var(--blue);">0.80</span>, <span style="color:var(--blue);">0.30</span>] — ready. Click Run to watch data flow through the network.</div>
+      <div style="display:flex;gap:12px;margin-top:10px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="fp-btn" onclick="runForwardPass()">▶ Run Forward Pass</button>
+        <button class="btn btn-secondary" id="fp-reset" onclick="resetFP()" style="display:none;">↺ Reset</button>
+        <span id="fp-pred" style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted);"></span>
+      </div>
+    </div>
+
+    <!-- Computed values breakdown -->
+    <div class="card reveal" id="fp-math" style="display:none;">
+      <p style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:16px;letter-spacing:0.06em;text-transform:uppercase;">Computed values — step by step</p>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="compute-row">
+          <span class="compute-label">z₁ =</span>
+          <div class="compute-val">
+            W₁ @ x + b₁ →
+            [<span class="pos">0.32</span>, <span class="pos">0.42</span>, <span class="pos">0.43</span>, <span style="color:var(--red);">−0.26</span>]
+          </div>
+        </div>
+        <div class="compute-row">
+          <span class="compute-label">h₁ =</span>
+          <div class="compute-val">
+            ReLU(z₁) →
+            [<span class="pos">0.32</span>, <span class="pos">0.42</span>, <span class="pos">0.43</span>, <span class="zero">0.00</span>]
+            <span style="color:var(--muted);font-size:10px;"> ← neuron 3 is dead (negative input)</span>
+          </div>
+        </div>
+        <div class="compute-row">
+          <span class="compute-label">z₂ =</span>
+          <div class="compute-val">W₂ @ h₁ + b₂ → <span class="pos">0.425</span></div>
+        </div>
+        <div class="compute-row">
+          <span class="compute-label">ŷ =</span>
+          <div class="compute-val">σ(0.425) = 1 / (1 + e<sup>−0.425</sup>) → <span class="out">0.605</span> → Class 1 predicted (60% confidence)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S3: ACTIVATION FUNCTIONS ══════════ -->
+<section class="section" id="s3">
+  <div class="section-inner">
+    <div class="reveal"><div class="sec-tag"><span class="dot"></span>The Nonlinearity</div></div>
+    <h2 class="section-heading reveal">Activation Functions —<br><span style="color:var(--purple);">The Hinge of Deep Learning</span></h2>
+    <div class="divider reveal"></div>
+
+    <div class="card reveal">
+      <p style="font-size:15px;line-height:1.85;color:var(--muted);">
+        Without a nonlinear function between layers, any depth of network collapses to a single matrix multiply. Activation functions introduce the curves that let a network model real-world complexity. Three matter most — and you need to know when to use each.
+      </p>
+    </div>
+
+    <div class="reveal">
+      <div class="act-selector" style="margin-bottom:14px;">
+        <button class="act-btn active" id="act-relu" onclick="showActFunc('relu')">ReLU</button>
+        <button class="act-btn" id="act-sigmoid" onclick="showActFunc('sigmoid')">Sigmoid</button>
+        <button class="act-btn" id="act-tanh" onclick="showActFunc('tanh')">Tanh</button>
+        <button class="act-btn" id="act-all" onclick="showActFunc('all')">All Three</button>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="act-canvas" width="840" height="300"></canvas>
+      </div>
+    </div>
+
+    <div class="act-info reveal">
+      <div class="act-formula">
+        <div class="fname" style="color:var(--accent);">ReLU(x)</div>
+        <div class="fexpr">f(x) = max(0, x)</div>
+        <div class="fnote">Used in hidden layers. Simple, no vanishing gradient for positive inputs. When x &lt; 0, output is 0 ("dead neuron").</div>
+      </div>
+      <div class="act-formula">
+        <div class="fname" style="color:var(--purple);">Sigmoid(x)</div>
+        <div class="fexpr">f(x) = 1 / (1 + e<sup>−x</sup>)</div>
+        <div class="fnote">Squashes input to (0,1). Used at the output layer for binary classification. Suffers vanishing gradients in deep networks.</div>
+      </div>
+      <div class="act-formula">
+        <div class="fname" style="color:var(--gold);">Tanh(x)</div>
+        <div class="fexpr">f(x) = (e<sup>x</sup> − e<sup>−x</sup>) / (e<sup>x</sup> + e<sup>−x</sup>)</div>
+        <div class="fnote">Zero-centered version of Sigmoid. Output range (−1, 1). Often preferred over Sigmoid in hidden layers when symmetry matters.</div>
+      </div>
+      <div class="act-formula" style="border-color:rgba(0,201,167,0.2);">
+        <div class="fname">When to use which?</div>
+        <div class="fexpr" style="font-size:11px;line-height:1.9;">
+          <span style="color:var(--accent);">Hidden layers:</span> ReLU (default)<br>
+          <span style="color:var(--purple);">Binary output:</span> Sigmoid<br>
+          <span style="color:var(--red);">Multi-class output:</span> Softmax<br>
+          <span style="color:var(--gold);">RNNs / attention:</span> Tanh
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S4: BACKPROPAGATION ══════════ -->
+<section class="section" id="s4">
+  <div class="section-inner">
+    <div class="reveal"><div class="sec-tag"><span class="dot"></span>How Learning Happens</div></div>
+    <h2 class="section-heading reveal">Backpropagation —<br><span style="color:var(--red);">Gradients Flow Backwards</span></h2>
+    <div class="divider reveal"></div>
+
+    <div class="card reveal">
+      <p style="font-size:15px;line-height:1.85;color:var(--muted);">
+        After a forward pass produces a prediction, we compute the loss. Then <strong style="color:var(--text);">backpropagation</strong> asks: how much did each weight contribute to that loss? Using the chain rule from calculus, it computes a gradient for every parameter in the network — in one backward sweep. Those gradients tell gradient descent exactly which direction to nudge each weight.
+      </p>
+    </div>
+
+    <!-- Forward / backward flow diagram -->
+    <div class="card reveal" style="padding:28px;">
+      <p style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:20px;letter-spacing:0.06em;text-transform:uppercase;">The two passes through the network</p>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <!-- Forward -->
+        <div style="display:flex;align-items:center;gap:0;overflow-x:auto;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);width:80px;flex-shrink:0;">→ FORWARD</div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <div style="padding:8px 14px;background:rgba(128,153,255,0.12);border:1px solid rgba(128,153,255,0.25);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue);">x input</div>
+            <span style="color:rgba(0,201,167,0.4);font-size:16px;">→</span>
+            <div style="padding:8px 14px;background:rgba(0,201,167,0.1);border:1px solid rgba(0,201,167,0.2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);">Layer 1 + ReLU</div>
+            <span style="color:rgba(0,201,167,0.4);font-size:16px;">→</span>
+            <div style="padding:8px 14px;background:rgba(0,201,167,0.1);border:1px solid rgba(0,201,167,0.2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);">Layer 2 + σ</div>
+            <span style="color:rgba(0,201,167,0.4);font-size:16px;">→</span>
+            <div style="padding:8px 14px;background:rgba(255,180,60,0.12);border:1px solid rgba(255,180,60,0.25);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold);">ŷ prediction</div>
+            <span style="color:rgba(255,107,107,0.4);font-size:16px;">→</span>
+            <div style="padding:8px 14px;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--red);">Loss = BCE(ŷ, y)</div>
+          </div>
+        </div>
+        <div style="width:100%;height:1px;background:var(--border);"></div>
+        <!-- Backward -->
+        <div style="display:flex;align-items:center;gap:0;overflow-x:auto;flex-direction:row-reverse;justify-content:flex-end;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--red);width:80px;flex-shrink:0;text-align:right;">← BACKWARD</div>
+          <div style="display:flex;align-items:center;gap:4px;flex-direction:row-reverse;">
+            <div style="padding:8px 14px;background:rgba(128,153,255,0.08);border:1px solid rgba(128,153,255,0.15);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(128,153,255,0.6);">dL/dx</div>
+            <span style="color:rgba(255,107,107,0.4);font-size:16px;">←</span>
+            <div style="padding:8px 14px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--red);">dL/dW₁</div>
+            <span style="color:rgba(255,107,107,0.4);font-size:16px;">←</span>
+            <div style="padding:8px 14px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--red);">dL/dW₂</div>
+            <span style="color:rgba(255,107,107,0.4);font-size:16px;">←</span>
+            <div style="padding:8px 14px;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.25);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--red);">dL/dŷ</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chain rule -->
+    <div class="card-row-2 reveal">
+      <div class="chain-rule-box">
+        <div class="chain-title">The Chain Rule</div>
+        <div class="chain-eq">
+          <div><span class="var">dL</span>/<span class="var">dW₂</span> = <span class="var">dL</span>/<span class="var">dŷ</span> <span class="op">×</span> <span class="var">dŷ</span>/<span class="var">dz₂</span> <span class="op">×</span> <span class="var">dz₂</span>/<span class="var">dW₂</span></div>
+          <div style="margin-top:10px;font-size:11px;color:var(--muted);">Loss gradient flows backward through every operation that produced it — chain-multiplying derivatives at each step.</div>
+          <div style="margin-top:10px;"><span class="var">W₂ ← W₂</span> <span class="op">−</span> <span style="color:var(--gold);">lr</span> <span class="op">×</span> <span class="var">dL/dW₂</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-color:rgba(255,107,107,0.15);">
+        <div class="gradient-steps">
+          <p style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:6px;letter-spacing:0.06em;text-transform:uppercase;">Backprop in 4 steps</p>
+          <div class="gs-row">
+            <span class="gs-num">1</span>
+            <span class="gs-text">Compute loss: <strong>L = BCE(ŷ, y)</strong></span>
+          </div>
+          <div class="gs-row">
+            <span class="gs-num">2</span>
+            <span class="gs-text">Gradient at output: <strong>dL/dŷ</strong></span>
+          </div>
+          <div class="gs-row">
+            <span class="gs-num">3</span>
+            <span class="gs-text">Chain rule backward through each layer</span>
+          </div>
+          <div class="gs-row">
+            <span class="gs-num">4</span>
+            <span class="gs-text">Update: <strong>W -= lr × dL/dW</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card reveal" style="background:var(--bg3);border-color:rgba(0,201,167,0.15);">
+      <p style="font-size:13px;color:var(--muted);line-height:1.75;margin:0;">
+        <strong style="color:var(--text);">The deep learning insight:</strong> Because every operation in a neural network is differentiable, backprop is fully automatic. This is why PyTorch has <code style="color:var(--accent);background:rgba(0,201,167,0.08);padding:1px 5px;border-radius:3px;">autograd</code> — it tracks every operation and computes all gradients in one backward pass. In Chapter 3, you implement this by hand so the abstraction becomes concrete.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S5: TRAINING LOOP ══════════ -->
+<section class="section" id="s5">
+  <div class="section-inner">
+    <div class="reveal"><div class="sec-tag"><span class="dot"></span>Interactive · Live Training</div></div>
+    <h2 class="section-heading reveal">Train the Network —<br><span style="color:var(--gold);">Watch the Loss Fall</span></h2>
+    <div class="divider reveal"></div>
+
+    <div class="card reveal">
+      <p style="font-size:15px;line-height:1.85;color:var(--muted);">
+        The <strong style="color:var(--text);">training loop</strong> is just this, repeated: forward pass → compute loss → backward pass → update weights. That cycle, run hundreds or thousands of times, is how a network learns. Watch it happen below — hit Train and observe as the loss descends toward zero.
+      </p>
+    </div>
+
+    <div class="reveal">
+      <div class="canvas-wrap">
+        <canvas id="loss-canvas" width="840" height="300"></canvas>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="train-btn" onclick="startTraining()">▶ Train 100 Epochs</button>
+        <button class="btn btn-secondary" id="train-reset-btn" onclick="resetTraining()" style="display:none;">↺ Reset</button>
+      </div>
+    </div>
+
+    <div class="train-stats reveal">
+      <div class="tstat">
+        <div class="ts-val" id="stat-epoch">0</div>
+        <div class="ts-lbl">Epoch</div>
+      </div>
+      <div class="tstat">
+        <div class="ts-val" id="stat-loss" style="color:var(--red);">—</div>
+        <div class="ts-lbl">Current Loss</div>
+      </div>
+      <div class="tstat">
+        <div class="ts-val" id="stat-acc" style="color:var(--gold);">—</div>
+        <div class="ts-lbl">Accuracy</div>
+      </div>
+      <div class="tstat">
+        <div class="ts-val" id="stat-status" style="color:var(--muted);font-size:14px;">Ready</div>
+        <div class="ts-lbl">Status</div>
+      </div>
+    </div>
+
+    <div class="card-row-2 reveal">
+      <div class="card" style="border-color:rgba(255,180,60,0.15);">
+        <p style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:12px;letter-spacing:0.06em;text-transform:uppercase;">The NumPy training loop</p>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.9;color:var(--muted);">
+          <div><span style="color:var(--gold);">for</span> epoch <span style="color:var(--gold);">in</span> range(<span style="color:var(--blue);">100</span>):</div>
+          <div style="padding-left:16px;"><span style="color:rgba(106,140,175,0.5);"># forward</span></div>
+          <div style="padding-left:16px;">z1 = W1 <span style="color:var(--accent);">@</span> X.T + b1</div>
+          <div style="padding-left:16px;">h1 = relu(z1)</div>
+          <div style="padding-left:16px;">y_hat = sigmoid(W2 <span style="color:var(--accent);">@</span> h1 + b2)</div>
+          <div style="padding-left:16px;margin-top:4px;"><span style="color:rgba(106,140,175,0.5);"># loss + backward</span></div>
+          <div style="padding-left:16px;">loss = bce(y_hat, y)</div>
+          <div style="padding-left:16px;">dW1, dW2, ... = backward(...)</div>
+          <div style="padding-left:16px;margin-top:4px;"><span style="color:rgba(106,140,175,0.5);"># update weights</span></div>
+          <div style="padding-left:16px;">W1 <span style="color:var(--red);">-=</span> lr <span style="color:var(--accent);">*</span> dW1</div>
+          <div style="padding-left:16px;">W2 <span style="color:var(--red);">-=</span> lr <span style="color:var(--accent);">*</span> dW2</div>
+        </div>
+      </div>
+      <div class="card" style="border-color:rgba(0,201,167,0.15);">
+        <p style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:12px;letter-spacing:0.06em;text-transform:uppercase;">What you will see in the notebook</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;"><span style="color:var(--accent);">→</span><span style="color:var(--muted);">Loss drops fast early, then slows (diminishing returns)</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;"><span style="color:var(--accent);">→</span><span style="color:var(--muted);">Accuracy climbs from ~52% to ~94% over 100 epochs</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;"><span style="color:var(--accent);">→</span><span style="color:var(--muted);">Learning rate too high → loss oscillates or explodes</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;"><span style="color:var(--accent);">→</span><span style="color:var(--muted);">Dead neurons stay dead unless you reinitialize weights</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S6: WHAT'S NEXT ══════════ -->
+<section class="section" id="s6">
+  <div class="section-inner" style="text-align:center;align-items:center;">
+    <div class="reveal"><div class="sec-tag"><span class="dot"></span>Chapter 3 Complete</div></div>
+    <h2 class="big-heading reveal">You just built a neural<br><span>network from scratch.</span></h2>
+    <p class="lead reveal" style="text-align:center;margin:0 auto;">
+      Forward pass, backward pass, training loop — all by hand with NumPy. Every abstraction in PyTorch maps directly to something you now understand from first principles.
+    </p>
+
+    <div class="card-row-2 reveal" style="width:100%;max-width:660px;">
+      <div class="card" style="text-align:left;border-color:rgba(0,201,167,0.2);">
+        <p style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:10px;font-family:'JetBrains Mono',monospace;">You learned</p>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:9px;">
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent);">✓</span>MLP architecture (weights, biases, layers)</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent);">✓</span>Forward pass — matrix multiply through layers</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent);">✓</span>ReLU, Sigmoid, Tanh — when and why</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent);">✓</span>Backpropagation via the chain rule</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent);">✓</span>The full training loop in NumPy</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent);">✓</span>Dead neurons and learning rate effects</li>
+        </ul>
+      </div>
+      <div class="card" style="text-align:left;border-color:rgba(128,153,255,0.2);">
+        <p style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:10px;font-family:'JetBrains Mono',monospace;">In the notebook</p>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:9px;">
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--blue);">→</span>MLP class built from scratch in NumPy</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--blue);">→</span>He initialization for weights</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--blue);">→</span>Binary cross-entropy loss function</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--blue);">→</span>Backward pass: full gradient derivation</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--blue);">→</span>Train on the SQuAD dataset from Ch2</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="next-card reveal" style="width:100%;max-width:660px;text-align:left;">
+      <div class="next-badge">Ch4</div>
+      <div>
+        <h3 style="font-size:17px;font-weight:700;margin-bottom:4px;">Up Next: PyTorch — NumPy with Superpowers</h3>
+        <p style="font-size:13px;color:var(--muted);">Now that you can write it by hand, meet the tool that does it automatically. PyTorch tensors, autograd, and GPU acceleration — your MLP from scratch becomes one file of clean, production-grade code. Everything you learned in Ch3 maps 1:1.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p><strong style="color:rgba(255,255,255,0.6);">JAWNVION LLC — AI Engineering: From Fundamentals to Production</strong><br>
+  Chapter 3 of 14 · <a href="mailto:peter@jawnvion.com">peter@jawnvion.com</a></p>
+</footer>
+
+<script>
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   NAVIGATION & SCROLL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const sections = ["s0","s1","s2","s3","s4","s5","s6"];
+const dots = document.querySelectorAll(".nav-dot");
+window.addEventListener("scroll", function() {
+  var h = document.documentElement.scrollHeight - window.innerHeight;
+  document.getElementById("progress-bar").style.width = (window.scrollY / h * 100) + "%";
+  sections.forEach(function(id, i) {
+    var el = document.getElementById(id);
+    var rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.5 && rect.bottom > 0) {
+      dots.forEach(function(d) { d.classList.remove("active"); });
+      dots[i].classList.add("active");
+    }
+  });
+}, { passive: true });
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   REVEAL ON SCROLL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+var observer = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) {
+    if (e.isIntersecting) e.target.classList.add("visible");
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll(".reveal").forEach(function(el) { observer.observe(el); });
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MLP CANVAS — FORWARD PASS DEMO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+var mlpCanvas = document.getElementById("mlp-canvas");
+var mc = mlpCanvas.getContext("2d");
+var MW = 840, MH = 380;
+
+// Layer positions
+var LX = [120, 420, 720];   // x centers of layers
+var LY = [
+  [120, 190, 260],           // input: 3 neurons
+  [70, 143, 217, 290],       // hidden: 4 neurons
+  [190]                      // output: 1 neuron
+];
+var NR = 22; // neuron radius
+
+// Fixed weights for demo (pre-computed values)
+// z1 = [0.32, 0.42, 0.43, -0.26] → h1 = [0.32, 0.42, 0.43, 0.00]
+// z2 = 0.425 → yhat = 0.605
+var H1 = [0.32, 0.42, 0.43, 0.00];
+var YHAT = 0.605;
+
+// Colors
+var COL_INPUT  = "#8099FF";
+var COL_HIDDEN = "#00C9A7";
+var COL_DEAD   = "#3A4D5E";
+var COL_OUTPUT = "#FFB44F";
+var COL_DIM    = "rgba(255,255,255,0.04)";
+var COL_CONN_DIM = "rgba(255,255,255,0.05)";
+
+function mlpDrawConnections(highlightPhase) {
+  // Phase 0: all dim
+  // Phase 1: input→hidden lit (teal)
+  // Phase 2: hidden→output lit (gold)
+  var i, j;
+  // Input → Hidden
+  for (i = 0; i < LY[0].length; i++) {
+    for (j = 0; j < LY[1].length; j++) {
+      mc.beginPath();
+      mc.moveTo(LX[0] + NR, LY[0][i]);
+      mc.lineTo(LX[1] - NR, LY[1][j]);
+      if (highlightPhase >= 1) {
+        mc.strokeStyle = "rgba(0,201,167,0.35)";
+        mc.lineWidth = 1.2;
+      } else {
+        mc.strokeStyle = COL_CONN_DIM;
+        mc.lineWidth = 0.8;
+      }
+      mc.stroke();
+    }
+  }
+  // Hidden → Output
+  for (j = 0; j < LY[1].length; j++) {
+    mc.beginPath();
+    mc.moveTo(LX[1] + NR, LY[1][j]);
+    mc.lineTo(LX[2] - NR, LY[2][0]);
+    if (highlightPhase >= 2) {
+      mc.strokeStyle = "rgba(255,180,60,0.4)";
+      mc.lineWidth = 1.5;
+    } else {
+      mc.strokeStyle = COL_CONN_DIM;
+      mc.lineWidth = 0.8;
+    }
+    mc.stroke();
+  }
+}
+
+function mlpDrawNeuron(x, y, color, label, sublabel, glow) {
+  mc.save();
+  if (glow) {
+    mc.shadowBlur = 20;
+    mc.shadowColor = color;
+  }
+  // Neuron body
+  mc.beginPath();
+  mc.arc(x, y, NR, 0, Math.PI * 2);
+  mc.fillStyle = "#0F1829";
+  mc.fill();
+  mc.strokeStyle = color;
+  mc.lineWidth = glow ? 2.5 : 1.5;
+  mc.stroke();
+  mc.restore();
+
+  if (label) {
+    mc.fillStyle = color;
+    mc.font = "bold 11px JetBrains Mono, monospace";
+    mc.textAlign = "center";
+    mc.textBaseline = "middle";
+    mc.fillText(label, x, y);
+  }
+  if (sublabel) {
+    mc.fillStyle = "rgba(106,140,175,0.7)";
+    mc.font = "9px JetBrains Mono, monospace";
+    mc.textAlign = "center";
+    mc.textBaseline = "top";
+    mc.fillText(sublabel, x, y + NR + 5);
+  }
+}
+
+function drawMLPStatic(phase) {
+  mc.clearRect(0, 0, MW, MH);
+  mc.fillStyle = "#0F1829";
+  mc.fillRect(0, 0, MW, MH);
+
+  // Background layer labels
+  mc.font = "10px JetBrains Mono, monospace";
+  mc.textBaseline = "alphabetic";
+  var labels = ["Input Layer", "Hidden Layer (ReLU)", "Output Layer (σ)"];
+  var lcols  = [COL_INPUT, COL_HIDDEN, COL_OUTPUT];
+  for (var l = 0; l < 3; l++) {
+    mc.fillStyle = lcols[l].replace(")", ",0.4)").replace("rgba(","rgba(").replace("#8099FF","rgba(128,153,255,").replace("#00C9A7","rgba(0,201,167,").replace("#FFB44F","rgba(255,180,60,");
+    mc.textAlign = "center";
+    mc.fillText(labels[l], LX[l], MH - 10);
+  }
+
+  mlpDrawConnections(phase);
+
+  // Input neurons
+  var inputVals = ["0.50", "0.80", "0.30"];
+  for (var i = 0; i < 3; i++) {
+    var glowI = (phase >= 0);
+    mlpDrawNeuron(LX[0], LY[0][i], phase >= 0 ? COL_INPUT : "rgba(128,153,255,0.2)", inputVals[i], "x" + (i+1), glowI && phase >= 0);
+  }
+
+  // Hidden neurons
+  for (var j = 0; j < 4; j++) {
+    var hVal = H1[j];
+    var hCol = phase >= 1 ? (hVal > 0 ? COL_HIDDEN : COL_DEAD) : "rgba(0,201,167,0.15)";
+    var hLabel = phase >= 1 ? hVal.toFixed(2) : "";
+    var hGlow  = phase >= 1 && hVal > 0;
+    mlpDrawNeuron(LX[1], LY[1][j], hCol, hLabel, "h" + (j+1), hGlow);
+  }
+
+  // Output neuron
+  var outLabel = phase >= 2 ? YHAT.toFixed(2) : "";
+  var outGlow  = phase >= 2;
+  mlpDrawNeuron(LX[2], LY[2][0], phase >= 2 ? COL_OUTPUT : "rgba(255,180,60,0.15)", outLabel, "ŷ", outGlow);
+
+  // "DEAD" badge on neuron 4 when phase >= 1
+  if (phase >= 1) {
+    mc.fillStyle = "rgba(255,107,107,0.7)";
+    mc.font = "bold 8px Plus Jakarta Sans, sans-serif";
+    mc.textAlign = "center";
+    mc.textBaseline = "top";
+    mc.fillText("DEAD", LX[1], LY[1][3] + NR + 5);
+  }
+
+  // Prediction label when phase >= 2
+  if (phase >= 2) {
+    mc.fillStyle = COL_OUTPUT;
+    mc.font = "bold 13px Plus Jakarta Sans, sans-serif";
+    mc.textAlign = "left";
+    mc.textBaseline = "middle";
+    mc.fillText("60% → Class 1", LX[2] + NR + 12, LY[2][0]);
+  }
+}
+
+var fpRunning = false;
+function runForwardPass() {
+  if (fpRunning) return;
+  fpRunning = true;
+  document.getElementById("fp-btn").disabled = true;
+
+  var status = document.getElementById("fp-status");
+
+  drawMLPStatic(0);
+  status.innerHTML = "Step 1: Input x = [<span style=\"color:#8099FF\">0.50</span>, <span style=\"color:#8099FF\">0.80</span>, <span style=\"color:#8099FF\">0.30</span>] enters the network...";
+
+  setTimeout(function() {
+    drawMLPStatic(1);
+    status.innerHTML = "Step 2: Hidden layer computes z₁ = W₁·x + b₁, then ReLU. Neuron 4 fired negative → <span style=\"color:#FF6B6B\">dead (output = 0)</span>.";
+  }, 900);
+
+  setTimeout(function() {
+    drawMLPStatic(2);
+    status.innerHTML = "Step 3: Output ŷ = σ(0.425) = <span style=\"color:#FFB44F;font-weight:700\">0.605</span> → Class 1 predicted with 60% confidence.";
+    document.getElementById("fp-math").style.display = "block";
+    document.getElementById("fp-reset").style.display = "inline-flex";
+    document.getElementById("fp-pred").textContent = "Prediction: ŷ = 0.605";
+    document.getElementById("fp-pred").style.color = "#FFB44F";
+  }, 1900);
+}
+
+function resetFP() {
+  fpRunning = false;
+  document.getElementById("fp-btn").disabled = false;
+  document.getElementById("fp-reset").style.display = "none";
+  document.getElementById("fp-pred").textContent = "";
+  document.getElementById("fp-math").style.display = "none";
+  document.getElementById("fp-status").innerHTML = "Input: x = [<span style=\"color:#8099FF\">0.50</span>, <span style=\"color:#8099FF\">0.80</span>, <span style=\"color:#8099FF\">0.30</span>] — ready. Click Run to watch data flow through the network.";
+  drawMLPStatic(0);
+}
+
+// Initial draw
+setTimeout(function() { drawMLPStatic(0); }, 300);
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ACTIVATION FUNCTION CANVAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+var actCanvas = document.getElementById("act-canvas");
+var ac = actCanvas.getContext("2d");
+var AW = 840, AH = 300;
+var APL = 60, APR = 30, APT = 30, APB = 40;
+
+function relu(x)    { return Math.max(0, x); }
+function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+function tanhF(x)   { return Math.tanh(x); }
+
+var actFuncs = {
+  relu:    { fn: relu,    color: "#00C9A7", label: "ReLU: f(x) = max(0, x)",    range: [-4, 4, -0.5, 4]    },
+  sigmoid: { fn: sigmoid, color: "#C084FC", label: "Sigmoid: f(x) = 1/(1+e⁻ˣ)", range: [-6, 6, -0.1, 1.1]  },
+  tanh:    { fn: tanhF,   color: "#FFB44F", label: "Tanh: f(x) = tanh(x)",     range: [-4, 4, -1.2, 1.2]  }
+};
+
+function drawActSingle(type) {
+  ac.clearRect(0, 0, AW, AH);
+  ac.fillStyle = "#0F1829";
+  ac.fillRect(0, 0, AW, AH);
+
+  var cfg = actFuncs[type];
+  var xMn = cfg.range[0], xMx = cfg.range[1];
+  var yMn = cfg.range[2], yMx = cfg.range[3];
+  var plotW = AW - APL - APR;
+  var plotH = AH - APT - APB;
+
+  function toCanvasX(x) { return APL + (x - xMn) / (xMx - xMn) * plotW; }
+  function toCanvasY(y) { return APT + plotH - (y - yMn) / (yMx - yMn) * plotH; }
+
+  // Grid
+  ac.strokeStyle = "rgba(255,255,255,0.04)";
+  ac.lineWidth = 1;
+  for (var gx = Math.ceil(xMn); gx <= Math.floor(xMx); gx++) {
+    ac.beginPath(); ac.moveTo(toCanvasX(gx), APT); ac.lineTo(toCanvasX(gx), APT + plotH); ac.stroke();
+  }
+  var yStep = (yMx - yMn) > 3 ? 1 : 0.5;
+  for (var gy = Math.ceil(yMn / yStep) * yStep; gy <= yMx; gy += yStep) {
+    ac.beginPath(); ac.moveTo(APL, toCanvasY(gy)); ac.lineTo(APL + plotW, toCanvasY(gy)); ac.stroke();
+  }
+
+  // Zero axes
+  ac.strokeStyle = "rgba(255,255,255,0.1)"; ac.lineWidth = 1;
+  ac.beginPath(); ac.moveTo(APL, toCanvasY(0)); ac.lineTo(APL + plotW, toCanvasY(0)); ac.stroke();
+  ac.beginPath(); ac.moveTo(toCanvasX(0), APT); ac.lineTo(toCanvasX(0), APT + plotH); ac.stroke();
+
+  // Axes border
+  ac.strokeStyle = "rgba(255,255,255,0.15)"; ac.lineWidth = 1.5;
+  ac.beginPath(); ac.moveTo(APL, APT); ac.lineTo(APL, APT + plotH); ac.stroke();
+  ac.beginPath(); ac.moveTo(APL, APT + plotH); ac.lineTo(APL + plotW, APT + plotH); ac.stroke();
+
+  // Axis labels
+  ac.fillStyle = "rgba(106,140,175,0.55)"; ac.font = "9px JetBrains Mono, monospace";
+  ac.textAlign = "center"; ac.textBaseline = "top";
+  for (var lx = Math.ceil(xMn); lx <= Math.floor(xMx); lx++) {
+    ac.fillText(lx, toCanvasX(lx), APT + plotH + 5);
+  }
+  ac.textAlign = "right"; ac.textBaseline = "middle";
+  for (var ly = Math.ceil(yMn / yStep) * yStep; ly <= yMx; ly += yStep) {
+    ac.fillText(ly.toFixed(ly % 1 === 0 ? 0 : 1), APL - 5, toCanvasY(ly));
+  }
+
+  // Function curve
+  ac.beginPath();
+  var steps = 300;
+  for (var s = 0; s <= steps; s++) {
+    var fx = xMn + (s / steps) * (xMx - xMn);
+    var fy = cfg.fn(fx);
+    var cx = toCanvasX(fx);
+    var cy = toCanvasY(fy);
+    if (cy < APT - 2 || cy > APT + plotH + 2) { ac.moveTo(cx, cy); continue; }
+    if (s === 0) ac.moveTo(cx, cy); else ac.lineTo(cx, cy);
+  }
+  ac.strokeStyle = cfg.color;
+  ac.lineWidth = 3;
+  ac.stroke();
+
+  // Title
+  ac.fillStyle = cfg.color;
+  ac.font = "bold 12px Plus Jakarta Sans, sans-serif";
+  ac.textAlign = "center"; ac.textBaseline = "top";
+  ac.fillText(cfg.label, APL + plotW / 2, 8);
+}
+
+function drawActAll() {
+  ac.clearRect(0, 0, AW, AH);
+  ac.fillStyle = "#0F1829";
+  ac.fillRect(0, 0, AW, AH);
+
+  var xMn = -5, xMx = 5, yMn = -1.3, yMx = 1.3;
+  var plotW = AW - APL - APR;
+  var plotH = AH - APT - APB;
+
+  function toX(x) { return APL + (x - xMn) / (xMx - xMn) * plotW; }
+  function toY(y) { return APT + plotH - (y - yMn) / (yMx - yMn) * plotH; }
+
+  // Grid
+  ac.strokeStyle = "rgba(255,255,255,0.04)"; ac.lineWidth = 1;
+  for (var gx = -4; gx <= 4; gx += 2) {
+    ac.beginPath(); ac.moveTo(toX(gx), APT); ac.lineTo(toX(gx), APT + plotH); ac.stroke();
+  }
+  for (var gy = -1; gy <= 1; gy += 0.5) {
+    ac.beginPath(); ac.moveTo(APL, toY(gy)); ac.lineTo(APL + plotW, toY(gy)); ac.stroke();
+  }
+  // Zero lines
+  ac.strokeStyle = "rgba(255,255,255,0.1)"; ac.lineWidth = 1;
+  ac.beginPath(); ac.moveTo(APL, toY(0)); ac.lineTo(APL + plotW, toY(0)); ac.stroke();
+  ac.beginPath(); ac.moveTo(toX(0), APT); ac.lineTo(toX(0), APT + plotH); ac.stroke();
+  // Axes
+  ac.strokeStyle = "rgba(255,255,255,0.15)"; ac.lineWidth = 1.5;
+  ac.beginPath(); ac.moveTo(APL, APT); ac.lineTo(APL, APT + plotH); ac.stroke();
+  ac.beginPath(); ac.moveTo(APL, APT + plotH); ac.lineTo(APL + plotW, APT + plotH); ac.stroke();
+
+  // Draw all three curves
+  var curves = [
+    { fn: relu,    color: "#00C9A7", name: "ReLU" },
+    { fn: sigmoid, color: "#C084FC", name: "Sigmoid" },
+    { fn: tanhF,   color: "#FFB44F", name: "Tanh" }
+  ];
+  curves.forEach(function(cur) {
+    ac.beginPath();
+    for (var s = 0; s <= 300; s++) {
+      var fx = xMn + (s / 300) * (xMx - xMn);
+      var fy = cur.fn(fx);
+      var cx = toX(fx);
+      var cy = toY(fy);
+      if (cy < APT - 2 || cy > APT + plotH + 2) { ac.moveTo(cx, cy); continue; }
+      if (s === 0) ac.moveTo(cx, cy); else ac.lineTo(cx, cy);
+    }
+    ac.strokeStyle = cur.color; ac.lineWidth = 2.5; ac.stroke();
+    // Label at right edge
+    var edgeY = cur.fn(4.5);
+    var labelY = toY(Math.min(1.2, Math.max(-1.2, edgeY)));
+    ac.fillStyle = cur.color; ac.font = "bold 11px JetBrains Mono, monospace";
+    ac.textAlign = "left"; ac.textBaseline = "middle";
+    ac.fillText(cur.name, toX(4.6), labelY);
+  });
+
+  // Axis labels
+  ac.fillStyle = "rgba(106,140,175,0.55)"; ac.font = "9px JetBrains Mono, monospace";
+  ac.textAlign = "center"; ac.textBaseline = "top";
+  [-4,-2,0,2,4].forEach(function(v) { ac.fillText(v, toX(v), APT + plotH + 5); });
+  ac.textAlign = "right"; ac.textBaseline = "middle";
+  [-1,-0.5,0,0.5,1].forEach(function(v) { ac.fillText(v.toFixed(1), APL - 5, toY(v)); });
+
+  ac.fillStyle = "rgba(255,255,255,0.5)"; ac.font = "bold 12px Plus Jakarta Sans, sans-serif";
+  ac.textAlign = "center"; ac.textBaseline = "top";
+  ac.fillText("All Three Activation Functions — Compared", APL + plotW / 2, 8);
+}
+
+function showActFunc(type) {
+  document.querySelectorAll(".act-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.getElementById("act-" + type).classList.add("active");
+  if (type === "all") drawActAll();
+  else drawActSingle(type);
+}
+
+setTimeout(function() { showActFunc("relu"); }, 500);
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TRAINING LOOP — LIVE LOSS CURVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+var lossCanvas = document.getElementById("loss-canvas");
+var lc = lossCanvas.getContext("2d");
+var LCW = 840, LCH = 300;
+var LPL = 60, LPR = 30, LPT = 30, LPB = 45;
+
+// Pre-generate training curve (realistic loss + accuracy)
+var seed = 42;
+function seededRand() {
+  seed = (seed * 9301 + 49297) % 233280;
+  return seed / 233280;
+}
+
+var epochLoss = [];
+var epochAcc  = [];
+for (var ep = 0; ep < 100; ep++) {
+  var noise = (seededRand() - 0.5) * 0.04;
+  var loss  = 0.76 * Math.exp(-ep / 21) + 0.072 + noise;
+  var acc   = 0.52 + 0.43 * (1 - Math.exp(-ep / 17)) + (seededRand() - 0.5) * 0.02;
+  epochLoss.push(Math.max(0.06, loss));
+  epochAcc.push(Math.min(0.98, Math.max(0.5, acc)));
+}
+
+function drawLossBase() {
+  lc.clearRect(0, 0, LCW, LCH);
+  lc.fillStyle = "#0F1829";
+  lc.fillRect(0, 0, LCW, LCH);
+
+  var plotW = LCW - LPL - LPR;
+  var plotH = LCH - LPT - LPB;
+
+  // Grid
+  lc.strokeStyle = "rgba(255,255,255,0.04)"; lc.lineWidth = 1;
+  for (var i = 0; i <= 5; i++) {
+    var gy = LPT + (i / 5) * plotH;
+    lc.beginPath(); lc.moveTo(LPL, gy); lc.lineTo(LPL + plotW, gy); lc.stroke();
+  }
+  [0,25,50,75,100].forEach(function(ep) {
+    var gx = LPL + (ep / 100) * plotW;
+    lc.beginPath(); lc.moveTo(gx, LPT); lc.lineTo(gx, LPT + plotH); lc.stroke();
+  });
+
+  // Axes
+  lc.strokeStyle = "rgba(255,255,255,0.15)"; lc.lineWidth = 1.5;
+  lc.beginPath(); lc.moveTo(LPL, LPT); lc.lineTo(LPL, LPT + plotH); lc.stroke();
+  lc.beginPath(); lc.moveTo(LPL, LPT + plotH); lc.lineTo(LPL + plotW, LPT + plotH); lc.stroke();
+
+  // Y-axis labels (loss 0 to 0.8)
+  lc.fillStyle = "rgba(106,140,175,0.55)"; lc.font = "9px JetBrains Mono, monospace";
+  [0, 0.2, 0.4, 0.6, 0.8].forEach(function(v) {
+    var y = LPT + plotH - (v / 0.8) * plotH;
+    lc.textAlign = "right"; lc.textBaseline = "middle";
+    lc.fillText(v.toFixed(1), LPL - 6, y);
+  });
+
+  // X-axis labels
+  lc.textAlign = "center"; lc.textBaseline = "top";
+  [0,25,50,75,100].forEach(function(ep) {
+    lc.fillText(ep, LPL + (ep / 100) * plotW, LPT + plotH + 7);
+  });
+
+  // Axis titles
+  lc.fillStyle = "rgba(106,140,175,0.5)"; lc.font = "11px Plus Jakarta Sans, sans-serif";
+  lc.textAlign = "center"; lc.textBaseline = "top";
+  lc.fillText("Epoch", LPL + plotW / 2, LCH - 10);
+  lc.save(); lc.translate(12, LPT + plotH / 2); lc.rotate(-Math.PI / 2);
+  lc.textAlign = "center"; lc.fillText("Loss (BCE)", 0, 0); lc.restore();
+
+  lc.fillStyle = "rgba(255,255,255,0.5)"; lc.font = "bold 12px Plus Jakarta Sans, sans-serif";
+  lc.textAlign = "center"; lc.textBaseline = "top";
+  lc.fillText("Training Loss Curve — MLP on Binary Classification Task", LPL + plotW / 2, 8);
+}
+
+function drawLossUpTo(epoch) {
+  drawLossBase();
+  if (epoch < 0) return;
+  var plotW = LCW - LPL - LPR;
+  var plotH = LCH - LPT - LPB;
+
+  // Draw loss curve as area fill
+  lc.beginPath();
+  lc.moveTo(LPL, LPT + plotH);
+  for (var e = 0; e <= epoch; e++) {
+    var cx = LPL + (e / 100) * plotW;
+    var cy = LPT + plotH - (epochLoss[e] / 0.8) * plotH;
+    lc.lineTo(cx, cy);
+  }
+  var lastCX = LPL + (epoch / 100) * plotW;
+  lc.lineTo(lastCX, LPT + plotH);
+  lc.closePath();
+  lc.fillStyle = "rgba(255,107,107,0.08)";
+  lc.fill();
+
+  // Loss line
+  lc.beginPath();
+  for (var e2 = 0; e2 <= epoch; e2++) {
+    var cx2 = LPL + (e2 / 100) * plotW;
+    var cy2 = LPT + plotH - (epochLoss[e2] / 0.8) * plotH;
+    if (e2 === 0) lc.moveTo(cx2, cy2); else lc.lineTo(cx2, cy2);
+  }
+  lc.strokeStyle = "#FF6B6B"; lc.lineWidth = 2.5; lc.stroke();
+
+  // Current point
+  if (epoch > 0) {
+    var px = LPL + (epoch / 100) * plotW;
+    var py = LPT + plotH - (epochLoss[epoch] / 0.8) * plotH;
+    lc.beginPath(); lc.arc(px, py, 5, 0, Math.PI * 2);
+    lc.fillStyle = "#FF6B6B"; lc.fill();
+    lc.strokeStyle = "#0F1829"; lc.lineWidth = 2; lc.stroke();
+  }
+}
+
+var trainTimer = null;
+var trainEpoch = -1;
+
+function startTraining() {
+  if (trainTimer) return;
+  document.getElementById("train-btn").disabled = true;
+  document.getElementById("train-reset-btn").style.display = "inline-flex";
+  document.getElementById("stat-status").textContent = "Training";
+  document.getElementById("stat-status").style.color = "#00C9A7";
+  trainEpoch = 0;
+
+  trainTimer = setInterval(function() {
+    drawLossUpTo(trainEpoch);
+    document.getElementById("stat-epoch").textContent = trainEpoch;
+    document.getElementById("stat-loss").textContent = epochLoss[trainEpoch].toFixed(3);
+    document.getElementById("stat-acc").textContent = (epochAcc[trainEpoch] * 100).toFixed(1) + "%";
+
+    trainEpoch++;
+    if (trainEpoch >= 100) {
+      clearInterval(trainTimer);
+      trainTimer = null;
+      document.getElementById("stat-status").textContent = "Converged";
+      document.getElementById("stat-status").style.color = "#00C9A7";
+      // Final annotation
+      lc.fillStyle = "rgba(0,201,167,0.8)";
+      lc.font = "bold 11px JetBrains Mono, monospace";
+      lc.textAlign = "left"; lc.textBaseline = "middle";
+      var finalX = LPL + (LCW - LPL - LPR) - 5;
+      var finalY = LPT + (LCH - LPT - LPB) - (epochLoss[99] / 0.8) * (LCH - LPT - LPB) - 18;
+      lc.fillText("✓ Converged! Loss = " + epochLoss[99].toFixed(3), finalX - 180, finalY);
+    }
+  }, 55);
+}
+
+function resetTraining() {
+  if (trainTimer) { clearInterval(trainTimer); trainTimer = null; }
+  trainEpoch = -1;
+  drawLossBase();
+  document.getElementById("train-btn").disabled = false;
+  document.getElementById("train-reset-btn").style.display = "none";
+  document.getElementById("stat-epoch").textContent = "0";
+  document.getElementById("stat-loss").textContent = "—";
+  document.getElementById("stat-acc").textContent = "—";
+  document.getElementById("stat-status").textContent = "Ready";
+  document.getElementById("stat-status").style.color = "var(--muted)";
+}
+
+setTimeout(function() { drawLossBase(); }, 600);
+</script>
+</body>
+</html>

@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Chapter 2 — Your Data Toolkit</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* ── Reset & Tokens ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:     #080E1B;
+  --bg2:    #0F1829;
+  --bg3:    #162035;
+  --accent: #00C9A7;
+  --accent2:#00A890;
+  --blue:   #8099FF;
+  --red:    #FF6B6B;
+  --gold:   #FFB44F;
+  --purple: #C084FC;
+  --text:   #E8EFF8;
+  --muted:  #6A8CAF;
+  --border: rgba(255,255,255,0.06);
+}
+html { scroll-behavior: smooth; }
+body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; overflow-x:hidden; }
+h1,h2,h3 { line-height:1.2; }
+
+/* ── Progress + Nav ── */
+#progress-bar { position:fixed; top:0; left:0; height:3px; background:linear-gradient(90deg,var(--accent),var(--blue)); width:0%; z-index:100; transition:width 0.1s linear; }
+.chapter-nav { position:fixed; top:16px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:99; background:rgba(8,14,27,0.85); backdrop-filter:blur(12px); border:1px solid var(--border); border-radius:50px; padding:6px 10px; }
+.nav-dot { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.15); cursor:pointer; transition:all 0.25s; border:none; }
+.nav-dot.active { background:var(--accent); transform:scale(1.3); }
+.nav-dot:hover { background:rgba(0,201,167,0.5); }
+
+/* ── Sections ── */
+.section { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 24px; position:relative; }
+.section-inner { width:100%; max-width:880px; display:flex; flex-direction:column; gap:36px; }
+
+/* ── Tags & typography ── */
+.sec-tag { display:inline-flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); padding:5px 12px; border:1px solid rgba(0,201,167,0.3); border-radius:20px; width:fit-content; }
+.sec-tag .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+.big-heading { font-size:clamp(30px,5.5vw,54px); font-weight:800; }
+.big-heading span { color:var(--accent); }
+.section-heading { font-size:clamp(22px,4vw,36px); font-weight:800; }
+.lead { font-size:17px; color:var(--muted); line-height:1.75; max-width:620px; }
+.divider { width:60px; height:3px; background:linear-gradient(90deg,var(--accent),transparent); border-radius:2px; }
+
+/* ── Cards ── */
+.card { background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:24px 28px; }
+.card-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.card-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:640px){ .card-row{ grid-template-columns:1fr; } .card-row-2{ grid-template-columns:1fr; } }
+
+/* ── Reveal ── */
+.reveal { opacity:0; transform:translateY(28px); transition:opacity 0.6s ease,transform 0.6s ease; }
+.reveal.visible { opacity:1; transform:translateY(0); }
+.reveal:nth-child(2){ transition-delay:0.08s; }
+.reveal:nth-child(3){ transition-delay:0.16s; }
+.reveal:nth-child(4){ transition-delay:0.24s; }
+
+/* ── Buttons ── */
+.btn { padding:11px 24px; border-radius:10px; border:none; font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; }
+.btn-primary { background:var(--accent); color:#0B1221; }
+.btn-primary:hover { background:var(--accent2); transform:translateY(-1px); }
+.btn-secondary { background:var(--bg3); color:var(--muted); border:1px solid var(--border); }
+.btn-secondary:hover { color:var(--text); border-color:rgba(0,201,167,0.3); }
+.btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+/* ── Scroll hint ── */
+.scroll-hint { position:absolute; bottom:28px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--muted); font-size:12px; animation:bob 2.5s ease-in-out infinite; }
+@keyframes bob { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(8px)} }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   S0: HERO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#s0::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 65% 55% at 50% 40%,rgba(0,201,167,0.09) 0%,transparent 65%); pointer-events:none; }
+.hero-badge { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent); border:1px solid rgba(0,201,167,0.35); padding:5px 14px; border-radius:4px; margin-bottom:24px; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   S1: WHY DATA FIRST?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.pipeline { display:flex; align-items:center; gap:0; overflow-x:auto; padding:4px 0; }
+.pipe-step { display:flex; flex-direction:column; align-items:center; gap:8px; min-width:110px; }
+.pipe-icon { width:64px; height:64px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:26px; }
+.pipe-label { font-size:12px; font-weight:700; text-align:center; }
+.pipe-sub { font-size:10px; color:var(--muted); text-align:center; }
+.pipe-arrow { color:rgba(0,201,167,0.35); font-size:22px; margin:0 4px; margin-bottom:24px; flex-shrink:0; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   S2: NUMPY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.speed-race { display:flex; flex-direction:column; gap:18px; }
+.race-row { display:flex; align-items:center; gap:14px; }
+.race-label { font-family:'JetBrains Mono',monospace; font-size:12px; width:96px; flex-shrink:0; color:var(--muted); }
+.race-track { flex:1; height:28px; background:var(--bg3); border-radius:6px; overflow:hidden; border:1px solid var(--border); position:relative; }
+.race-bar { height:100%; border-radius:6px; display:flex; align-items:center; padding-left:10px; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; white-space:nowrap; transition:width 1.2s cubic-bezier(0.22,1,0.36,1); width:0%; }
+.race-bar.list-bar { background:rgba(255,107,107,0.25); color:rgba(255,107,107,0.85); }
+.race-bar.numpy-bar { background:rgba(0,201,167,0.22); color:var(--accent); }
+.race-time { font-family:'JetBrains Mono',monospace; font-size:12px; width:72px; text-align:right; }
+
+.matrix-demo { display:grid; grid-template-columns:1fr auto 1fr auto 1fr; align-items:center; gap:10px; }
+.matrix-box { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:12px 10px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); line-height:1.8; text-align:center; }
+.matrix-box .hl { color:var(--accent); }
+.matrix-op { color:var(--muted); font-size:18px; text-align:center; }
+.matrix-result { background:rgba(0,201,167,0.08); border-color:rgba(0,201,167,0.3); }
+.matrix-result .hl { color:var(--accent); font-weight:600; }
+@media(max-width:600px){ .matrix-demo { grid-template-columns:1fr; } .matrix-op { transform:rotate(90deg); } }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   S3: PANDAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.df-wrap { overflow-x:auto; border-radius:12px; border:1px solid var(--border); }
+table.dataframe { width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:11px; }
+table.dataframe thead tr { background:var(--bg3); }
+table.dataframe thead th { padding:10px 14px; text-align:left; color:var(--accent); font-weight:600; letter-spacing:0.04em; border-bottom:1px solid var(--border); white-space:nowrap; }
+table.dataframe tbody tr { border-bottom:1px solid rgba(255,255,255,0.03); transition:background 0.15s; }
+table.dataframe tbody tr:hover { background:rgba(0,201,167,0.04); }
+table.dataframe tbody td { padding:9px 14px; color:var(--muted); white-space:nowrap; }
+table.dataframe tbody tr.hidden { display:none; }
+.cat-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; }
+.cat-optimization { background:rgba(0,201,167,0.12); color:var(--accent); }
+.cat-architecture  { background:rgba(128,153,255,0.12); color:var(--blue); }
+.cat-fine-tuning   { background:rgba(255,180,60,0.12); color:var(--gold); }
+.cat-nlp           { background:rgba(192,132,252,0.12); color:var(--purple); }
+.cat-retrieval     { background:rgba(255,107,107,0.12); color:var(--red); }
+.cat-training      { background:rgba(0,201,167,0.1); color:#5DD6BD; }
+.cat-hardware      { background:rgba(120,160,200,0.1); color:#8BBAD4; }
+
+.diff-easy   { color:var(--accent); }
+.diff-medium { color:var(--gold); }
+.diff-hard   { color:var(--red); }
+
+.filter-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.filter-row span { font-size:12px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+.filter-btn { padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:var(--bg3); font-size:11px; font-weight:600; cursor:pointer; transition:all 0.2s; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+.filter-btn:hover { border-color:rgba(0,201,167,0.4); color:var(--text); }
+.filter-btn.active { background:rgba(0,201,167,0.12); border-color:rgba(0,201,167,0.5); color:var(--accent); }
+
+.groupby-result { display:flex; flex-direction:column; gap:8px; }
+.gb-row { display:flex; align-items:center; gap:12px; }
+.gb-key { font-family:'JetBrains Mono',monospace; font-size:11px; width:80px; flex-shrink:0; }
+.gb-bar-track { flex:1; height:16px; background:var(--bg3); border-radius:4px; overflow:hidden; }
+.gb-bar { height:100%; border-radius:4px; display:flex; align-items:center; padding-left:8px; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; }
+.gb-val { font-family:'JetBrains Mono',monospace; font-size:11px; width:48px; text-align:right; color:var(--text); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   S4: MATPLOTLIB
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.chart-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:8px; }
+#hist-canvas { display:block; width:100%; border-radius:8px; }
+
+.chart-controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.chart-btn { padding:8px 18px; border-radius:8px; border:1px solid var(--border); background:var(--bg3); font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; color:var(--muted); font-family:'Plus Jakarta Sans',sans-serif; }
+.chart-btn:hover { color:var(--text); border-color:rgba(0,201,167,0.3); }
+.chart-btn.active { background:rgba(0,201,167,0.1); border-color:var(--accent); color:var(--accent); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   S5: SQUAD DATASET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.squad-card { display:flex; flex-direction:column; gap:0; background:var(--bg2); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+.squad-row { display:grid; grid-template-columns:90px 1fr; border-bottom:1px solid var(--border); }
+.squad-row:last-child { border-bottom:none; }
+.squad-key { padding:14px 16px; background:var(--bg3); font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); font-weight:600; display:flex; align-items:flex-start; padding-top:16px; }
+.squad-val { padding:14px 16px; font-size:13px; color:var(--muted); line-height:1.6; }
+.squad-val strong { color:var(--text); }
+.squad-val .ans { color:var(--accent); font-weight:700; }
+
+.stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+@media(max-width:600px){ .stats-grid{grid-template-columns:1fr 1fr;} }
+.stat-box { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center; }
+.stat-box .s-num { font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:600; color:var(--accent); }
+.stat-box .s-lbl { font-size:11px; color:var(--muted); margin-top:4px; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   S6: WHAT'S NEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#s6::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 60% 50% at 50% 60%,rgba(0,201,167,0.07) 0%,transparent 65%); pointer-events:none; }
+.next-card { background:var(--bg2); border:1px solid rgba(0,201,167,0.2); border-radius:16px; padding:28px 32px; display:flex; gap:20px; align-items:center; }
+.next-badge { width:52px; height:52px; border-radius:14px; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; color:#0B1221; flex-shrink:0; }
+
+/* ── Footer ── */
+footer { background:#04080F; padding:28px 40px; text-align:center; font-size:12px; color:var(--muted); border-top:1px solid var(--border); }
+footer a { color:var(--accent); text-decoration:none; }
+</style>
+</head>
+<body><div style="background:linear-gradient(135deg,#060d1e 0%,#0d2240 100%);color:#fff;padding:32px 40px 24px;font-family:'Segoe UI',Arial,sans-serif;border-bottom:4px solid #4fc3f7;margin-bottom:0;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div style="font-size:12px;color:#4fc3f7;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">JAWNVION LLC &nbsp;·&nbsp; LLM Engineering Series</div>
+      <div style="font-size:28px;font-weight:900;line-height:1.1;margin-bottom:6px;">17 Interactive Colab Labs</div>
+      <div style="font-size:14px;color:#8ab8d4;">Run in-browser &nbsp;·&nbsp; No setup required &nbsp;·&nbsp; Production LLM skills</div>
+    </div>
+    <div style="text-align:right;font-size:12px;color:#6090b0;line-height:1.8;">
+      <div>www.jawnvion.com</div>
+      <div>peter@jawnvion.com</div>
+      <div>© 2026 JAWNVION LLC</div>
+    </div>
+  </div>
+</div>
+
+
+<div id="progress-bar"></div>
+<nav class="chapter-nav">
+  <button class="nav-dot active" onclick="scrollTo(0)" title="Intro"></button>
+  <button class="nav-dot" onclick="go('s1')" title="Why Data First"></button>
+  <button class="nav-dot" onclick="go('s2')" title="NumPy"></button>
+  <button class="nav-dot" onclick="go('s3')" title="Pandas"></button>
+  <button class="nav-dot" onclick="go('s4')" title="Matplotlib"></button>
+  <button class="nav-dot" onclick="go('s5')" title="SQuAD Dataset"></button>
+  <button class="nav-dot" onclick="go('s6')" title="What's Next"></button>
+</nav>
+<script>function go(id){document.getElementById(id).scrollIntoView({behavior:'smooth'});}</script>
+
+<!-- ══════════ S0: HERO ══════════ -->
+<section class="section" id="s0">
+  <div class="section-inner" style="text-align:center;align-items:center;">
+    <div class="reveal">
+      <div class="hero-badge">JAWNVION LLC · AI Training Workbook · Chapter 2</div>
+    </div>
+    <h1 class="big-heading reveal">Before You Train a Model,<br><span>You Need Data.</span></h1>
+    <p class="lead reveal" style="text-align:center;margin:0 auto;">
+      Every AI project starts with raw, messy data. Chapter 2 teaches the three Python libraries that every machine learning engineer uses every single day to tame it.
+    </p>
+    <div class="reveal" style="display:flex;gap:28px;justify-content:center;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--accent);">3</div>
+        <div style="font-size:12px;color:var(--muted);">Core Libraries</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--blue);">500</div>
+        <div style="font-size:12px;color:var(--muted);">Real Q&amp;A Examples</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--gold);">100×</div>
+        <div style="font-size:12px;color:var(--muted);">NumPy vs Python speed</div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll to explore</span>
+    <svg width="16" height="24" viewBox="0 0 16 24" fill="none"><path d="M8 5v14M3 14l5 5 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+</section>
+
+<!-- ══════════ S1: WHY DATA FIRST ══════════ -->
+<section class="section" id="s1">
+  <div class="section-inner">
+    <div class="reveal"><div class="sec-tag"><span class="dot"></span>The Big Picture</div></div>
+    <h2 class="section-heading reveal">You Can't Train a Model<br><span style="color:var(--accent)">on a Gut Feeling</span></h2>
+    <div class="divider reveal"></div>
+
+    <div class="card reveal">
+      <p style="font-size:15px;line-height:1.85;color:var(--muted);">
+        A model learns by seeing thousands of examples. But raw examples are almost never clean — they have inconsistent formatting, missing values, irrelevant columns, and wildly different scales. Before a single weight gets updated, a data engineer has to <strong style="color:var(--text)">load, inspect, clean, and understand</strong> the dataset.
+        <br><br>
+        That's what this chapter is about. These three tools are the foundation. You'll use them in every chapter after this.
+      </p>
+    </div>
+
+    <div class="card reveal" style="padding:32px;">
+      <div class="pipeline">
+        <div class="pipe-step">
+          <div class="pipe-icon" style="background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.2);">📂</div>
+          <div class="pipe-label" style="color:var(--red);">Raw Data</div>
+          <div class="pipe-sub">CSV · JSON · API · Hugging Face</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="pipe-icon" style="background:rgba(0,201,167,0.1);border:1px solid rgba(0,201,167,0.2);">⚡</div>
+          <div class="pipe-label" style="color:var(--accent);">NumPy</div>
+          <div class="pipe-sub">fast arrays &amp; math</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="pipe-icon" style="background:rgba(128,153,255,0.1);border:1px solid rgba(128,153,255,0.2);">🗂️</div>
+          <div class="pipe-label" style="color:var(--blue);">Pandas</div>
+          <div class="pipe-sub">filter &amp; explore</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="pipe-icon" style="background:rgba(255,180,60,0.1);border:1px solid rgba(255,180,60,0.2);">📊</div>
+          <div class="pipe-label" style="color:var(--gold);">Matplotlib</div>
+          <div class="pipe-sub">visualize &amp; validate</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="pipe-icon" style="background:rgba(0,201,167,0.15);border:1px solid rgba(0,201,167,0.3);">🧠</div>
+          <div class="pipe-label" style="color:var(--accent);">Model Training</div>
+          <div class="pipe-sub">Ch3 onward</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-row reveal">
+      <div class="card" style="border-color:rgba(0,201,167,0.2);">
+        <div style="font-size:22px;margin-bottom:8px;">⚡</div>
+        <h3 style="font-size:14px;font-weight:700;color:var(--accent);margin-bottom:6px;">NumPy</h3>
+        <p style="font-size:12px;color:var(--muted);">The backbone of all ML math. Arrays, matrix multiply, statistics — 100× faster than pure Python because it runs in compiled C.</p>
+      </div>
+      <div class="card" style="border-color:rgba(128,153,255,0.2);">
+        <div style="font-size:22px;margin-bottom:8px;">🗂️</div>
+        <h3 style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:6px;">Pandas</h3>
+        <p style="font-size:12px;color:var(--muted);">Load any dataset into a table. Filter rows, group by category, compute stats — in one line of code instead of fifty.</p>
+      </div>
+      <div class="card" style="border-color:rgba(255,180,60,0.2);">
+        <div style="font-size:22px;margin-bottom:8px;">📊</div>
+        <h3 style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:6px;">Matplotlib</h3>
+        <p style="font-size:12px;color:var(--muted);">Turn numbers into pictures. You'll use it to plot loss curves, data distributions, and model outputs throughout the course.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S2: NUMPY ══════════ -->
+<section class="section" id="s2">
+  <div class="section-inner">
+    <div class="reveal"><div class="sec-tag"><span class="dot"></span>Library 1 of 3</div></div>
+    <h2 class="section-heading reveal"><span style="color:var(--accent);">NumPy</span> —<br>Fast Array Math</h2>
+    <div class="divider reveal"></div>
+
+    <div class="card reveal">
+      <p style="font-size:15px;line-height:1.85;color:var(--muted);">
+        Python's built-in lists are flexible — but painfully slow for math. <strong style="color:var(--text)">NumPy arrays</strong> store data in a single contiguous block of memory (like C or Fortran) and run operations in compiled machine code. When a neural network multiplies thousands of weight matrices together per second, it's doing it through NumPy — or its GPU cousin, PyTorch tensors.
+      </p>
+    </div>
+
+    <!-- Speed race demo -->
+    <div class="card reveal">
+      <p style="font-size:12px;font-family:'JetBrains Mono',monospace;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:20px;">Speed comparison — adding 1 million numbers</p>
+      <div class="speed-race" id="speed-race">
+        <div class="race-row">
+          <span class="race-label">Python list</span>
+          <div class="race-track"><div class="race-bar list-bar" id="bar-list">Python: ~85 ms</div></div>
+          <span class="race-time" id="time-list" style="color:var(--red);">—</span>
+        </div>
+        <div class="race-row">
+          <span class="race-label">NumPy array</span>
+          <div class="race-track"><div class="race-bar numpy-bar" id="bar-numpy">NumPy: ~0.8 ms</div></div>
+          <span class="race-time" id="time-numpy" style="color:var(--accent);">—</span>
+        </div>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="race-btn" onclick="runRace()">▶ Run Speed Test</button>
+        <span id="speedup-label" style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted);"></span>
+      </div>
+    </div>
+
+    <!-- Matrix multiply -->
+    <div class="card reveal">
+      <p style="font-size:12px;font-family:'JetBrains Mono',monospace;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;">Matrix multiplication — the core operation in every neural network layer</p>
+      <div class="matrix-demo">
+        <div class="matrix-box">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">Weight Matrix W</div>
+          <div><span class="hl">1</span>  <span class="hl">2</span>  <span class="hl">3</span></div>
+          <div><span class="hl">4</span>  <span class="hl">5</span>  <span class="hl">6</span></div>
+          <div><span class="hl">7</span>  <span class="hl">8</span>  <span class="hl">9</span></div>
+          <div style="font-size:9px;color:var(--muted);margin-top:6px;">shape: (3, 3)</div>
+        </div>
+        <div class="matrix-op">@</div>
+        <div class="matrix-box">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">Input vector x</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <span class="hl">1.0</span>
+            <span class="hl">0.5</span>
+            <span class="hl">0.25</span>
+          </div>
+          <div style="font-size:9px;color:var(--muted);margin-top:6px;">shape: (3,)</div>
+        </div>
+        <div class="matrix-op">=</div>
+        <div class="matrix-box matrix-result">
+          <div style="font-size:10px;color:var(--accent);margin-bottom:6px;font-weight:600;">Output</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <span class="hl">2.75</span>
+            <span class="hl">7.25</span>
+            <span class="hl">11.75</span>
+          </div>
+          <div style="font-size:9px;color:var(--muted);margin-top:6px;">shape: (3,)</div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:16px;font-style:italic;">This single <code style="color:var(--accent);background:rgba(0,201,167,0.08);padding:1px 6px;border-radius:4px;">W @ x</code> operation runs inside every linear layer of every neural network. TinyLlama runs it billions of times to generate a single response.</p>
+    </div>
+
+    <!-- Key functions -->
+    <div class="card-row-2 reveal">
+      <div class="card" style="border-color:rgba(0,201,167,0.15);">
+        <p style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:12px;letter-spacing:0.06em;text-transform:uppercase;">Key NumPy operations</p>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--accent);">np.array()</span><span style="color:var(--muted);">create array</span></div>
+          <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--accent);">A @ B</span><span style="color:var(--muted);">matrix multiply</span></div>
+          <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--accent);">np.mean() / .std()</span><span style="color:var(--muted);">statistics</span></div>
+          <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--accent);">np.random.normal()</span><span style="color:var(--muted);">random weights</span></div>
+          <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--accent);">np.sqrt() / np.exp()</span><span style="color:var(--muted);">element-wise math</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-color:rgba(128,153,255,0.15);">
+        <p style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:12px;letter-spacing:0.06em;text-transform:uppercase;">Why this matters for LLMs</p>
+        <p style="font-size:13px;color:var(--muted);line-height:1.7;">
+          PyTorch tensors — the data type TinyLlama and every other LLM uses — <strong style="color:var(--text);">are NumPy arrays with GPU support added on top.</strong> Every NumPy operation you learn here has a direct <code style="color:var(--blue);background:rgba(128,153,255,0.08);padding:1px 5px;border-radius:3px;">torch.Tensor</code> equivalent. The concepts transfer 1:1.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S3: PANDAS ══════════ -->
+<section class="section" id="s3">
+  <div class="section-inner">
+    <div class="reveal"><div class="sec-tag"><span class="dot"></span>Library 2 of 3</div></div>
+    <h2 class="section-heading reveal"><span style="color:var(--blue);">Pandas</span> —<br>Your Data Table</h2>
+    <div class="divider reveal"></div>
+
+    <div class="card reveal">
+      <p style="font-size:15px;line-height:1.85;color:var(--muted);">
+        Pandas loads any dataset — CSV, JSON, a database, a Hugging Face dataset — into a <strong style="color:var(--text)">DataFrame</strong>: a table where every row is one example and every column is one feature. From there you can filter, sort, group, and compute statistics in a single line of code. Below is the exact dataset from the notebook.
+      </p>
+    </div>
+
+    <!-- Filter buttons -->
+    <div class="reveal">
+      <div class="filter-row" style="margin-bottom:14px;">
+        <span>Filter by category:</span>
+        <button class="filter-btn active" onclick="filterDF('all')">all</button>
+        <button class="filter-btn" onclick="filterDF('optimization')">optimization</button>
+        <button class="filter-btn" onclick="filterDF('fine-tuning')">fine-tuning</button>
+        <button class="filter-btn" onclick="filterDF('architecture')">architecture</button>
+        <button class="filter-btn" onclick="filterDF('training')">training</button>
+        <button class="filter-btn" onclick="filterDF('nlp')">nlp</button>
+        <button class="filter-btn" onclick="filterDF('retrieval')">retrieval</button>
+        <button class="filter-btn" onclick="filterDF('hardware')">hardware</button>
+      </div>
+      <div class="df-wrap">
+        <table class="dataframe" id="main-df">
+          <thead>
+            <tr>
+              <th>id</th>
+              <th>question</th>
+              <th>ans_len_words</th>
+              <th>category</th>
+              <th>difficulty</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-cat="optimization">
+              <td>1</td><td>What is gradient descent?</td><td>45</td>
+              <td><span class="cat-badge cat-optimization">optimization</span></td>
+              <td><span class="diff-medium">medium</span></td>
+            </tr>
+            <tr data-cat="architecture">
+              <td>2</td><td>How does attention work in transformers?</td><td>82</td>
+              <td><span class="cat-badge cat-architecture">architecture</span></td>
+              <td><span class="diff-hard">hard</span></td>
+            </tr>
+            <tr data-cat="optimization">
+              <td>3</td><td>What is a learning rate?</td><td>31</td>
+              <td><span class="cat-badge cat-optimization">optimization</span></td>
+              <td><span class="diff-easy">easy</span></td>
+            </tr>
+            <tr data-cat="fine-tuning">
+              <td>4</td><td>Explain fine-tuning in simple terms.</td><td>67</td>
+              <td><span class="cat-badge cat-fine-tuning">fine-tuning</span></td>
+              <td><span class="diff-medium">medium</span></td>
+            </tr>
+            <tr data-cat="nlp">
+              <td>5</td><td>What is a token in NLP?</td><td>28</td>
+              <td><span class="cat-badge cat-nlp">nlp</span></td>
+              <td><span class="diff-easy">easy</span></td>
+            </tr>
+            <tr data-cat="fine-tuning">
+              <td>6</td><td>What is QLoRA?</td><td>94</td>
+              <td><span class="cat-badge cat-fine-tuning">fine-tuning</span></td>
+              <td><span class="diff-hard">hard</span></td>
+            </tr>
+            <tr data-cat="retrieval">
+              <td>7</td><td>How does RAG improve LLM accuracy?</td><td>73</td>
+              <td><span class="cat-badge cat-retrieval">retrieval</span></td>
+              <td><span class="diff-hard">hard</span></td>
+            </tr>
+            <tr data-cat="training">
+              <td>8</td><td>What is overfitting?</td><td>52</td>
+              <td><span class="cat-badge cat-training">training</span></td>
+              <td><span class="diff-easy">easy</span></td>
+            </tr>
+            <tr data-cat="hardware">
+              <td>9</td><td>What does VRAM stand for?</td><td>19</td>
+              <td><span class="cat-badge cat-hardware">hardware</span></td>
+              <td><span class="diff-easy">easy</span></td>
+            </tr>
+            <tr data-cat="training">
+              <td>10</td><td>What is an epoch in training?</td><td>38</td>
+              <td><span class="cat-badge cat-training">training</span></td>
+              <td><span class="diff-easy">easy</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="df-count" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:8px;">Showing 10 of 10 rows · df.shape = (10, 5)</p>
+    </div>
+
+    <!-- Groupby demo -->
+    <div class="card-row-2 reveal">
+      <div class="card" style="border-color:rgba(128,153,255,0.15);">
+        <p style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:14px;letter-spacing:0.06em;text-transform:uppercase;">df.groupby("difficulty")["ans_len_words"].mean()</p>
+        <div class="groupby-result">
+          <div class="gb-row">
+            <span class="gb-key diff-easy">easy</span>
+            <div class="gb-bar-track"><div class="gb-bar" style="width:52%;background:rgba(0,201,167,0.3);color:var(--accent);">33.6</div></div>
+            <span class="gb-val">33.6</span>
+          </div>
+          <div class="gb-row">
+            <span class="gb-key diff-medium">medium</span>
+            <div class="gb-bar-track"><div class="gb-bar" style="width:84%;background:rgba(255,180,60,0.25);color:var(--gold);">56.0</div></div>
+            <span class="gb-val">56.0</span>
+          </div>
+          <div class="gb-row">
+            <span class="gb-key diff-hard">hard</span>
+            <div class="gb-bar-track"><div class="gb-bar" style="width:99%;background:rgba(255,107,107,0.22);color:var(--red);">83.0</div></div>
+            <span class="gb-val">83.0</span>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:12px;">Insight: harder questions need longer answers. This could bias training if not balanced.</p>
+      </div>
+      <div class="card" style="border-color:rgba(128,153,255,0.15);">
+        <p style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:14px;letter-spacing:0.06em;text-transform:uppercase;">Key Pandas operations</p>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--blue);">pd.DataFrame()</span> <span style="color:var(--muted);">— create a table</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--blue);">df[df["col"] == x]</span> <span style="color:var(--muted);">— filter rows</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--blue);">.groupby().mean()</span> <span style="color:var(--muted);">— aggregate</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--blue);">.value_counts()</span> <span style="color:var(--muted);">— category counts</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--blue);">.describe()</span> <span style="color:var(--muted);">— summary stats</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--blue);">.apply(lambda)</span> <span style="color:var(--muted);">— transform column</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S4: MATPLOTLIB ══════════ -->
+<section class="section" id="s4">
+  <div class="section-inner">
+    <div class="reveal"><div class="sec-tag"><span class="dot"></span>Library 3 of 3 · Interactive</div></div>
+    <h2 class="section-heading reveal"><span style="color:var(--gold);">Matplotlib</span> —<br>See What Your Data Says</h2>
+    <div class="divider reveal"></div>
+
+    <div class="card reveal">
+      <p style="font-size:15px;line-height:1.85;color:var(--muted);">
+        Numbers in a table are hard to reason about. A chart makes the shape of your data immediately obvious — are answers normally distributed? Are there outliers? Is one category massively over-represented? Matplotlib turns DataFrames into plots in two lines of code. Below is the EDA (Exploratory Data Analysis) you'd run on any new dataset.
+      </p>
+    </div>
+
+    <!-- Chart tabs -->
+    <div class="reveal">
+      <div class="chart-controls" style="margin-bottom:14px;">
+        <span style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;">View:</span>
+        <button class="chart-btn active" id="btn-qlen" onclick="showChart('qlen')">Question Length</button>
+        <button class="chart-btn" id="btn-ctxlen" onclick="showChart('ctxlen')">Context Length</button>
+        <button class="chart-btn" id="btn-anslen" onclick="showChart('anslen')">Answer Length</button>
+        <button class="chart-btn" id="btn-scatter" onclick="showChart('scatter')">Q vs A Scatter</button>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="hist-canvas" width="840" height="340"></canvas>
+      </div>
+      <div id="chart-caption" style="font-size:12px;color:var(--muted);margin-top:10px;font-style:italic;padding:0 4px;"></div>
+    </div>
+
+    <!-- 2x2 grid callout -->
+    <div class="card-row-2 reveal">
+      <div class="card" style="border-color:rgba(255,180,60,0.15);">
+        <p style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:10px;letter-spacing:0.06em;text-transform:uppercase;">What EDA tells you</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;"><span style="color:var(--gold);">→</span><span style="color:var(--muted);">Are there outliers that'll confuse the model?</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;"><span style="color:var(--gold);">→</span><span style="color:var(--muted);">Is one class massively over-represented?</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;"><span style="color:var(--gold);">→</span><span style="color:var(--muted);">What's the typical token length? (affects context window)</span></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;"><span style="color:var(--gold);">→</span><span style="color:var(--muted);">Are two features correlated — or independent?</span></div>
+        </div>
+      </div>
+      <div class="card" style="border-color:rgba(255,180,60,0.15);">
+        <p style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:10px;letter-spacing:0.06em;text-transform:uppercase;">Key Matplotlib functions</p>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--gold);">plt.hist()</span> <span style="color:var(--muted);">— distribution histogram</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--gold);">plt.scatter()</span> <span style="color:var(--muted);">— two-variable comparison</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--gold);">plt.plot()</span> <span style="color:var(--muted);">— loss curves (Ch3+)</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--gold);">plt.subplots()</span> <span style="color:var(--muted);">— 2×2 grid of charts</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--gold);">plt.savefig()</span> <span style="color:var(--muted);">— export to .png</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;"><span style="color:var(--gold);">plt.axvline()</span> <span style="color:var(--muted);">— mark the mean</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S5: SQUAD DATASET ══════════ -->
+<section class="section" id="s5">
+  <div class="section-inner">
+    <div class="reveal"><div class="sec-tag"><span class="dot"></span>The Real Dataset</div></div>
+    <h2 class="section-heading reveal">SQuAD —<br><span style="color:var(--accent);">500 Real Q&amp;A Examples</span><br><span style="color:var(--muted);font-weight:400;font-size:0.6em;">from Stanford University</span></h2>
+    <div class="divider reveal"></div>
+
+    <div class="card reveal">
+      <p style="font-size:15px;line-height:1.85;color:var(--muted);">
+        In Chapter 2 you load a real, professional dataset used to train and evaluate question-answering AI systems. The <strong style="color:var(--text)">Stanford Question Answering Dataset (SQuAD)</strong> contains Wikipedia passages paired with human-written questions and answers. You'll use your new Pandas and Matplotlib skills to understand its structure before a model ever sees it.
+      </p>
+    </div>
+
+    <div class="squad-card reveal">
+      <div class="squad-row">
+        <div class="squad-key">title</div>
+        <div class="squad-val"><strong>Super Bowl 50</strong></div>
+      </div>
+      <div class="squad-row">
+        <div class="squad-key">context</div>
+        <div class="squad-val" style="font-size:12px;">Super Bowl 50 was an American football game to determine the champion of the National Football League (NFL) for the 2015 season. The American Football Conference (AFC) champion Denver Broncos defeated the National Football Conference (NFC) champion Carolina Panthers 24–10 to earn their third Super Bowl title… <span style="color:var(--accent);">[passage continues for ~120 words]</span></div>
+      </div>
+      <div class="squad-row">
+        <div class="squad-key">question</div>
+        <div class="squad-val"><strong>"Which NFL team represented the AFC at Super Bowl 50?"</strong></div>
+      </div>
+      <div class="squad-row">
+        <div class="squad-key">answer</div>
+        <div class="squad-val"><span class="ans">"Denver Broncos"</span> <span style="font-size:11px;color:var(--muted);">(extracted directly from context — the model must learn to locate it)</span></div>
+      </div>
+    </div>
+
+    <div class="stats-grid reveal">
+      <div class="stat-box">
+        <div class="s-num">500</div>
+        <div class="s-lbl">examples loaded</div>
+      </div>
+      <div class="stat-box">
+        <div class="s-num" style="color:var(--blue);">10.4</div>
+        <div class="s-lbl">avg question length (words)</div>
+      </div>
+      <div class="stat-box">
+        <div class="s-num" style="color:var(--gold);">117</div>
+        <div class="s-lbl">avg context length (words)</div>
+      </div>
+      <div class="stat-box">
+        <div class="s-num" style="color:var(--accent);">3.1</div>
+        <div class="s-lbl">avg answer length (words)</div>
+      </div>
+      <div class="stat-box">
+        <div class="s-num" style="color:var(--purple);">48</div>
+        <div class="s-lbl">unique Wikipedia topics</div>
+      </div>
+      <div class="stat-box">
+        <div class="s-num" style="color:var(--red);">0</div>
+        <div class="s-lbl">setup cost (free · Hugging Face)</div>
+      </div>
+    </div>
+
+    <div class="card reveal" style="background:var(--bg3);border-color:rgba(0,201,167,0.15);">
+      <p style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:10px;letter-spacing:0.06em;text-transform:uppercase;">Text preprocessing — from raw data to training format</p>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.9;color:var(--muted);">
+        <div style="color:rgba(106,140,175,0.5);">### Context:</div>
+        <div style="color:var(--text);padding-left:16px;">Super Bowl 50 was an American football game…</div>
+        <div style="margin-top:4px;color:rgba(106,140,175,0.5);">### Question:</div>
+        <div style="color:var(--text);padding-left:16px;">Which NFL team represented the AFC at Super Bowl 50?</div>
+        <div style="margin-top:4px;color:rgba(106,140,175,0.5);">### Answer:</div>
+        <div style="color:var(--accent);padding-left:16px;">Denver Broncos</div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:12px;">This exact format is what the model ingests during QLoRA fine-tuning in Chapter 6. Chapter 2 is where you learn to build it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ S6: WHAT'S NEXT ══════════ -->
+<section class="section" id="s6">
+  <div class="section-inner" style="text-align:center;align-items:center;">
+    <div class="reveal"><div class="sec-tag"><span class="dot"></span>Chapter 2 Complete</div></div>
+    <h2 class="big-heading reveal">You can now handle<br><span>any dataset.</span></h2>
+    <p class="lead reveal" style="text-align:center;margin:0 auto;">
+      NumPy for math, Pandas for tables, Matplotlib for charts. These three tools separate engineers who can work with data from everyone else — and you just learned all three.
+    </p>
+
+    <div class="card-row-2 reveal" style="width:100%;max-width:660px;">
+      <div class="card" style="text-align:left;border-color:rgba(0,201,167,0.2);">
+        <p style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:10px;font-family:'JetBrains Mono',monospace;">You learned</p>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:9px;">
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent);">✓</span>Why data pipelines come first</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent);">✓</span>NumPy arrays vs Python lists</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent);">✓</span>Matrix multiply — the neural network op</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent);">✓</span>Pandas DataFrames, filter, groupby</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent);">✓</span>EDA with Matplotlib histograms</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--accent);">✓</span>How to load and inspect SQuAD</li>
+        </ul>
+      </div>
+      <div class="card" style="text-align:left;border-color:rgba(128,153,255,0.2);">
+        <p style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:10px;font-family:'JetBrains Mono',monospace;">In the notebook</p>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:9px;">
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--blue);">→</span>Speed benchmark loop vs np.sum</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--blue);">→</span>Softmax from scratch with NumPy</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--blue);">→</span>Load SQuAD via Hugging Face</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--blue);">→</span>4-panel EDA chart (saved as .png)</li>
+          <li style="font-size:13px;display:flex;gap:8px;"><span style="color:var(--blue);">→</span>Text cleaning &amp; training formatter</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="next-card reveal" style="width:100%;max-width:660px;text-align:left;">
+      <div class="next-badge">Ch3</div>
+      <div>
+        <h3 style="font-size:17px;font-weight:700;margin-bottom:4px;">Up Next: Neural Networks from Scratch</h3>
+        <p style="font-size:13px;color:var(--muted);">Using only NumPy — no PyTorch, no shortcuts — you'll build a multi-layer perceptron, implement the forward and backward passes by hand, and train it on a real task. After this, nothing about neural networks feels like a black box.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p><strong style="color:rgba(255,255,255,0.6);">JAWNVION LLC — AI Engineering: From Fundamentals to Production</strong><br>
+  Chapter 2 of 14 · <a href="mailto:peter@jawnvion.com">peter@jawnvion.com</a></p>
+</footer>
+
+<script>
+/* ── Progress + nav dots ── */
+const sections = ['s0','s1','s2','s3','s4','s5','s6'];
+const dots = document.querySelectorAll('.nav-dot');
+window.addEventListener('scroll', () => {
+  const h = document.documentElement.scrollHeight - window.innerHeight;
+  document.getElementById('progress-bar').style.width = (window.scrollY / h * 100) + '%';
+  sections.forEach((id, i) => {
+    const el = document.getElementById(id);
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.5 && rect.bottom > 0) {
+      dots.forEach(d => d.classList.remove('active'));
+      dots[i].classList.add('active');
+    }
+  });
+}, { passive: true });
+
+/* ── Reveal ── */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+/* ━━━ SPEED RACE ━━━ */
+let raceRan = false;
+function runRace() {
+  if (raceRan) { resetRace(); return; }
+  raceRan = true;
+  document.getElementById('race-btn').textContent = '↺ Reset';
+  // Python list: slow — use 100% width to represent slowness
+  const barList = document.getElementById('bar-list');
+  const barNumpy = document.getElementById('bar-numpy');
+  barList.style.width = '0%';
+  barNumpy.style.width = '0%';
+  document.getElementById('time-list').textContent = '';
+  document.getElementById('time-numpy').textContent = '';
+  document.getElementById('speedup-label').textContent = '';
+
+  // Simulate race: list fills to 100%, numpy fills to ~1%
+  setTimeout(() => {
+    barList.style.transition = 'width 2.2s cubic-bezier(0.1,0.4,0.3,1)';
+    barList.style.width = '100%';
+  }, 200);
+  setTimeout(() => {
+    document.getElementById('time-list').textContent = '85.3 ms';
+  }, 2500);
+  setTimeout(() => {
+    barNumpy.style.transition = 'width 0.4s ease';
+    barNumpy.style.width = '1%';
+  }, 2600);
+  setTimeout(() => {
+    document.getElementById('time-numpy').textContent = '0.8 ms';
+    document.getElementById('speedup-label').textContent = '⚡ NumPy is ~107× faster';
+    document.getElementById('speedup-label').style.color = 'var(--accent)';
+  }, 3100);
+}
+function resetRace() {
+  raceRan = false;
+  document.getElementById('race-btn').textContent = '▶ Run Speed Test';
+  document.getElementById('bar-list').style.width = '0%';
+  document.getElementById('bar-numpy').style.width = '0%';
+  document.getElementById('time-list').textContent = '—';
+  document.getElementById('time-numpy').textContent = '—';
+  document.getElementById('speedup-label').textContent = '';
+}
+
+/* ━━━ PANDAS FILTER ━━━ */
+function filterDF(cat) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  const rows = document.querySelectorAll('#main-df tbody tr');
+  let shown = 0;
+  rows.forEach(r => {
+    const match = cat === 'all' || r.dataset.cat === cat;
+    r.classList.toggle('hidden', !match);
+    if (match) shown++;
+  });
+  document.getElementById('df-count').textContent =
+    `Showing ${shown} of 10 rows · df[df["category"] == "${cat}"].shape = (${shown}, 5)`;
+  if (cat === 'all') document.getElementById('df-count').textContent = 'Showing 10 of 10 rows · df.shape = (10, 5)';
+}
+
+/* ━━━ MATPLOTLIB CHARTS ━━━ */
+const canvas = document.getElementById('hist-canvas');
+const ctx2 = canvas.getContext('2d');
+const W = 840, H = 340;
+const PL = 55, PR = 30, PT = 36, PB = 50;
+
+// Simulated SQuAD data based on real statistics
+function gaussian(mean, std, n) {
+  const arr = [];
+  for (let i = 0; i < n; i++) {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    arr.push(mean + std * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v));
+  }
+  return arr;
+}
+
+const qLens   = gaussian(10.4, 3.1, 500).map(x => Math.max(3, Math.round(x)));
+const ctxLens = gaussian(117, 38, 500).map(x => Math.max(30, Math.round(x)));
+const ansLens = gaussian(3.1, 2.0, 500).map(x => Math.max(1, Math.round(x)));
+
+let currentChart = 'qlen';
+const colors = {
+  qlen:    { bar: 'rgba(0,201,167,0.65)',   border: '#00C9A7', mean: '#FF6B6B', label: 'Question Length (words)' },
+  ctxlen:  { bar: 'rgba(128,153,255,0.55)', border: '#8099FF', mean: '#FF6B6B', label: 'Context Length (words)' },
+  anslen:  { bar: 'rgba(255,180,60,0.55)',  border: '#FFB44F', mean: '#FF6B6B', label: 'Answer Length (words)' },
+  scatter: { dot: 'rgba(255,107,107,0.5)', label: 'Question Length vs Answer Length' },
+};
+const captions = {
+  qlen:   'Question lengths cluster tightly around 10 words — helpful because it means inputs are predictable in size for the model.',
+  ctxlen: 'Context passages average 117 words but vary widely (30–250). This tells you the model needs a large context window.',
+  anslen: 'Answers are very short — typically 1–4 words extracted directly from the passage. This is a span-extraction task, not generation.',
+  scatter:'Weak correlation (r ≈ 0.08) between question and answer length — longer questions don\'t produce longer answers. These are independent variables.',
+};
+
+function drawHistogram(data, color, xLabel) {
+  ctx2.clearRect(0, 0, W, H);
+  ctx2.fillStyle = '#0F1829';
+  ctx2.fillRect(0, 0, W, H);
+
+  const vals = [...data].sort((a,b) => a-b);
+  const mn = vals[0], mx = vals[vals.length-1];
+  const bins = 24;
+  const binW = (mx - mn) / bins;
+  const counts = new Array(bins).fill(0);
+  data.forEach(v => {
+    const b = Math.min(bins-1, Math.floor((v - mn) / binW));
+    counts[b]++;
+  });
+  const maxCount = Math.max(...counts);
+  const mean = data.reduce((a,b) => a+b,0) / data.length;
+
+  const plotW = W - PL - PR;
+  const plotH = H - PT - PB;
+  const bw = plotW / bins;
+
+  // Grid
+  ctx2.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx2.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = PT + plotH - (i/5) * plotH;
+    ctx2.beginPath(); ctx2.moveTo(PL, y); ctx2.lineTo(PL+plotW, y); ctx2.stroke();
+    ctx2.fillStyle = 'rgba(106,140,175,0.5)';
+    ctx2.font = '10px JetBrains Mono, monospace';
+    ctx2.textAlign = 'right';
+    ctx2.fillText(Math.round(i/5 * maxCount), PL-6, y+4);
+  }
+  // Axes
+  ctx2.strokeStyle = 'rgba(255,255,255,0.15)'; ctx2.lineWidth = 1.5;
+  ctx2.beginPath(); ctx2.moveTo(PL, PT); ctx2.lineTo(PL, PT+plotH); ctx2.stroke();
+  ctx2.beginPath(); ctx2.moveTo(PL, PT+plotH); ctx2.lineTo(PL+plotW, PT+plotH); ctx2.stroke();
+
+  // Bars with animation
+  let frame = 0; const totalFrames = 28;
+  function animBars() {
+    ctx2.clearRect(PL, PT, plotW+2, plotH);
+    // Redraw grid
+    ctx2.strokeStyle = 'rgba(255,255,255,0.04)'; ctx2.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+      const y = PT + plotH - (i/5)*plotH;
+      ctx2.beginPath(); ctx2.moveTo(PL, y); ctx2.lineTo(PL+plotW, y); ctx2.stroke();
+    }
+    const progress = Math.min(1, frame/totalFrames);
+    const ease = 1 - Math.pow(1-progress, 3);
+    counts.forEach((c, i) => {
+      const bh = (c/maxCount) * plotH * ease;
+      const x = PL + i*bw + 1;
+      const y = PT + plotH - bh;
+      ctx2.fillStyle = color.bar;
+      ctx2.fillRect(x, y, bw-2, bh);
+      ctx2.strokeStyle = color.border;
+      ctx2.lineWidth = 1;
+      ctx2.strokeRect(x, y, bw-2, bh);
+    });
+    // Mean line
+    const mx2 = PL + (mean-mn)/(mx-mn)*plotW;
+    ctx2.strokeStyle = color.mean; ctx2.lineWidth = 2;
+    ctx2.setLineDash([5,3]);
+    ctx2.beginPath(); ctx2.moveTo(mx2, PT+8); ctx2.lineTo(mx2, PT+plotH); ctx2.stroke();
+    ctx2.setLineDash([]);
+    ctx2.fillStyle = color.mean; ctx2.font = 'bold 11px JetBrains Mono,monospace';
+    ctx2.textAlign = 'left';
+    ctx2.fillText(`μ=${mean.toFixed(1)}`, mx2+6, PT+22);
+    frame++;
+    if (frame <= totalFrames) requestAnimationFrame(animBars);
+  }
+  animBars();
+
+  // X-axis labels
+  ctx2.fillStyle = 'rgba(106,140,175,0.55)'; ctx2.font = '10px JetBrains Mono,monospace'; ctx2.textAlign='center';
+  const step = Math.ceil((mx-mn)/6);
+  for (let v = mn; v <= mx; v += step) {
+    const x = PL + (v-mn)/(mx-mn)*plotW;
+    ctx2.fillText(Math.round(v), x, PT+plotH+16);
+  }
+  ctx2.fillText(xLabel, PL + plotW/2, H-6);
+  ctx2.fillStyle='rgba(106,140,175,0.45)'; ctx2.font='11px Plus Jakarta Sans,sans-serif';
+  ctx2.save(); ctx2.translate(12, PT+plotH/2); ctx2.rotate(-Math.PI/2);
+  ctx2.textAlign='center'; ctx2.fillText('Count', 0, 0); ctx2.restore();
+
+  // Title
+  ctx2.fillStyle='rgba(255,255,255,0.7)'; ctx2.font='bold 13px Plus Jakarta Sans,sans-serif';
+  ctx2.textAlign='center'; ctx2.fillText(xLabel + ' Distribution — SQuAD (n=500)', W/2, 18);
+}
+
+function drawScatter() {
+  ctx2.clearRect(0, 0, W, H);
+  ctx2.fillStyle = '#0F1829'; ctx2.fillRect(0, 0, W, H);
+  const plotW = W-PL-PR, plotH = H-PT-PB;
+  const xMn=3, xMx=24, yMn=0, yMx=14;
+  function toC(x,y){ return [PL+(x-xMn)/(xMx-xMn)*plotW, PT+plotH-(y-yMn)/(yMx-yMn)*plotH]; }
+
+  // Grid
+  ctx2.strokeStyle='rgba(255,255,255,0.04)'; ctx2.lineWidth=1;
+  for(let v=5;v<=24;v+=5){ const[cx]=toC(v,0); ctx2.beginPath();ctx2.moveTo(cx,PT);ctx2.lineTo(cx,PT+plotH);ctx2.stroke(); }
+  for(let v=0;v<=14;v+=2){ const[,cy]=toC(0,v); ctx2.beginPath();ctx2.moveTo(PL,cy);ctx2.lineTo(PL+plotW,cy);ctx2.stroke(); }
+
+  // Axes
+  ctx2.strokeStyle='rgba(255,255,255,0.15)'; ctx2.lineWidth=1.5;
+  ctx2.beginPath();ctx2.moveTo(PL,PT);ctx2.lineTo(PL,PT+plotH);ctx2.stroke();
+  ctx2.beginPath();ctx2.moveTo(PL,PT+plotH);ctx2.lineTo(PL+plotW,PT+plotH);ctx2.stroke();
+
+  // Axis labels
+  ctx2.fillStyle='rgba(106,140,175,0.5)';ctx2.font='10px JetBrains Mono,monospace';ctx2.textAlign='center';
+  for(let v=5;v<=24;v+=5){ const[cx]=toC(v,0); ctx2.fillText(v,cx,PT+plotH+16); }
+  ctx2.textAlign='right';
+  for(let v=0;v<=14;v+=2){ const[,cy]=toC(0,v); ctx2.fillText(v,PL-6,cy+4); }
+  ctx2.fillStyle='rgba(106,140,175,0.45)';ctx2.font='11px Plus Jakarta Sans,sans-serif';ctx2.textAlign='center';
+  ctx2.fillText('Question Length (words)', PL+plotW/2, H-6);
+  ctx2.save();ctx2.translate(12,PT+plotH/2);ctx2.rotate(-Math.PI/2);ctx2.fillText('Answer Length (words)',0,0);ctx2.restore();
+
+  // Dots
+  let i=0;
+  const pts = qLens.map((q,idx)=>[q,ansLens[idx]]);
+  function animDots(){
+    const batch = 18;
+    for(let j=0;j<batch&&i<pts.length;j++,i++){
+      const[x,y]=toC(pts[i][0],pts[i][1]);
+      ctx2.fillStyle='rgba(255,107,107,0.45)';
+      ctx2.beginPath();ctx2.arc(x,y,3.5,0,Math.PI*2);ctx2.fill();
+    }
+    if(i<pts.length) requestAnimationFrame(animDots);
+    else{
+      // correlation label
+      ctx2.fillStyle='rgba(255,107,107,0.85)';ctx2.font='bold 12px JetBrains Mono,monospace';ctx2.textAlign='left';
+      ctx2.fillText('r = 0.08  (weak correlation)',PL+12,PT+22);
+    }
+  }
+  animDots();
+  ctx2.fillStyle='rgba(255,255,255,0.7)';ctx2.font='bold 13px Plus Jakarta Sans,sans-serif';ctx2.textAlign='center';
+  ctx2.fillText('Question Length vs Answer Length — SQuAD (n=500)',W/2,18);
+}
+
+function showChart(type) {
+  currentChart = type;
+  document.querySelectorAll('.chart-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+type).classList.add('active');
+  document.getElementById('chart-caption').textContent = captions[type];
+  const c = colors[type];
+  if (type==='qlen')   drawHistogram(qLens,   colors.qlen,   'Question Length (words)');
+  if (type==='ctxlen') drawHistogram(ctxLens, colors.ctxlen, 'Context Length (words)');
+  if (type==='anslen') drawHistogram(ansLens, colors.anslen, 'Answer Length (words)');
+  if (type==='scatter') drawScatter();
+}
+
+// Initial chart
+setTimeout(()=>{ showChart('qlen'); }, 400);
+</script>
+</body>
+</html>

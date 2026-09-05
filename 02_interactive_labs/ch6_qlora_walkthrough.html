@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Chapter 6: QLoRA Fine-Tuning</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --navy: #080E1B;
+    --navy2: #0D1528;
+    --navy3: #111C35;
+    --navy4: #1A2640;
+    --gold: #FFB44F;
+    --gold2: #FFA020;
+    --gold-dim: rgba(255,180,79,0.12);
+    --gold-glow: rgba(255,180,79,0.25);
+    --teal: #00C9A7;
+    --teal-dim: rgba(0,201,167,0.1);
+    --purple: #C084FC;
+    --purple-dim: rgba(192,132,252,0.12);
+    --red: #FF6B6B;
+    --text: #E8EDF5;
+    --text-muted: #7A8BA8;
+    --text-dim: #4A5A72;
+    --border: rgba(255,180,79,0.15);
+    --border-subtle: rgba(255,255,255,0.06);
+    --font: 'Plus Jakarta Sans', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--navy);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    position: relative;
+    padding: 80px 40px 64px;
+    text-align: center;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,180,79,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,180,79,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .hero-glow {
+    position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 400px;
+    background: radial-gradient(ellipse, rgba(255,180,79,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 20px; position: relative;
+  }
+  .hero h1 {
+    font-size: clamp(32px, 6vw, 64px); font-weight: 800; line-height: 1.1;
+    position: relative; margin-bottom: 20px;
+  }
+  .hero h1 span { color: var(--gold); }
+  .hero-sub {
+    font-size: 18px; color: var(--text-muted); max-width: 600px;
+    margin: 0 auto 40px; line-height: 1.6; position: relative;
+  }
+  .hero-badges {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+    position: relative;
+  }
+  .badge {
+    padding: 6px 16px; border-radius: 100px; font-size: 12px; font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .badge-gold { background: var(--gold-dim); color: var(--gold); border: 1px solid rgba(255,180,79,0.3); }
+  .badge-teal { background: var(--teal-dim); color: var(--teal); border: 1px solid rgba(0,201,167,0.25); }
+  .badge-purple { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(192,132,252,0.25); }
+
+  /* ─── PROGRESS BAR ─── */
+  .progress-bar-wrap {
+    background: var(--navy2); padding: 16px 40px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex; align-items: center; gap: 16px;
+  }
+  .progress-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+  .progress-track { flex: 1; height: 4px; background: var(--navy4); border-radius: 2px; }
+  .progress-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--teal), var(--gold)); width: 42.8%; }
+  .progress-pct { font-size: 12px; font-weight: 700; color: var(--gold); white-space: nowrap; }
+
+  /* ─── LAYOUT ─── */
+  .main { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+  .section { margin-top: 72px; }
+  .section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 8px;
+  }
+  .section-title {
+    font-size: 28px; font-weight: 800; margin-bottom: 8px; line-height: 1.2;
+  }
+  .section-desc {
+    font-size: 15px; color: var(--text-muted); line-height: 1.6; max-width: 700px; margin-bottom: 32px;
+  }
+  .card {
+    background: var(--navy2); border: 1px solid var(--border-subtle);
+    border-radius: 16px; padding: 28px;
+  }
+  .card-gold { border-color: rgba(255,180,79,0.2); }
+
+  /* ─── THE PROBLEM CARDS ─── */
+  .problem-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .problem-card {
+    background: var(--navy3); border-radius: 12px; padding: 20px;
+    border: 1px solid var(--border-subtle); text-align: center;
+  }
+  .problem-icon { font-size: 32px; margin-bottom: 12px; }
+  .problem-val { font-size: 28px; font-weight: 800; color: var(--red); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  .problem-label { font-size: 13px; color: var(--text-muted); }
+
+  /* ─── LORA DECOMP CANVAS ─── */
+  #loraCanvas { width: 100%; border-radius: 12px; cursor: pointer; display: block; }
+  .canvas-hint { font-size: 12px; color: var(--text-dim); margin-top: 8px; text-align: center; }
+
+  /* ─── RANK SLIDER ─── */
+  .rank-controls {
+    display: flex; align-items: center; gap: 16px; margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .rank-label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+  input[type=range] {
+    -webkit-appearance: none; height: 4px;
+    background: var(--navy4); border-radius: 2px; flex: 1; min-width: 120px;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--gold); cursor: pointer; border: 2px solid var(--navy);
+  }
+  .rank-val {
+    font-family: var(--mono); font-size: 14px; font-weight: 700;
+    color: var(--gold); min-width: 40px; text-align: right;
+  }
+  .param-stats {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 20px;
+  }
+  .param-stat { background: var(--navy3); border-radius: 8px; padding: 14px; text-align: center; }
+  .param-stat-val { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; margin-bottom: 2px; }
+  .param-stat-label { font-size: 11px; color: var(--text-muted); }
+  .color-gold { color: var(--gold); }
+  .color-teal { color: var(--teal); }
+  .color-red { color: var(--red); }
+
+  /* ─── QLORA STACK ─── */
+  .qlora-stack { display: flex; flex-direction: column; gap: 0; }
+  .qlora-layer {
+    border-radius: 0; padding: 14px 20px;
+    display: flex; align-items: center; gap: 14px;
+    transition: background 0.2s;
+    cursor: default;
+  }
+  .qlora-layer:first-child { border-radius: 12px 12px 0 0; }
+  .qlora-layer:last-child { border-radius: 0 0 12px 12px; }
+  .qlora-layer-frozen { background: rgba(122,139,168,0.08); border: 1px solid rgba(122,139,168,0.15); border-bottom: none; }
+  .qlora-layer:last-child { border-bottom: 1px solid rgba(122,139,168,0.15); }
+  .qlora-layer-active { background: var(--gold-dim); border: 1px solid rgba(255,180,79,0.25); border-bottom: none; }
+  .qlora-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot-frozen { background: var(--text-dim); }
+  .dot-active { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+  .qlora-name { font-size: 14px; font-weight: 600; flex: 1; }
+  .qlora-bits {
+    font-family: var(--mono); font-size: 12px; font-weight: 700; padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .bits-4 { background: rgba(255,107,107,0.15); color: var(--red); }
+  .bits-16 { background: var(--gold-dim); color: var(--gold); }
+  .bits-32 { background: var(--teal-dim); color: var(--teal); }
+  .qlora-desc { font-size: 12px; color: var(--text-muted); }
+
+  /* ─── MEMORY COMPARISON ─── */
+  .mem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .mem-card { background: var(--navy3); border-radius: 12px; padding: 20px; border: 1px solid var(--border-subtle); }
+  .mem-card-title { font-size: 13px; font-weight: 700; margin-bottom: 16px; }
+  .mem-bar-wrap { margin-bottom: 10px; }
+  .mem-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .mem-bar-track { height: 10px; background: var(--navy4); border-radius: 5px; overflow: hidden; }
+  .mem-bar-fill { height: 100%; border-radius: 5px; transition: width 0.6s ease; }
+  .mem-total { font-size: 22px; font-weight: 800; margin-top: 12px; font-variant-numeric: tabular-nums; }
+
+  /* ─── TRAINING ANIMATION ─── */
+  #trainCanvas { width: 100%; border-radius: 12px; display: block; }
+  .train-controls { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    padding: 8px 20px; border-radius: 8px; font-family: var(--font);
+    font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s;
+  }
+  .btn-gold { background: var(--gold); color: var(--navy); }
+  .btn-gold:hover { background: var(--gold2); }
+  .btn-outline {
+    background: transparent; color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+  }
+  .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+  .step-indicator {
+    font-family: var(--mono); font-size: 12px; color: var(--text-muted); margin-left: auto;
+  }
+  .step-highlight { color: var(--gold); }
+
+  /* ─── LOSS CURVE ─── */
+  #lossCanvas { width: 100%; border-radius: 12px; display: block; }
+
+  /* ─── PEFT CODE ─── */
+  .code-tabs { display: flex; gap: 0; margin-bottom: 0; }
+  .code-tab {
+    padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border-subtle); color: var(--text-muted);
+    background: var(--navy3); transition: all 0.15s;
+  }
+  .code-tab:first-child { border-radius: 8px 0 0 0; }
+  .code-tab:last-child { border-radius: 0 8px 0 0; }
+  .code-tab.active { background: var(--navy4); color: var(--gold); border-color: rgba(255,180,79,0.3); border-bottom-color: var(--navy4); }
+  .code-panel {
+    display: none; background: var(--navy4); border: 1px solid rgba(255,180,79,0.15);
+    border-top: none; border-radius: 0 0 12px 12px; padding: 24px;
+    overflow-x: auto;
+  }
+  .code-panel.active { display: block; }
+  pre { font-family: var(--mono); font-size: 13px; line-height: 1.7; white-space: pre; }
+  .kw { color: #C084FC; }
+  .fn { color: #60CDFF; }
+  .str { color: #6FCF97; }
+  .cm { color: #4A5A72; font-style: italic; }
+  .num { color: var(--gold); }
+  .cls { color: #FFB44F; }
+  .var { color: #E8EDF5; }
+
+  /* ─── ADAPTER COMPARE ─── */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .compare-card { background: var(--navy3); border-radius: 12px; padding: 20px; border: 1px solid var(--border-subtle); }
+  .compare-title { font-size: 13px; font-weight: 700; margin-bottom: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-size: 11px; }
+  .compare-row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border-subtle); }
+  .compare-row:last-child { border-bottom: none; }
+  .compare-key { color: var(--text-muted); }
+  .compare-val { font-weight: 600; font-family: var(--mono); }
+
+  /* ─── CHEAT SHEET ─── */
+  .cheat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .cheat-card {
+    background: var(--navy3); border-radius: 10px; padding: 16px;
+    border: 1px solid var(--border-subtle);
+  }
+  .cheat-card-title { font-size: 12px; font-weight: 700; color: var(--gold); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+  .cheat-line { font-family: var(--mono); font-size: 12px; color: var(--text-muted); padding: 3px 0; line-height: 1.5; }
+  .cheat-line span { color: var(--teal); }
+
+  /* ─── NEXT CHAPTER ─── */
+  .next-card {
+    background: linear-gradient(135deg, var(--navy2) 0%, rgba(192,132,252,0.08) 100%);
+    border: 1px solid rgba(192,132,252,0.25); border-radius: 16px;
+    padding: 32px; text-align: center; margin-top: 72px;
+  }
+  .next-eyebrow { font-size: 11px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .next-title { font-size: 24px; font-weight: 800; color: var(--purple); margin-bottom: 6px; }
+  .next-sub { font-size: 14px; color: var(--text-muted); }
+
+  /* ─── FOOTER ─── */
+  .footer { text-align: center; padding: 40px 24px 20px; border-top: 1px solid var(--border-subtle); margin-top: 80px; }
+  .footer-brand { font-weight: 800; font-size: 20px; letter-spacing: 1px; color: var(--gold); }
+  .footer-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+  @media (max-width: 640px) {
+    .mem-grid, .compare-grid { grid-template-columns: 1fr; }
+    .param-stats { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body><div style="background:linear-gradient(135deg,#060d1e 0%,#0d2240 100%);color:#fff;padding:32px 40px 24px;font-family:'Segoe UI',Arial,sans-serif;border-bottom:4px solid #4fc3f7;margin-bottom:0;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div style="font-size:12px;color:#4fc3f7;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">JAWNVION LLC &nbsp;·&nbsp; LLM Engineering Series</div>
+      <div style="font-size:28px;font-weight:900;line-height:1.1;margin-bottom:6px;">17 Interactive Colab Labs</div>
+      <div style="font-size:14px;color:#8ab8d4;">Run in-browser &nbsp;·&nbsp; No setup required &nbsp;·&nbsp; Production LLM skills</div>
+    </div>
+    <div style="text-align:right;font-size:12px;color:#6090b0;line-height:1.8;">
+      <div>www.jawnvion.com</div>
+      <div>peter@jawnvion.com</div>
+      <div>© 2026 JAWNVION LLC</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-eyebrow">AI Training Workbook · Chapter 06</div>
+  <h1>QLoRA <span>Fine-Tuning</span></h1>
+  <p class="hero-sub">Adapt billion-parameter models on a single GPU using quantization + low-rank adapters — no full fine-tune required.</p>
+  <div class="hero-badges">
+    <span class="badge badge-gold">LoRA · Low-Rank Adaptation</span>
+    <span class="badge badge-teal">4-bit NF4 Quantization</span>
+    <span class="badge badge-purple">PEFT + bitsandbytes</span>
+    <span class="badge badge-gold">Parameter Efficiency</span>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-bar-wrap">
+  <span class="progress-label">Course Progress</span>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+  <span class="progress-pct">6 / 14 chapters &nbsp;·&nbsp; 42.8%</span>
+</div>
+
+<div class="main">
+
+  <!-- ── SECTION 1: THE PROBLEM ── -->
+  <div class="section">
+    <div class="section-label">The Problem</div>
+    <div class="section-title">Full Fine-Tuning Is Impractical</div>
+    <p class="section-desc">Training every parameter of a 7B model requires enormous VRAM, long runtimes, and per-task storage. QLoRA solves all three — without sacrificing quality.</p>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="problem-icon">💾</div>
+        <div class="problem-val">112 GB</div>
+        <div class="problem-label">VRAM for LLaMA-2-7B full fine-tune (fp32)</div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">⏱️</div>
+        <div class="problem-val">~80 hrs</div>
+        <div class="problem-label">Training time on 4× A100 GPUs for 1 epoch</div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">📦</div>
+        <div class="problem-val">26 GB</div>
+        <div class="problem-label">Storage per fine-tuned checkpoint (fp16)</div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">💸</div>
+        <div class="problem-val">$800+</div>
+        <div class="problem-label">Cloud compute cost per full fine-tune run</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 2: LORA DECOMPOSITION ── -->
+  <div class="section">
+    <div class="section-label">Core Concept</div>
+    <div class="section-title">LoRA — Low-Rank Decomposition</div>
+    <p class="section-desc">Instead of updating the full weight matrix W (d×d), LoRA injects two tiny matrices A (d×r) and B (r×d). Only A and B train. The rank r controls the parameter budget.</p>
+    <div class="card card-gold">
+      <canvas id="loraCanvas" height="220"></canvas>
+      <p class="canvas-hint">Click the canvas to animate the decomposition</p>
+      <div class="rank-controls">
+        <span class="rank-label">Rank r =</span>
+        <input type="range" id="rankSlider" min="1" max="64" value="8">
+        <span class="rank-val" id="rankVal">8</span>
+        <span class="rank-label" style="margin-left:8px;">d =</span>
+        <input type="range" id="dimSlider" min="64" max="4096" step="64" value="4096">
+        <span class="rank-val" id="dimVal">4096</span>
+      </div>
+      <div class="param-stats">
+        <div class="param-stat">
+          <div class="param-stat-val color-red" id="origParams">16.8M</div>
+          <div class="param-stat-label">Full W params (d²)</div>
+        </div>
+        <div class="param-stat">
+          <div class="param-stat-val color-gold" id="loraParams">65.5K</div>
+          <div class="param-stat-label">LoRA params (2·d·r)</div>
+        </div>
+        <div class="param-stat">
+          <div class="param-stat-val color-teal" id="reduction">256×</div>
+          <div class="param-stat-label">Parameter reduction</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 3: QLORA STACK ── -->
+  <div class="section">
+    <div class="section-label">Architecture</div>
+    <div class="section-title">QLoRA = Quantization + LoRA</div>
+    <p class="section-desc">QLoRA freezes the base model in 4-bit NF4 format (Normal Float 4), then adds trainable LoRA adapters in bf16. The quantized base never updates — only the adapters learn.</p>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div style="padding:16px 20px 12px; border-bottom:1px solid var(--border-subtle);">
+        <span style="font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--gold);">Layer Stack (per Transformer Block)</span>
+      </div>
+      <div class="qlora-stack">
+        <div class="qlora-layer qlora-layer-active">
+          <div class="qlora-dot dot-active"></div>
+          <div class="qlora-name">LoRA Adapter B (d×r → d)</div>
+          <span class="qlora-bits bits-16">bf16 · TRAINS</span>
+        </div>
+        <div class="qlora-layer qlora-layer-active">
+          <div class="qlora-dot dot-active"></div>
+          <div class="qlora-name">LoRA Adapter A (d → r)</div>
+          <span class="qlora-bits bits-16">bf16 · TRAINS</span>
+        </div>
+        <div class="qlora-layer qlora-layer-frozen">
+          <div class="qlora-dot dot-frozen"></div>
+          <div class="qlora-name">Attention Q, K, V, O</div>
+          <span class="qlora-bits bits-4">NF4 · FROZEN</span>
+        </div>
+        <div class="qlora-layer qlora-layer-frozen">
+          <div class="qlora-dot dot-frozen"></div>
+          <div class="qlora-name">Feed-Forward Gate / Up / Down</div>
+          <span class="qlora-bits bits-4">NF4 · FROZEN</span>
+        </div>
+        <div class="qlora-layer qlora-layer-frozen">
+          <div class="qlora-dot dot-frozen"></div>
+          <div class="qlora-name">RMSNorm Weights</div>
+          <span class="qlora-bits bits-32">fp32 · FROZEN</span>
+        </div>
+        <div class="qlora-layer qlora-layer-frozen" style="border-radius: 0 0 12px 12px; border-bottom: 1px solid rgba(122,139,168,0.15);">
+          <div class="qlora-dot dot-frozen"></div>
+          <div class="qlora-name">Embedding + LM Head</div>
+          <span class="qlora-bits bits-4">NF4 · FROZEN</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 4: MEMORY COMPARISON ── -->
+  <div class="section">
+    <div class="section-label">Memory</div>
+    <div class="section-title">VRAM Comparison: 7B Model</div>
+    <p class="section-desc">QLoRA slashes memory requirements by 10–14×, making fine-tuning possible on a single consumer GPU.</p>
+    <div class="mem-grid">
+      <div class="mem-card">
+        <div class="mem-card-title" style="color:var(--red);">❌ Full Fine-Tune (fp16)</div>
+        <div class="mem-bar-wrap">
+          <div class="mem-bar-label"><span>Model Weights</span><span>14 GB</span></div>
+          <div class="mem-bar-track"><div class="mem-bar-fill" style="width:100%;background:var(--red);opacity:0.7;"></div></div>
+        </div>
+        <div class="mem-bar-wrap">
+          <div class="mem-bar-label"><span>Gradients</span><span>14 GB</span></div>
+          <div class="mem-bar-track"><div class="mem-bar-fill" style="width:100%;background:var(--red);opacity:0.5;"></div></div>
+        </div>
+        <div class="mem-bar-wrap">
+          <div class="mem-bar-label"><span>Optimizer States (Adam)</span><span>56 GB</span></div>
+          <div class="mem-bar-track"><div class="mem-bar-fill" style="width:100%;background:var(--red);opacity:0.3;"></div></div>
+        </div>
+        <div class="mem-bar-wrap">
+          <div class="mem-bar-label"><span>Activations</span><span>~8 GB</span></div>
+          <div class="mem-bar-track"><div class="mem-bar-fill" style="width:57%;background:var(--red);opacity:0.2;"></div></div>
+        </div>
+        <div class="mem-total color-red">≈ 92+ GB</div>
+      </div>
+      <div class="mem-card">
+        <div class="mem-card-title" style="color:var(--gold);">✅ QLoRA (4-bit base + bf16 adapters)</div>
+        <div class="mem-bar-wrap">
+          <div class="mem-bar-label"><span>Model Weights (4-bit)</span><span>3.5 GB</span></div>
+          <div class="mem-bar-track"><div class="mem-bar-fill" style="width:25%;background:var(--gold);opacity:0.7;"></div></div>
+        </div>
+        <div class="mem-bar-wrap">
+          <div class="mem-bar-label"><span>LoRA Adapters</span><span>~24 MB</span></div>
+          <div class="mem-bar-track"><div class="mem-bar-fill" style="width:1%;background:var(--gold);"></div></div>
+        </div>
+        <div class="mem-bar-wrap">
+          <div class="mem-bar-label"><span>Optimizer (adapters only)</span><span>~48 MB</span></div>
+          <div class="mem-bar-track"><div class="mem-bar-fill" style="width:1%;background:var(--gold);opacity:0.5;"></div></div>
+        </div>
+        <div class="mem-bar-wrap">
+          <div class="mem-bar-label"><span>Activations + Paged Adam</span><span>~2 GB</span></div>
+          <div class="mem-bar-track"><div class="mem-bar-fill" style="width:14%;background:var(--gold);opacity:0.3;"></div></div>
+        </div>
+        <div class="mem-total color-gold">≈ 6 GB total</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 5: TRAINING ANIMATION ── -->
+  <div class="section">
+    <div class="section-label">Training Loop</div>
+    <div class="section-title">Animated QLoRA Training Pass</div>
+    <p class="section-desc">Watch the forward pass propagate through the frozen 4-bit base, then gradients flow back only through the LoRA adapter layers.</p>
+    <div class="card card-gold">
+      <canvas id="trainCanvas" height="260"></canvas>
+      <div class="train-controls">
+        <button class="btn btn-gold" id="trainBtn">▶ Run Training Step</button>
+        <button class="btn btn-outline" id="resetBtn">↺ Reset</button>
+        <span class="step-indicator" id="stepLabel">Step <span class="step-highlight">0</span> / 5</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 6: LOSS CURVE ── -->
+  <div class="section">
+    <div class="section-label">Learning Dynamics</div>
+    <div class="section-title">Loss Curve Visualization</div>
+    <p class="section-desc">QLoRA training converges comparably to full fine-tuning on many tasks, with significantly less compute. The adapter quickly learns the task-specific signal.</p>
+    <div class="card card-gold">
+      <canvas id="lossCanvas" height="200"></canvas>
+      <div class="train-controls">
+        <button class="btn btn-gold" id="lossBtn">▶ Simulate Training</button>
+        <button class="btn btn-outline" id="lossReset">↺ Reset</button>
+        <span class="step-indicator" id="lossLabel">Epoch <span class="step-highlight">0</span> / 3</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 7: PEFT CODE ── -->
+  <div class="section">
+    <div class="section-label">Implementation</div>
+    <div class="section-title">PEFT Code Walkthrough</div>
+    <p class="section-desc">Three steps: quantize the base model, attach LoRA config, train with standard HuggingFace Trainer.</p>
+    <div>
+      <div class="code-tabs">
+        <div class="code-tab active" onclick="showTab('load')">1. Load 4-bit</div>
+        <div class="code-tab" onclick="showTab('lora')">2. LoRA Config</div>
+        <div class="code-tab" onclick="showTab('train')">3. Train</div>
+        <div class="code-tab" onclick="showTab('save')">4. Save & Merge</div>
+      </div>
+      <div id="tab-load" class="code-panel active">
+<pre><span class="kw">from</span> <span class="var">transformers</span> <span class="kw">import</span> <span class="cls">AutoModelForCausalLM</span>, <span class="cls">BitsAndBytesConfig</span>
+<span class="kw">import</span> <span class="var">torch</span>
+
+<span class="cm"># Configure 4-bit NF4 quantization</span>
+<span class="var">bnb_config</span> = <span class="cls">BitsAndBytesConfig</span>(
+    <span class="var">load_in_4bit</span>=<span class="kw">True</span>,
+    <span class="var">bnb_4bit_use_double_quant</span>=<span class="kw">True</span>,   <span class="cm"># nested quantization</span>
+    <span class="var">bnb_4bit_quant_type</span>=<span class="str">"nf4"</span>,           <span class="cm"># Normal Float 4</span>
+    <span class="var">bnb_4bit_compute_dtype</span>=<span class="var">torch</span>.<span class="var">bfloat16</span>
+)
+
+<span class="cm"># Load model — weights land in 4-bit automatically</span>
+<span class="var">model</span> = <span class="cls">AutoModelForCausalLM</span>.<span class="fn">from_pretrained</span>(
+    <span class="str">"meta-llama/Llama-2-7b-hf"</span>,
+    <span class="var">quantization_config</span>=<span class="var">bnb_config</span>,
+    <span class="var">device_map</span>=<span class="str">"auto"</span>          <span class="cm"># spread across available GPUs</span>
+)
+<span class="cm"># Model is now ~3.5 GB instead of 14 GB</span></pre>
+      </div>
+      <div id="tab-lora" class="code-panel">
+<pre><span class="kw">from</span> <span class="var">peft</span> <span class="kw">import</span> <span class="cls">LoraConfig</span>, <span class="fn">get_peft_model</span>, <span class="fn">prepare_model_for_kbit_training</span>
+
+<span class="cm"># Prepare frozen layers for gradient checkpointing</span>
+<span class="var">model</span> = <span class="fn">prepare_model_for_kbit_training</span>(<span class="var">model</span>)
+
+<span class="var">lora_config</span> = <span class="cls">LoraConfig</span>(
+    <span class="var">r</span>=<span class="num">16</span>,                  <span class="cm"># rank — higher = more params, more expressiveness</span>
+    <span class="var">lora_alpha</span>=<span class="num">32</span>,          <span class="cm"># scaling factor (usually 2×r)</span>
+    <span class="var">target_modules</span>=[        <span class="cm"># which weight matrices to adapt</span>
+        <span class="str">"q_proj"</span>, <span class="str">"k_proj"</span>,
+        <span class="str">"v_proj"</span>, <span class="str">"o_proj"</span>,
+        <span class="str">"gate_proj"</span>, <span class="str">"up_proj"</span>, <span class="str">"down_proj"</span>
+    ],
+    <span class="var">lora_dropout</span>=<span class="num">0.05</span>,
+    <span class="var">bias</span>=<span class="str">"none"</span>,
+    <span class="var">task_type</span>=<span class="str">"CAUSAL_LM"</span>
+)
+
+<span class="var">model</span> = <span class="fn">get_peft_model</span>(<span class="var">model</span>, <span class="var">lora_config</span>)
+<span class="var">model</span>.<span class="fn">print_trainable_parameters</span>()
+<span class="cm"># trainable params: 6,553,600 || all params: 6,744,215,552 || trainable%: 0.0972</span></pre>
+      </div>
+      <div id="tab-train" class="code-panel">
+<pre><span class="kw">from</span> <span class="var">transformers</span> <span class="kw">import</span> <span class="cls">TrainingArguments</span>
+<span class="kw">from</span> <span class="var">trl</span> <span class="kw">import</span> <span class="cls">SFTTrainer</span>
+
+<span class="var">training_args</span> = <span class="cls">TrainingArguments</span>(
+    <span class="var">output_dir</span>=<span class="str">"./qlora-output"</span>,
+    <span class="var">num_train_epochs</span>=<span class="num">3</span>,
+    <span class="var">per_device_train_batch_size</span>=<span class="num">4</span>,
+    <span class="var">gradient_accumulation_steps</span>=<span class="num">4</span>,   <span class="cm"># effective batch = 16</span>
+    <span class="var">warmup_steps</span>=<span class="num">100</span>,
+    <span class="var">learning_rate</span>=<span class="num">2e-4</span>,
+    <span class="var">fp16</span>=<span class="kw">True</span>,
+    <span class="var">logging_steps</span>=<span class="num">10</span>,
+    <span class="var">optim</span>=<span class="str">"paged_adamw_32bit"</span>,      <span class="cm"># paged optimizer for large models</span>
+    <span class="var">save_strategy</span>=<span class="str">"epoch"</span>,
+)
+
+<span class="var">trainer</span> = <span class="cls">SFTTrainer</span>(
+    <span class="var">model</span>=<span class="var">model</span>,
+    <span class="var">train_dataset</span>=<span class="var">dataset</span>,
+    <span class="var">args</span>=<span class="var">training_args</span>,
+    <span class="var">dataset_text_field</span>=<span class="str">"text"</span>,
+    <span class="var">max_seq_length</span>=<span class="num">2048</span>,
+)
+<span class="var">trainer</span>.<span class="fn">train</span>()</pre>
+      </div>
+      <div id="tab-save" class="code-panel">
+<pre><span class="cm"># Option 1: Save adapters only (~24 MB) for later merging</span>
+<span class="var">model</span>.<span class="fn">save_pretrained</span>(<span class="str">"./lora-adapters"</span>)
+
+<span class="cm"># Option 2: Merge adapters into full model for deployment</span>
+<span class="kw">from</span> <span class="var">peft</span> <span class="kw">import</span> <span class="cls">PeftModel</span>
+
+<span class="cm"># Reload base in fp16 (not 4-bit) for clean merge</span>
+<span class="var">base</span> = <span class="cls">AutoModelForCausalLM</span>.<span class="fn">from_pretrained</span>(
+    <span class="str">"meta-llama/Llama-2-7b-hf"</span>,
+    <span class="var">torch_dtype</span>=<span class="var">torch</span>.<span class="var">float16</span>,
+    <span class="var">device_map</span>=<span class="str">"auto"</span>
+)
+<span class="var">merged</span> = <span class="cls">PeftModel</span>.<span class="fn">from_pretrained</span>(<span class="var">base</span>, <span class="str">"./lora-adapters"</span>)
+<span class="var">merged</span> = <span class="var">merged</span>.<span class="fn">merge_and_unload</span>()   <span class="cm"># fuse W' = W + α/r · BA</span>
+<span class="var">merged</span>.<span class="fn">save_pretrained</span>(<span class="str">"./merged-model"</span>)
+<span class="cm"># Ready to deploy as a standard HuggingFace model</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 8: TECHNIQUE COMPARE ── -->
+  <div class="section">
+    <div class="section-label">Comparison</div>
+    <div class="section-title">Full Fine-Tune vs LoRA vs QLoRA</div>
+    <p class="section-desc">Choosing the right technique depends on your compute budget and quality requirements.</p>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <div class="compare-title">Full Fine-Tune (fp16)</div>
+        <div class="compare-row"><span class="compare-key">Trainable Params</span><span class="compare-val color-red">7,000,000,000</span></div>
+        <div class="compare-row"><span class="compare-key">VRAM (7B model)</span><span class="compare-val color-red">~92 GB</span></div>
+        <div class="compare-row"><span class="compare-key">Training Time</span><span class="compare-val color-red">~80 hrs</span></div>
+        <div class="compare-row"><span class="compare-key">Storage / Task</span><span class="compare-val color-red">26 GB</span></div>
+        <div class="compare-row"><span class="compare-key">Quality Ceiling</span><span class="compare-val color-teal">Highest</span></div>
+      </div>
+      <div class="compare-card" style="border-color:rgba(255,180,79,0.2);">
+        <div class="compare-title" style="color:var(--gold);">QLoRA ← recommended</div>
+        <div class="compare-row"><span class="compare-key">Trainable Params</span><span class="compare-val color-gold">6,553,600</span></div>
+        <div class="compare-row"><span class="compare-key">VRAM (7B model)</span><span class="compare-val color-gold">~6 GB</span></div>
+        <div class="compare-row"><span class="compare-key">Training Time</span><span class="compare-val color-gold">~4 hrs</span></div>
+        <div class="compare-row"><span class="compare-key">Storage / Task</span><span class="compare-val color-gold">24 MB</span></div>
+        <div class="compare-row"><span class="compare-key">Quality Ceiling</span><span class="compare-val color-gold">Near Full</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 9: CHEAT SHEET ── -->
+  <div class="section">
+    <div class="section-label">Quick Reference</div>
+    <div class="section-title">QLoRA Cheat Sheet</div>
+    <div class="cheat-grid">
+      <div class="cheat-card">
+        <div class="cheat-card-title">Key Hyperparameters</div>
+        <div class="cheat-line"><span>r</span> = rank (4–64; start at 16)</div>
+        <div class="cheat-line"><span>lora_alpha</span> = scaling (= 2×r)</div>
+        <div class="cheat-line"><span>lora_dropout</span> = 0.05–0.1</div>
+        <div class="cheat-line"><span>lr</span> = 2e-4 (higher than full FT)</div>
+        <div class="cheat-line"><span>epochs</span> = 1–5 (task-dependent)</div>
+      </div>
+      <div class="cheat-card">
+        <div class="cheat-card-title">Quantization Types</div>
+        <div class="cheat-line"><span>NF4</span> — Normal Float 4 (best quality)</div>
+        <div class="cheat-line"><span>FP4</span> — Float Point 4 (simpler)</div>
+        <div class="cheat-line"><span>INT8</span> — for inference only (LLM.int8)</div>
+        <div class="cheat-line"><span>double_quant</span> — quantize quant constants</div>
+        <div class="cheat-line"><span>compute_dtype</span> — bf16 for training</div>
+      </div>
+      <div class="cheat-card">
+        <div class="cheat-card-title">Target Module Defaults</div>
+        <div class="cheat-line">LLaMA: <span>q,k,v,o,gate,up,down</span></div>
+        <div class="cheat-line">Mistral: <span>q,k,v,o,gate,up,down</span></div>
+        <div class="cheat-line">Falcon: <span>query_key_value</span></div>
+        <div class="cheat-line">GPT-2: <span>c_attn, c_proj</span></div>
+        <div class="cheat-line">BERT: <span>query, value</span></div>
+      </div>
+      <div class="cheat-card">
+        <div class="cheat-card-title">Key Equations</div>
+        <div class="cheat-line">W' = W + <span>α/r · B·A</span></div>
+        <div class="cheat-line">B initialized: <span>zeros</span></div>
+        <div class="cheat-line">A initialized: <span>gaussian noise</span></div>
+        <div class="cheat-line">Params: <span>2·d·r</span> per adapter</div>
+        <div class="cheat-line">Merge at inference: <span>merge_and_unload()</span></div>
+      </div>
+      <div class="cheat-card">
+        <div class="cheat-card-title">Optimizer Tips</div>
+        <div class="cheat-line"><span>paged_adamw_32bit</span> — for large models</div>
+        <div class="cheat-line"><span>paged_adamw_8bit</span> — saves another 4 GB</div>
+        <div class="cheat-line"><span>gradient_checkpointing</span> — reduces VRAM</div>
+        <div class="cheat-line"><span>gradient_accumulation</span> — simulate big batch</div>
+        <div class="cheat-line"><span>max_grad_norm=0.3</span> — clip gradients</div>
+      </div>
+      <div class="cheat-card">
+        <div class="cheat-card-title">Dataset Formats</div>
+        <div class="cheat-line">SFT: <span>{"text": "prompt + response"}</span></div>
+        <div class="cheat-line">Chat: <span>{"messages": [...]}</span></div>
+        <div class="cheat-line">Instruction: <span>alpaca-style JSON</span></div>
+        <div class="cheat-line">Min examples: <span>~500–1000 for fine tasks</span></div>
+        <div class="cheat-line">Quality &gt; quantity: <span>curate carefully</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEXT CHAPTER -->
+  <div class="next-card">
+    <div class="next-eyebrow">Coming Up Next</div>
+    <div class="next-title">Chapter 7 — DPO: Direct Preference Optimization</div>
+    <div class="next-sub">Align model outputs to human preferences without a reward model — the technique behind ChatGPT's quality improvements.</div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-brand">JAWNVION</div>
+  <div class="footer-sub">AI Training Workbook · Chapter 06 of 14 · peter@jawnvion.com</div>
+</div>
+
+<script>
+// ─── LORA DECOMPOSITION CANVAS ───
+const loraCanvas = document.getElementById('loraCanvas');
+const loraCtx = loraCanvas.getContext('2d');
+let loraAnim = 0, loraAnimTarget = 0, loraRaf = null;
+
+function fmt(n) {
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return n;
+}
+
+function updateParamStats() {
+  const r = parseInt(document.getElementById('rankSlider').value);
+  const d = parseInt(document.getElementById('dimSlider').value);
+  document.getElementById('rankVal').textContent = r;
+  document.getElementById('dimVal').textContent = d;
+  const orig = d * d;
+  const lora = 2 * d * r;
+  const ratio = Math.round(orig / lora);
+  document.getElementById('origParams').textContent = fmt(orig);
+  document.getElementById('loraParams').textContent = fmt(lora);
+  document.getElementById('reduction').textContent = ratio + '×';
+  drawLora(loraAnim);
+}
+
+function drawLora(t) {
+  const W = loraCanvas.width, H = loraCanvas.height;
+  const ctx = loraCtx;
+  ctx.clearRect(0, 0, W, H);
+
+  const r = parseInt(document.getElementById('rankSlider').value);
+  const d = parseInt(document.getElementById('dimSlider').value);
+  const rNorm = Math.max(0.03, r / 64);
+
+  // Layout
+  const pad = 30, blockH = H - 60, blockY = 30;
+  const fullW = 160, fullX = pad;
+  const eqX = fullX + fullW + 20;
+  const aX = eqX + 40, aW = Math.max(18, rNorm * 60);
+  const bX = aX + aW + 12, bW = 90;
+  const arrowX = bX + bW + 16;
+
+  // Draw Full W
+  const alpha = 1 - t * 0.4;
+  ctx.globalAlpha = alpha;
+  const gdW = ctx.createLinearGradient(fullX, blockY, fullX + fullW, blockY + blockH);
+  gdW.addColorStop(0, 'rgba(255,107,107,0.25)');
+  gdW.addColorStop(1, 'rgba(255,107,107,0.08)');
+  ctx.fillStyle = gdW;
+  roundRect(ctx, fullX, blockY, fullW, blockH, 8);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,107,107,0.5)';
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, fullX, blockY, fullW, blockH, 8);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Label W
+  ctx.fillStyle = '#FF6B6B';
+  ctx.font = 'bold 13px JetBrains Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('W', fullX + fullW/2, blockY + blockH/2 - 8);
+  ctx.fillStyle = 'rgba(255,107,107,0.6)';
+  ctx.font = '11px JetBrains Mono, monospace';
+  ctx.fillText(`${d}×${d}`, fullX + fullW/2, blockY + blockH/2 + 10);
+
+  if (t > 0.1) {
+    const ta = Math.min(1, (t - 0.1) / 0.5);
+    ctx.globalAlpha = ta;
+
+    // "≈" separator
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('≈', eqX + 16, blockY + blockH/2 + 8);
+
+    // Draw A (tall narrow)
+    const gdA = ctx.createLinearGradient(aX, blockY, aX + aW, blockY + blockH);
+    gdA.addColorStop(0, 'rgba(255,180,79,0.35)');
+    gdA.addColorStop(1, 'rgba(255,180,79,0.1)');
+    ctx.fillStyle = gdA;
+    roundRect(ctx, aX, blockY, aW, blockH, 6);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,180,79,0.6)';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, aX, blockY, aW, blockH, 6);
+    ctx.stroke();
+
+    ctx.fillStyle = '#FFB44F';
+    ctx.font = 'bold 12px JetBrains Mono, monospace';
+    ctx.textAlign = 'center';
+    if (aW > 24) {
+      ctx.save();
+      ctx.translate(aX + aW/2, blockY + blockH/2);
+      ctx.rotate(-Math.PI/2);
+      ctx.fillText('A', 0, 4);
+      ctx.restore();
+    }
+    ctx.fillStyle = 'rgba(255,180,79,0.6)';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.fillText(`${d}×${r}`, aX + aW/2, blockY + blockH + 16);
+
+    // "×" between A and B
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillText('×', bX - 8, blockY + blockH/2 + 6);
+
+    // Draw B (wide short)
+    const bH = Math.max(18, rNorm * blockH);
+    const bY = blockY + (blockH - bH) / 2;
+    const gdB = ctx.createLinearGradient(bX, bY, bX + bW, bY + bH);
+    gdB.addColorStop(0, 'rgba(0,201,167,0.35)');
+    gdB.addColorStop(1, 'rgba(0,201,167,0.1)');
+    ctx.fillStyle = gdB;
+    roundRect(ctx, bX, bY, bW, bH, 6);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,201,167,0.6)';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, bX, bY, bW, bH, 6);
+    ctx.stroke();
+
+    ctx.fillStyle = '#00C9A7';
+    ctx.font = 'bold 12px JetBrains Mono, monospace';
+    ctx.fillText('B', bX + bW/2, bY + bH/2 + 4);
+    ctx.fillStyle = 'rgba(0,201,167,0.6)';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.fillText(`${r}×${d}`, bX + bW/2, blockY + blockH + 16);
+
+    ctx.globalAlpha = 1;
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function animateLora() {
+  const speed = 0.04;
+  if (Math.abs(loraAnim - loraAnimTarget) > 0.005) {
+    loraAnim += (loraAnimTarget - loraAnim) * speed * 3;
+    drawLora(loraAnim);
+    loraRaf = requestAnimationFrame(animateLora);
+  } else {
+    loraAnim = loraAnimTarget;
+    drawLora(loraAnim);
+  }
+}
+
+loraCanvas.addEventListener('click', () => {
+  loraAnimTarget = loraAnimTarget > 0.5 ? 0 : 1;
+  if (loraRaf) cancelAnimationFrame(loraRaf);
+  animateLora();
+});
+
+function resizeLoraCanvas() {
+  loraCanvas.width = loraCanvas.offsetWidth;
+  loraCanvas.height = 220;
+  drawLora(loraAnim);
+}
+
+document.getElementById('rankSlider').addEventListener('input', updateParamStats);
+document.getElementById('dimSlider').addEventListener('input', updateParamStats);
+
+// ─── TRAINING ANIMATION CANVAS ───
+const trainCanvas = document.getElementById('trainCanvas');
+const trainCtx = trainCanvas.getContext('2d');
+let trainStep = 0, trainAnimating = false;
+const STEPS = ['Load 4-bit base', 'Forward pass (frozen)', 'Compute loss', 'Backprop → adapters only', 'Optimizer step (adapters)'];
+const STEP_COLORS = ['#7A8BA8', '#7A8BA8', '#FFB44F', '#FFB44F', '#00C9A7'];
+
+function drawTrain(step, progress) {
+  const W = trainCanvas.width, H = trainCanvas.height;
+  const ctx = trainCtx;
+  ctx.clearRect(0, 0, W, H);
+
+  const layers = [
+    { label: 'Input Tokens', type: 'input' },
+    { label: 'Embedding (4-bit frozen)', type: 'frozen' },
+    { label: 'Transformer ×22 (4-bit frozen)', type: 'frozen' },
+    { label: 'LoRA Adapters A+B (bf16 active)', type: 'adapter' },
+    { label: 'LM Head (4-bit frozen)', type: 'frozen' },
+    { label: 'Loss / Output', type: 'output' },
+  ];
+
+  const blockH = 32, gap = 6;
+  const totalH = layers.length * (blockH + gap);
+  const startY = (H - totalH) / 2;
+  const blockW = Math.min(W - 80, 500);
+  const blockX = (W - blockW) / 2;
+
+  layers.forEach((layer, i) => {
+    const y = startY + i * (blockH + gap);
+    let fillAlpha = 0.12, strokeAlpha = 0.25, labelAlpha = 0.5;
+
+    const isActive = step > 0 && i <= step;
+    if (isActive) { fillAlpha = layer.type === 'adapter' ? 0.25 : 0.18; strokeAlpha = 0.6; labelAlpha = 1; }
+
+    let color = '#7A8BA8';
+    if (layer.type === 'adapter') color = '#FFB44F';
+    else if (layer.type === 'input' || layer.type === 'output') color = '#00C9A7';
+
+    ctx.fillStyle = `rgba(${hexToRgb(color)},${fillAlpha})`;
+    roundRect(ctx, blockX, y, blockW, blockH, 6);
+    ctx.fill();
+    ctx.strokeStyle = `rgba(${hexToRgb(color)},${strokeAlpha})`;
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, blockX, y, blockW, blockH, 6);
+    ctx.stroke();
+
+    ctx.fillStyle = `rgba(${hexToRgb(color)},${labelAlpha})`;
+    ctx.font = `${layer.type === 'adapter' ? '600' : '500'} 13px Plus Jakarta Sans, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(layer.label, blockX + blockW / 2, y + blockH / 2);
+
+    // Frozen lock icon
+    if (layer.type === 'frozen') {
+      ctx.fillStyle = `rgba(122,139,168,${labelAlpha * 0.6})`;
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('🔒', blockX + 8, y + blockH / 2);
+    }
+    if (layer.type === 'adapter') {
+      ctx.fillStyle = `rgba(255,180,79,${labelAlpha * 0.8})`;
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('⚡', blockX + 8, y + blockH / 2);
+    }
+
+    // Animated pulse on current active
+    if (step > 0 && i === Math.min(step, layers.length - 1)) {
+      ctx.strokeStyle = `rgba(${hexToRgb(color)},${0.5 + 0.5 * Math.sin(Date.now() * 0.005)})`;
+      ctx.lineWidth = 2.5;
+      roundRect(ctx, blockX - 2, y - 2, blockW + 4, blockH + 4, 8);
+      ctx.stroke();
+    }
+  });
+
+  // Step label
+  if (step > 0 && step <= STEPS.length) {
+    ctx.fillStyle = STEP_COLORS[step - 1];
+    ctx.font = 'bold 12px Plus Jakarta Sans, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`Step ${step}: ${STEPS[step - 1]}`, W / 2, startY - 24);
+  }
+
+  document.getElementById('stepLabel').innerHTML = `Step <span class="step-highlight">${step}</span> / 5`;
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
+let trainPulseRaf = null;
+function pulseTrain() {
+  drawTrain(trainStep, 0);
+  trainPulseRaf = requestAnimationFrame(pulseTrain);
+}
+
+document.getElementById('trainBtn').addEventListener('click', () => {
+  if (trainStep < 5) {
+    trainStep++;
+    drawTrain(trainStep, 0);
+    if (trainStep === 5 && trainPulseRaf) { cancelAnimationFrame(trainPulseRaf); trainPulseRaf = null; }
+    if (trainStep < 5 && !trainPulseRaf) pulseTrain();
+  }
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  trainStep = 0;
+  if (trainPulseRaf) { cancelAnimationFrame(trainPulseRaf); trainPulseRaf = null; }
+  drawTrain(0, 0);
+});
+
+// ─── LOSS CURVE CANVAS ───
+const lossCanvas = document.getElementById('lossCanvas');
+const lossCtx = lossCanvas.getContext('2d');
+let lossPoints = [], lossAnimId = null, lossEpoch = 0;
+
+function generateLoss() {
+  const pts = [];
+  let v = 2.8 + Math.random() * 0.5;
+  for (let i = 0; i < 150; i++) {
+    const decay = Math.exp(-i / 60) * 2.0;
+    const noise = (Math.random() - 0.5) * 0.15;
+    v = Math.max(0.35, 0.38 + decay + noise);
+    pts.push(v);
+  }
+  return pts;
+}
+
+const allLoss = generateLoss();
+
+function drawLoss(n) {
+  const W = lossCanvas.width, H = lossCanvas.height;
+  const ctx = lossCtx;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { left: 50, right: 20, top: 20, bottom: 36 };
+  const pw = W - pad.left - pad.right, ph = H - pad.top - pad.bottom;
+
+  // Grid
+  const gridLines = [0.5, 1.0, 1.5, 2.0, 2.5];
+  const maxLoss = 3.0, minLoss = 0.2;
+  gridLines.forEach(v => {
+    const y = pad.top + ph - ((v - minLoss) / (maxLoss - minLoss)) * ph;
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + pw, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(v.toFixed(1), pad.left - 6, y + 4);
+  });
+
+  // Axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.left, pad.top); ctx.lineTo(pad.left, pad.top + ph); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.left, pad.top + ph); ctx.lineTo(pad.left + pw, pad.top + ph); ctx.stroke();
+
+  // Epoch dividers
+  for (let e = 1; e <= 3; e++) {
+    const x = pad.left + (e / 3) * pw;
+    ctx.strokeStyle = 'rgba(255,180,79,0.15)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + ph); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,180,79,0.5)';
+    ctx.font = '10px Plus Jakarta Sans, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Epoch ${e}`, x, pad.top + ph + 24);
+  }
+
+  if (n === 0) return;
+
+  // Draw loss line
+  const pts = allLoss.slice(0, n);
+  const gd = ctx.createLinearGradient(pad.left, 0, pad.left + pw, 0);
+  gd.addColorStop(0, '#FF6B6B');
+  gd.addColorStop(0.5, '#FFB44F');
+  gd.addColorStop(1, '#00C9A7');
+
+  ctx.beginPath();
+  pts.forEach((v, i) => {
+    const x = pad.left + (i / (allLoss.length - 1)) * pw;
+    const y = pad.top + ph - ((v - minLoss) / (maxLoss - minLoss)) * ph;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = gd;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Current dot
+  const lastV = pts[pts.length - 1];
+  const lx = pad.left + ((n - 1) / (allLoss.length - 1)) * pw;
+  const ly = pad.top + ph - ((lastV - minLoss) / (maxLoss - minLoss)) * ph;
+  ctx.fillStyle = '#FFB44F';
+  ctx.beginPath(); ctx.arc(lx, ly, 5, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = '#FFB44F';
+  ctx.font = 'bold 11px JetBrains Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`loss: ${lastV.toFixed(3)}`, lx, ly - 12);
+
+  // Y axis label
+  ctx.save();
+  ctx.translate(14, pad.top + ph / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '11px Plus Jakarta Sans, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Training Loss', 0, 0);
+  ctx.restore();
+
+  document.getElementById('lossLabel').innerHTML = `Step <span class="step-highlight">${n}</span> / 150`;
+}
+
+let lossN = 0;
+document.getElementById('lossBtn').addEventListener('click', () => {
+  if (lossAnimId) return;
+  lossAnimId = setInterval(() => {
+    lossN = Math.min(lossN + 2, allLoss.length);
+    drawLoss(lossN);
+    if (lossN >= allLoss.length) { clearInterval(lossAnimId); lossAnimId = null; }
+  }, 30);
+});
+
+document.getElementById('lossReset').addEventListener('click', () => {
+  if (lossAnimId) { clearInterval(lossAnimId); lossAnimId = null; }
+  lossN = 0;
+  drawLoss(0);
+});
+
+// ─── CODE TABS ───
+function showTab(id) {
+  document.querySelectorAll('.code-tab').forEach((t, i) => {
+    const ids = ['load','lora','train','save'];
+    t.classList.toggle('active', ids[i] === id);
+  });
+  document.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+}
+
+// ─── RESIZE & INIT ───
+function resizeAll() {
+  const allCanvases = [loraCanvas, trainCanvas, lossCanvas];
+  allCanvases.forEach(c => {
+    c.width = c.offsetWidth;
+  });
+  loraCanvas.height = 220;
+  trainCanvas.height = 260;
+  lossCanvas.height = 200;
+  drawLora(loraAnim);
+  drawTrain(trainStep, 0);
+  drawLoss(lossN);
+  if (trainStep > 0 && trainStep < 5 && !trainPulseRaf) pulseTrain();
+}
+
+window.addEventListener('resize', resizeAll);
+window.addEventListener('load', () => {
+  resizeAll();
+  updateParamStats();
+  loraAnimTarget = 1;
+  animateLora();
+  if (!trainPulseRaf) pulseTrain();
+});
+</script>
+</body>
+</html>

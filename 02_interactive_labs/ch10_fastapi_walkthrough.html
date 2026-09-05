@@ -1,0 +1,1354 @@
+<!doctype html>
+<title>JAWNVION LLC | Chapter 10 — FastAPI Deployment</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+:root {
+  --navy:   #0B0F1A;
+  --navy2:  #10151F;
+  --navy3:  #141B27;
+  --coral:  #FF6B9D;
+  --coral2: #FF3D7F;
+  --coral3: #FFB3CE;
+  --teal:   #00C9A7;
+  --gold:   #FFB44F;
+  --purple: #C084FC;
+  --blue:   #60A5FA;
+  --green:  #4ADE80;
+  --red:    #F87171;
+  --dim:    rgba(255,255,255,0.55);
+  --dimmer: rgba(255,255,255,0.28);
+  --border: rgba(255,107,157,0.18);
+  --card:   rgba(255,107,157,0.04);
+  --card2:  rgba(255,107,157,0.09);
+  --bg: var(--navy);
+  --bg2: var(--navy2);
+  --bg3: var(--navy3);
+  --text: #F0EDE8;
+  --accent: var(--coral);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --navy:  #FFF0F5; --navy2: #FFE6EF; --navy3: #FFD6E6;
+    --border: rgba(180,0,70,0.15); --card: rgba(180,0,70,0.04);
+    --card2: rgba(180,0,70,0.08);
+    --bg: var(--navy); --bg2: var(--navy2); --bg3: var(--navy3);
+    --text: #1A0010; --dim: rgba(0,0,0,0.55); --dimmer: rgba(0,0,0,0.28);
+    --coral: #C0004A; --coral2: #A00035; --coral3: #800020;
+  }
+}
+:root[data-theme="dark"] {
+  --navy:#0B0F1A; --navy2:#10151F; --navy3:#141B27;
+  --border:rgba(255,107,157,0.18); --card:rgba(255,107,157,0.04);
+  --card2:rgba(255,107,157,0.09);
+  --bg:var(--navy); --bg2:var(--navy2); --bg3:var(--navy3);
+  --text:#F0EDE8; --dim:rgba(255,255,255,0.55); --dimmer:rgba(255,255,255,0.28);
+  --coral:#FF6B9D; --coral2:#FF3D7F; --coral3:#FFB3CE;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.wrap{max-width:1100px;margin:0 auto;padding:0 24px;}
+
+/* hero */
+.hero{
+  min-height:520px; display:flex; align-items:center;
+  background:radial-gradient(ellipse 80% 60% at 70% 30%,rgba(255,107,157,0.13) 0%,transparent 65%),
+             radial-gradient(ellipse 50% 50% at 15% 75%,rgba(0,201,167,0.07) 0%,transparent 55%),
+             var(--bg);
+  padding:80px 0 60px; position:relative; overflow:hidden;
+}
+.hero::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(
+    0deg, transparent, transparent 39px, rgba(255,107,157,0.04) 40px
+  );
+}
+.hero-eyebrow{
+  display:flex;align-items:center;gap:12px;
+  font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--coral);font-family:'JetBrains Mono',monospace;margin-bottom:20px;
+}
+.hero-eyebrow span{color:var(--dimmer);}
+.hero-title{
+  font-size:clamp(2.8rem,6vw,4.4rem);font-weight:800;line-height:1.08;
+  letter-spacing:-0.02em;text-wrap:balance;margin-bottom:20px;
+}
+.hero-title em{
+  font-style:normal;
+  background:linear-gradient(135deg,var(--coral) 0%,var(--coral3) 45%,var(--purple) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero-sub{font-size:1.05rem;color:var(--dim);max-width:580px;line-height:1.65;margin-bottom:28px;}
+.hero-pills{display:flex;flex-wrap:wrap;gap:8px;}
+.pill{
+  padding:5px 14px;border-radius:100px;border:1px solid var(--border);
+  background:var(--card2);font-size:0.78rem;font-weight:600;color:var(--coral3);
+  font-family:'JetBrains Mono',monospace;letter-spacing:0.04em;
+}
+
+/* section */
+section{padding:72px 0;}
+section+section{border-top:1px solid var(--border);}
+.section-label{font-size:0.68rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--coral);font-family:'JetBrains Mono',monospace;margin-bottom:10px;}
+.section-title{font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:800;letter-spacing:-0.02em;line-height:1.15;text-wrap:balance;margin-bottom:16px;}
+.section-sub{color:var(--dim);font-size:1.05rem;max-width:640px;line-height:1.65;margin-bottom:40px;}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;}
+.card h3{font-size:1rem;font-weight:700;margin-bottom:8px;}
+.card p{font-size:0.9rem;color:var(--dim);line-height:1.6;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+@media(max-width:720px){.grid3,.grid2{grid-template-columns:1fr;}}
+
+/* code tabs */
+.code-box{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.code-tab-row{display:flex;border-bottom:1px solid var(--border);overflow-x:auto;}
+.code-tab{
+  padding:11px 18px;border:none;background:transparent;
+  color:var(--dim);font-size:0.82rem;font-weight:600;cursor:pointer;
+  white-space:nowrap;transition:all 0.2s;border-bottom:2px solid transparent;
+  font-family:'Plus Jakarta Sans',sans-serif;
+}
+.code-tab:hover{color:var(--text);}
+.code-tab.active{color:var(--coral);border-bottom-color:var(--coral);}
+.code-body{display:none;padding:22px;overflow-x:auto;}
+.code-body.active{display:block;}
+pre{margin:0;}
+code{font-family:'JetBrains Mono',monospace;font-size:0.82rem;line-height:1.75;}
+.kw{color:#C084FC;}.fn{color:#60A5FA;}.str{color:#4ADE80;}.cm{color:#5A6B80;font-style:italic;}.num{color:#FFB44F;}.cls{color:#FF6B9D;}.dec{color:#00C9A7;}
+
+/* request flow */
+.flow-container{
+  position:relative;background:var(--bg2);border:1px solid var(--border);
+  border-radius:14px;padding:32px;overflow:hidden;
+}
+.flow-nodes{display:flex;align-items:center;justify-content:space-between;gap:0;flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px;}
+.flow-node{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  min-width:90px; flex-shrink:0;
+}
+.flow-icon{
+  width:52px;height:52px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;border:2px solid var(--border);background:var(--bg3);
+  transition:all 0.4s;position:relative;
+}
+.flow-icon.active{border-color:var(--coral);background:rgba(255,107,157,0.15);box-shadow:0 0 18px rgba(255,107,157,0.35);}
+.flow-label{font-size:0.72rem;font-weight:600;color:var(--dimmer);text-align:center;text-transform:uppercase;letter-spacing:0.06em;line-height:1.3;}
+.flow-label.active{color:var(--coral);}
+.flow-arrow{color:var(--dimmer);font-size:1.1rem;flex-shrink:0;transition:color 0.3s;margin:0 4px;padding-bottom:24px;}
+.flow-arrow.active{color:var(--coral);}
+.flow-desc{
+  margin-top:24px;padding:14px 18px;border-radius:10px;
+  background:var(--card2);border:1px solid var(--border);
+  font-size:0.88rem;color:var(--text);line-height:1.65;min-height:56px;
+  transition:all 0.3s;
+}
+.flow-btns{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.flow-btn{
+  padding:7px 16px;border-radius:8px;border:1px solid var(--border);
+  background:transparent;color:var(--dim);font-size:0.82rem;font-weight:600;
+  cursor:pointer;transition:all 0.2s;font-family:'Plus Jakarta Sans',sans-serif;
+}
+.flow-btn:hover{border-color:var(--coral);color:var(--text);}
+.flow-btn.running{background:var(--coral);color:#fff;border-color:var(--coral);}
+
+/* API playground */
+.playground{
+  background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;
+}
+.playground-header{
+  display:flex;align-items:center;gap:16px;padding:16px 20px;
+  border-bottom:1px solid var(--border);background:var(--bg3);
+}
+.method-badge{
+  padding:4px 12px;border-radius:6px;font-size:0.78rem;font-weight:800;
+  font-family:'JetBrains Mono',monospace;letter-spacing:0.06em;
+}
+.method-post{background:rgba(0,201,167,0.15);color:var(--teal);}
+.method-get{background:rgba(96,165,250,0.15);color:var(--blue);}
+.endpoint-url{font-family:'JetBrains Mono',monospace;font-size:0.88rem;color:var(--text);}
+.playground-body{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+@media(max-width:720px){.playground-body{grid-template-columns:1fr;}}
+.playground-pane{padding:20px;}
+.playground-pane+.playground-pane{border-left:1px solid var(--border);}
+@media(max-width:720px){.playground-pane+.playground-pane{border-left:none;border-top:1px solid var(--border);}}
+.pane-label{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);margin-bottom:12px;}
+.field-group{margin-bottom:14px;}
+.field-label{font-size:0.8rem;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.field-label .req{color:var(--coral);font-size:0.65rem;}
+.field-input,.field-select,.field-textarea{
+  width:100%;padding:9px 12px;border-radius:8px;
+  border:1px solid var(--border);background:var(--bg3);
+  color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:0.88rem;
+  transition:border-color 0.2s;
+}
+.field-input:focus,.field-select:focus,.field-textarea:focus{outline:none;border-color:var(--coral);}
+.field-select option{background:var(--bg3);}
+.field-textarea{resize:vertical;min-height:60px;line-height:1.5;}
+.send-btn{
+  width:100%;padding:11px;border-radius:8px;border:none;
+  background:var(--coral);color:#fff;font-size:0.9rem;font-weight:700;
+  cursor:pointer;transition:all 0.2s;font-family:'Plus Jakarta Sans',sans-serif;
+  margin-top:4px;
+}
+.send-btn:hover{background:var(--coral2);}
+.send-btn:disabled{opacity:0.5;cursor:default;}
+.response-area{
+  background:var(--bg3);border-radius:8px;padding:14px;
+  font-family:'JetBrains Mono',monospace;font-size:0.82rem;line-height:1.7;
+  min-height:160px;white-space:pre-wrap;color:var(--dimmer);overflow-x:auto;
+}
+.status-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:3px 10px;border-radius:5px;font-family:'JetBrains Mono',monospace;
+  font-size:0.78rem;font-weight:700;margin-bottom:8px;
+}
+.status-200{background:rgba(74,222,128,0.15);color:var(--green);}
+.status-422{background:rgba(248,113,113,0.15);color:var(--red);}
+.latency-badge{font-size:0.72rem;color:var(--dimmer);font-family:'JetBrains Mono',monospace;margin-left:8px;}
+
+/* model loading patterns */
+.pattern-tabs{display:flex;gap:4px;margin-bottom:20px;}
+.pattern-tab{
+  padding:8px 18px;border-radius:8px;border:1px solid var(--border);
+  background:transparent;color:var(--dim);font-size:0.84rem;font-weight:600;
+  cursor:pointer;transition:all 0.2s;font-family:'Plus Jakarta Sans',sans-serif;
+}
+.pattern-tab.active{background:var(--coral);color:#fff;border-color:var(--coral);}
+.pattern-panel{display:none;}
+.pattern-panel.active{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:720px){.pattern-panel.active{grid-template-columns:1fr;}}
+.pattern-viz{
+  background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.pattern-bar-wrap{display:flex;align-items:center;gap:12px;}
+.pattern-bar-label{font-size:0.8rem;width:110px;flex-shrink:0;font-family:'JetBrains Mono',monospace;color:var(--dim);}
+.pattern-bar-track{flex:1;height:16px;background:var(--bg3);border-radius:8px;overflow:hidden;}
+.pattern-bar-fill{height:100%;border-radius:8px;transition:width 0.8s ease;}
+.pattern-bar-val{font-size:0.78rem;font-family:'JetBrains Mono',monospace;color:var(--dimmer);width:60px;text-align:right;}
+.pro-con{margin-top:8px;display:flex;flex-direction:column;gap:6px;}
+.pro-con-item{display:flex;gap:8px;font-size:0.84rem;color:var(--dim);}
+.pro{color:var(--green);}
+.con{color:var(--red);}
+
+/* docker layers */
+.docker-layers{display:flex;flex-direction:column-reverse;gap:0;max-width:480px;}
+.docker-layer{
+  padding:12px 20px;display:flex;align-items:center;gap:14px;
+  border:1px solid var(--border);margin-top:-1px;
+  background:var(--bg2);cursor:pointer;transition:all 0.2s;
+  position:relative;
+}
+.docker-layer:first-child{border-radius:0 0 10px 10px;}
+.docker-layer:last-child{border-radius:10px 10px 0 0;}
+.docker-layer:hover{background:var(--card2);border-color:var(--coral);}
+.docker-layer.highlight{background:rgba(255,107,157,0.1);border-color:var(--coral);}
+.layer-icon{font-size:1.1rem;flex-shrink:0;}
+.layer-name{font-size:0.85rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.layer-size{font-size:0.72rem;color:var(--dimmer);font-family:'JetBrains Mono',monospace;margin-left:auto;}
+.layer-desc{font-size:0.8rem;color:var(--dim);line-height:1.5;margin-top:4px;}
+.docker-detail{
+  margin-top:16px;padding:14px 18px;background:var(--card2);
+  border:1px solid var(--border);border-radius:10px;font-size:0.88rem;line-height:1.65;
+  color:var(--text);
+}
+
+/* deployment cards */
+.deploy-card{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;
+  border-top:3px solid;
+}
+.deploy-card h3{font-size:0.95rem;font-weight:700;margin-bottom:8px;}
+.deploy-card p{font-size:0.85rem;color:var(--dim);line-height:1.6;margin-bottom:12px;}
+.deploy-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.tag{padding:2px 8px;border-radius:4px;font-size:0.72rem;font-weight:600;font-family:'JetBrains Mono',monospace;}
+.tag-green{background:rgba(74,222,128,0.12);color:var(--green);}
+.tag-gold{background:rgba(255,180,79,0.12);color:var(--gold);}
+.tag-red{background:rgba(248,113,113,0.12);color:var(--red);}
+.tag-blue{background:rgba(96,165,250,0.12);color:var(--blue);}
+.tag-purple{background:rgba(192,132,252,0.12);color:var(--purple);}
+
+/* cheat */
+.cheat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+@media(max-width:900px){.cheat-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.cheat-grid{grid-template-columns:1fr;}}
+.cheat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.cheat-card h4{font-size:0.8rem;font-weight:700;color:var(--coral);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
+.cheat-item{display:flex;gap:8px;margin-bottom:7px;font-size:0.84rem;color:var(--dim);}
+.cheat-dot{color:var(--coral3);flex-shrink:0;margin-top:2px;}
+
+footer{padding:40px 0;text-align:center;border-top:1px solid var(--border);font-size:0.82rem;color:var(--dimmer);font-family:'JetBrains Mono',monospace;letter-spacing:0.04em;}
+.mt16{margin-top:16px;}.mt24{margin-top:24px;}.mt32{margin-top:32px;}
+</style>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap">
+    <div class="hero-eyebrow">AI Training Workbook <span>·</span> Chapter 10</div>
+    <h1 class="hero-title">Ship Your Model.<br>Build a <em>Production API.</em></h1>
+    <p class="hero-sub">Training is only half the story. FastAPI turns your fine-tuned model into a real service — with validation, async inference, auto-docs, and a Docker image ready to deploy anywhere.</p>
+    <div class="hero-pills">
+      <span class="pill">FastAPI</span>
+      <span class="pill">Pydantic</span>
+      <span class="pill">Async Inference</span>
+      <span class="pill">Lifespan Events</span>
+      <span class="pill">Middleware</span>
+      <span class="pill">Docker</span>
+      <span class="pill">Railway · Modal</span>
+      <span class="pill">Health Checks</span>
+    </div>
+  </div>
+</div>
+
+<!-- WHY FASTAPI -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Why FastAPI</div>
+    <h2 class="section-title">The Right Tool for ML Serving</h2>
+    <p class="section-sub">Flask is fine for demos. FastAPI is built for production — async, typed, and self-documenting out of the box.</p>
+    <div class="grid3">
+      <div class="card" style="border-top:2px solid var(--coral);">
+        <h3>⚡ Async by Default</h3>
+        <p>ASGI-native. While one request waits for model inference, the event loop serves others. No threads, no GIL fights — crucial for latency under load.</p>
+      </div>
+      <div class="card" style="border-top:2px solid var(--teal);">
+        <h3>🔒 Pydantic Validation</h3>
+        <p>Define your request schema once. FastAPI validates inputs, coerces types, and returns a structured 422 with field-level errors — before your model ever runs.</p>
+      </div>
+      <div class="card" style="border-top:2px solid var(--purple);">
+        <h3>📚 Auto-Docs Free</h3>
+        <p>OpenAPI schema and interactive Swagger UI at <code class="mono">/docs</code>, Redoc at <code class="mono">/redoc</code> — generated from your type annotations, zero extra work.</p>
+      </div>
+      <div class="card" style="border-top:2px solid var(--gold);">
+        <h3>🚀 Performance</h3>
+        <p>Benchmarks show FastAPI close to Node.js and Go for I/O-bound workloads. Starlette underneath, uvicorn on top — a serious production stack.</p>
+      </div>
+      <div class="card" style="border-top:2px solid var(--blue);">
+        <h3>🧩 Dependency Injection</h3>
+        <p>Inject model instances, DB connections, auth handlers via <code class="mono">Depends()</code>. Composable, testable, and mockable — the pattern that makes large APIs maintainable.</p>
+      </div>
+      <div class="card" style="border-top:2px solid var(--coral);">
+        <h3>🧪 Testable</h3>
+        <p>Built-in <code class="mono">TestClient</code> wraps requests in-process. Write unit tests that hit your real routes without spinning up a server — CI-ready from day one.</p>
+      </div>
+    </div>
+
+    <!-- stat bar -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:28px;">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--coral);font-family:'JetBrains Mono',monospace;">~1ms</div>
+        <div style="font-size:0.78rem;color:var(--dim);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;">Framework overhead</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--teal);font-family:'JetBrains Mono',monospace;">/docs</div>
+        <div style="font-size:0.78rem;color:var(--dim);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;">Free Swagger UI</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--purple);font-family:'JetBrains Mono',monospace;">0 extra</div>
+        <div style="font-size:0.78rem;color:var(--dim);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;">Lines for validation</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--gold);font-family:'JetBrains Mono',monospace;">async</div>
+        <div style="font-size:0.78rem;color:var(--dim);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;">Native concurrency</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REQUEST FLOW -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Request Lifecycle</div>
+    <h2 class="section-title">What Happens to Your Request</h2>
+    <p class="section-sub">Click a step or hit "Animate" to walk through the full lifecycle of an inference request through your FastAPI service.</p>
+
+    <div class="flow-container">
+      <div class="flow-btns">
+        <button class="flow-btn" id="animateBtn" onclick="animateFlow()">▶ Animate</button>
+        <button class="flow-btn" onclick="resetFlow()">↺ Reset</button>
+      </div>
+      <div class="flow-nodes" id="flowNodes">
+        <div class="flow-node" onclick="selectStep(0)">
+          <div class="flow-icon" id="fi0">📡</div>
+          <div class="flow-label" id="fl0">Client</div>
+        </div>
+        <div class="flow-arrow" id="fa0">→</div>
+        <div class="flow-node" onclick="selectStep(1)">
+          <div class="flow-icon" id="fi1">🛡️</div>
+          <div class="flow-label" id="fl1">Middleware<br>CORS / Auth</div>
+        </div>
+        <div class="flow-arrow" id="fa1">→</div>
+        <div class="flow-node" onclick="selectStep(2)">
+          <div class="flow-icon" id="fi2">🔍</div>
+          <div class="flow-label" id="fl2">Pydantic<br>Validation</div>
+        </div>
+        <div class="flow-arrow" id="fa2">→</div>
+        <div class="flow-node" onclick="selectStep(3)">
+          <div class="flow-icon" id="fi3">⚡</div>
+          <div class="flow-label" id="fl3">Route<br>Handler</div>
+        </div>
+        <div class="flow-arrow" id="fa3">→</div>
+        <div class="flow-node" onclick="selectStep(4)">
+          <div class="flow-icon" id="fi4">🤖</div>
+          <div class="flow-label" id="fl4">Model<br>Inference</div>
+        </div>
+        <div class="flow-arrow" id="fa4">→</div>
+        <div class="flow-node" onclick="selectStep(5)">
+          <div class="flow-icon" id="fi5">📦</div>
+          <div class="flow-label" id="fl5">Serialize<br>Response</div>
+        </div>
+        <div class="flow-arrow" id="fa5">→</div>
+        <div class="flow-node" onclick="selectStep(6)">
+          <div class="flow-icon" id="fi6">✅</div>
+          <div class="flow-label" id="fl6">Client<br>Response</div>
+        </div>
+      </div>
+      <div class="flow-desc" id="flowDesc">Click a step above or press Animate to walk through the request lifecycle.</div>
+    </div>
+  </div>
+</section>
+
+<!-- API PLAYGROUND -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Live Demo</div>
+    <h2 class="section-title">API Playground</h2>
+    <p class="section-sub">Simulate a real sentiment-analysis inference endpoint. Fill in the fields, hit Send, and see a structured JSON response with latency — just like your live service would return.</p>
+
+    <div class="playground">
+      <div class="playground-header">
+        <span class="method-badge method-post">POST</span>
+        <span class="endpoint-url">http://localhost:8000/predict</span>
+        <span style="margin-left:auto;font-size:0.78rem;color:var(--dimmer);font-family:'JetBrains Mono',monospace;">v1.0.0</span>
+      </div>
+      <div class="playground-body">
+        <div class="playground-pane">
+          <div class="pane-label">Request Body</div>
+          <div class="field-group">
+            <div class="field-label">text <span class="req">required</span></div>
+            <textarea class="field-textarea" id="pgText" placeholder="Enter text to classify…">This product exceeded my expectations!</textarea>
+          </div>
+          <div class="field-group">
+            <div class="field-label">model_id</div>
+            <select class="field-select" id="pgModel">
+              <option value="distilbert-sentiment">distilbert-base-sentiment</option>
+              <option value="roberta-sentiment">roberta-base-sentiment</option>
+              <option value="bert-base">bert-base-uncased</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <div class="field-label">max_length</div>
+            <input type="number" class="field-input" id="pgMaxLen" value="128" min="1" max="512">
+          </div>
+          <div class="field-group">
+            <div class="field-label">return_probs</div>
+            <select class="field-select" id="pgProbs">
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          </div>
+          <button class="send-btn" id="pgSendBtn" onclick="sendRequest()">Send Request</button>
+        </div>
+        <div class="playground-pane">
+          <div class="pane-label">Response</div>
+          <div id="pgStatus"></div>
+          <div class="response-area" id="pgResponse">Waiting for request…</div>
+          <div style="margin-top:12px;font-size:0.8rem;color:var(--dimmer);">
+            💡 Try: leave text blank (422 error), switch models, or toggle return_probs.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GET endpoint -->
+    <div class="playground mt24">
+      <div class="playground-header">
+        <span class="method-badge method-get">GET</span>
+        <span class="endpoint-url">http://localhost:8000/health</span>
+      </div>
+      <div class="playground-body">
+        <div class="playground-pane">
+          <div class="pane-label">No Parameters</div>
+          <p style="font-size:0.88rem;color:var(--dim);line-height:1.6;margin-bottom:16px;">Health checks let your load balancer and orchestrator know the service is ready to serve traffic.</p>
+          <button class="send-btn" style="background:var(--teal);color:var(--navy);" onclick="sendHealth()">Send Health Check</button>
+        </div>
+        <div class="playground-pane">
+          <div class="pane-label">Response</div>
+          <div id="healthStatus"></div>
+          <div class="response-area" id="healthResponse">Waiting for request…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODEL LOADING PATTERNS -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Architecture</div>
+    <h2 class="section-title">Model Loading Patterns</h2>
+    <p class="section-sub">How you load your model matters more than almost any other architectural decision. These three patterns have very different latency, memory, and concurrency profiles.</p>
+
+    <div class="pattern-tabs">
+      <button class="pattern-tab active" onclick="switchPattern('singleton',this)">Global Singleton</button>
+      <button class="pattern-tab" onclick="switchPattern('depends',this)">Depends() Injection</button>
+      <button class="pattern-tab" onclick="switchPattern('per',this)">Per-Request</button>
+    </div>
+
+    <div id="patternPanel-singleton" class="pattern-panel active">
+      <div>
+        <div class="code-box">
+          <div style="padding:18px;"><pre><code><span class="kw">from</span> contextlib <span class="kw">import</span> asynccontextmanager
+<span class="kw">from</span> fastapi <span class="kw">import</span> <span class="cls">FastAPI</span>
+<span class="kw">from</span> transformers <span class="kw">import</span> pipeline
+
+<span class="cm"># Global model registry</span>
+model_cache: dict = {}
+
+<span class="dec">@asynccontextmanager</span>
+<span class="kw">async def</span> <span class="fn">lifespan</span>(app: <span class="cls">FastAPI</span>):
+    <span class="cm"># Load ONCE at startup</span>
+    model_cache[<span class="str">"clf"</span>] = <span class="fn">pipeline</span>(
+        <span class="str">"text-classification"</span>,
+        model=<span class="str">"distilbert-base-uncased-finetuned-sst-2-english"</span>,
+        device=<span class="num">0</span>  <span class="cm"># GPU if available</span>
+    )
+    <span class="fn">yield</span>
+    <span class="cm"># Cleanup on shutdown</span>
+    model_cache.clear()
+
+app = <span class="cls">FastAPI</span>(lifespan=lifespan)
+
+<span class="dec">@app.post</span>(<span class="str">"/predict"</span>)
+<span class="kw">async def</span> <span class="fn">predict</span>(req: <span class="cls">PredictRequest</span>):
+    <span class="cm"># Reuse the loaded model — no reload</span>
+    result = model_cache[<span class="str">"clf"</span>](req.text)
+    <span class="kw">return</span> result
+</code></pre></div>
+        </div>
+      </div>
+      <div class="pattern-viz">
+        <div style="font-size:0.8rem;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">Performance Profile</div>
+        <div class="pattern-bar-wrap">
+          <div class="pattern-bar-label">Cold start</div>
+          <div class="pattern-bar-track"><div class="pattern-bar-fill" style="width:70%;background:var(--red);"></div></div>
+          <div class="pattern-bar-val" style="color:var(--red);">~8s once</div>
+        </div>
+        <div class="pattern-bar-wrap">
+          <div class="pattern-bar-label">Req latency</div>
+          <div class="pattern-bar-track"><div class="pattern-bar-fill" style="width:15%;background:var(--green);"></div></div>
+          <div class="pattern-bar-val" style="color:var(--green);">~12ms</div>
+        </div>
+        <div class="pattern-bar-wrap">
+          <div class="pattern-bar-label">Memory / req</div>
+          <div class="pattern-bar-track"><div class="pattern-bar-fill" style="width:8%;background:var(--green);"></div></div>
+          <div class="pattern-bar-val" style="color:var(--green);">shared</div>
+        </div>
+        <div class="pattern-bar-wrap">
+          <div class="pattern-bar-label">Concurrency</div>
+          <div class="pattern-bar-track"><div class="pattern-bar-fill" style="width:90%;background:var(--teal);"></div></div>
+          <div class="pattern-bar-val" style="color:var(--teal);">excellent</div>
+        </div>
+        <div class="pro-con mt16">
+          <div class="pro-con-item"><span class="pro">✓</span> Sub-20ms inference — model already in memory</div>
+          <div class="pro-con-item"><span class="pro">✓</span> Best concurrency — single model shared across all requests</div>
+          <div class="pro-con-item"><span class="pro">✓</span> GPU VRAM loaded once, warm for entire lifetime</div>
+          <div class="pro-con-item"><span class="con">✗</span> Startup takes time — k8s readiness probe must wait</div>
+          <div class="pro-con-item"><span class="con">✗</span> Model updates require restart — plan for rolling deploys</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="patternPanel-depends" class="pattern-panel">
+      <div>
+        <div class="code-box">
+          <div style="padding:18px;"><pre><code><span class="kw">from</span> fastapi <span class="kw">import</span> <span class="cls">FastAPI</span>, Depends
+<span class="kw">from</span> functools <span class="kw">import</span> lru_cache
+<span class="kw">from</span> transformers <span class="kw">import</span> pipeline
+
+<span class="dec">@lru_cache</span>(maxsize=<span class="num">4</span>)
+<span class="kw">def</span> <span class="fn">get_model</span>(model_id: str):
+    <span class="cm"># Cached by model_id — first call loads,
+    # subsequent calls return cached instance</span>
+    <span class="kw">return</span> <span class="fn">pipeline</span>(
+        <span class="str">"text-classification"</span>, model=model_id
+    )
+
+<span class="kw">async def</span> <span class="fn">model_dependency</span>(
+    model_id: str = <span class="str">"distilbert-base"</span>
+):
+    <span class="kw">return</span> <span class="fn">get_model</span>(model_id)
+
+app = <span class="cls">FastAPI</span>()
+
+<span class="dec">@app.post</span>(<span class="str">"/predict"</span>)
+<span class="kw">async def</span> <span class="fn">predict</span>(
+    req: <span class="cls">PredictRequest</span>,
+    model = <span class="cls">Depends</span>(model_dependency)
+):
+    <span class="cm"># Model injected — cached after first call</span>
+    result = model(req.text)
+    <span class="kw">return</span> result
+</code></pre></div>
+        </div>
+      </div>
+      <div class="pattern-viz">
+        <div style="font-size:0.8rem;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">Performance Profile</div>
+        <div class="pattern-bar-wrap">
+          <div class="pattern-bar-label">Cold start</div>
+          <div class="pattern-bar-track"><div class="pattern-bar-fill" style="width:70%;background:var(--gold);"></div></div>
+          <div class="pattern-bar-val" style="color:var(--gold);">~8s first call</div>
+        </div>
+        <div class="pattern-bar-wrap">
+          <div class="pattern-bar-label">Req latency</div>
+          <div class="pattern-bar-track"><div class="pattern-bar-fill" style="width:15%;background:var(--green);"></div></div>
+          <div class="pattern-bar-val" style="color:var(--green);">~12ms warm</div>
+        </div>
+        <div class="pattern-bar-wrap">
+          <div class="pattern-bar-label">Multi-model</div>
+          <div class="pattern-bar-track"><div class="pattern-bar-fill" style="width:85%;background:var(--teal);"></div></div>
+          <div class="pattern-bar-val" style="color:var(--teal);">up to 4</div>
+        </div>
+        <div class="pattern-bar-wrap">
+          <div class="pattern-bar-label">Testability</div>
+          <div class="pattern-bar-track"><div class="pattern-bar-fill" style="width:95%;background:var(--teal);"></div></div>
+          <div class="pattern-bar-val" style="color:var(--teal);">excellent</div>
+        </div>
+        <div class="pro-con mt16">
+          <div class="pro-con-item"><span class="pro">✓</span> Serve multiple model variants with one endpoint</div>
+          <div class="pro-con-item"><span class="pro">✓</span> Override with mock in tests — <code class="mono" style="font-size:0.78rem;">app.dependency_overrides</code></div>
+          <div class="pro-con-item"><span class="pro">✓</span> LRU cache keeps hot models warm automatically</div>
+          <div class="pro-con-item"><span class="con">✗</span> First request per model pays full load cost</div>
+          <div class="pro-con-item"><span class="con">✗</span> LRU eviction can cause surprise latency spikes</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="patternPanel-per" class="pattern-panel">
+      <div>
+        <div class="code-box">
+          <div style="padding:18px;"><pre><code><span class="kw">from</span> fastapi <span class="kw">import</span> <span class="cls">FastAPI</span>
+<span class="kw">from</span> transformers <span class="kw">import</span> pipeline
+
+app = <span class="cls">FastAPI</span>()
+
+<span class="dec">@app.post</span>(<span class="str">"/predict"</span>)
+<span class="kw">async def</span> <span class="fn">predict</span>(req: <span class="cls">PredictRequest</span>):
+    <span class="cm"># Load model on EVERY request — ❌ avoid in production</span>
+    model = <span class="fn">pipeline</span>(
+        <span class="str">"text-classification"</span>,
+        model=req.model_id
+    )
+    result = model(req.text)
+
+    <span class="cm"># Model goes out of scope and is GC'd after</span>
+    <span class="kw">return</span> result
+
+<span class="cm"># This pattern is only acceptable when:
+# - You're in a serverless function with forced cold starts
+# - Models are tiny (<10MB) and load in <50ms
+# - You have a strict per-request isolation requirement</span>
+</code></pre></div>
+        </div>
+      </div>
+      <div class="pattern-viz">
+        <div style="font-size:0.8rem;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">Performance Profile</div>
+        <div class="pattern-bar-wrap">
+          <div class="pattern-bar-label">Cold start</div>
+          <div class="pattern-bar-track"><div class="pattern-bar-fill" style="width:80%;background:var(--red);"></div></div>
+          <div class="pattern-bar-val" style="color:var(--red);">every req</div>
+        </div>
+        <div class="pattern-bar-wrap">
+          <div class="pattern-bar-label">Req latency</div>
+          <div class="pattern-bar-track"><div class="pattern-bar-fill" style="width:88%;background:var(--red);"></div></div>
+          <div class="pattern-bar-val" style="color:var(--red);">~8,000ms</div>
+        </div>
+        <div class="pattern-bar-wrap">
+          <div class="pattern-bar-label">Memory / req</div>
+          <div class="pattern-bar-track"><div class="pattern-bar-fill" style="width:90%;background:var(--red);"></div></div>
+          <div class="pattern-bar-val" style="color:var(--red);">full copy</div>
+        </div>
+        <div class="pattern-bar-wrap">
+          <div class="pattern-bar-label">Concurrency</div>
+          <div class="pattern-bar-track"><div class="pattern-bar-fill" style="width:20%;background:var(--red);"></div></div>
+          <div class="pattern-bar-val" style="color:var(--red);">poor</div>
+        </div>
+        <div class="pro-con mt16">
+          <div class="pro-con-item"><span class="pro">✓</span> Complete request isolation — no shared state</div>
+          <div class="pro-con-item"><span class="pro">✓</span> Trivially simple code — works fine for tiny models</div>
+          <div class="pro-con-item"><span class="con">✗</span> 8s+ latency per request for any real model</div>
+          <div class="pro-con-item"><span class="con">✗</span> OOM risk under concurrent load — each req holds full model</div>
+          <div class="pro-con-item"><span class="con">✗</span> ❌ Never use this for transformer-scale models in production</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DOCKER LAYERS -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Containerization</div>
+    <h2 class="section-title">Your Dockerfile, Layer by Layer</h2>
+    <p class="section-sub">Docker builds images in layers — each instruction is cached separately. Click a layer to understand what it does and why layer order matters for build speed.</p>
+
+    <div class="grid2">
+      <div>
+        <div class="docker-layers" id="dockerLayers">
+          <div class="docker-layer" onclick="selectLayer(0)">
+            <div class="layer-icon">📝</div>
+            <div><div class="layer-name">COPY . .</div><div class="layer-desc">Your application source code</div></div>
+            <div class="layer-size">~5 MB</div>
+          </div>
+          <div class="docker-layer" onclick="selectLayer(1)">
+            <div class="layer-icon">📦</div>
+            <div><div class="layer-name">RUN pip install -r requirements.txt</div><div class="layer-desc">Application dependencies</div></div>
+            <div class="layer-size">~2.1 GB</div>
+          </div>
+          <div class="docker-layer" onclick="selectLayer(2)">
+            <div class="layer-icon">📋</div>
+            <div><div class="layer-name">COPY requirements.txt .</div><div class="layer-desc">Requirements file (before pip install)</div></div>
+            <div class="layer-size">~1 KB</div>
+          </div>
+          <div class="docker-layer" onclick="selectLayer(3)">
+            <div class="layer-icon">👤</div>
+            <div><div class="layer-name">RUN useradd -m appuser</div><div class="layer-desc">Non-root user for security</div></div>
+            <div class="layer-size">~12 KB</div>
+          </div>
+          <div class="docker-layer" onclick="selectLayer(4)">
+            <div class="layer-icon">📁</div>
+            <div><div class="layer-name">WORKDIR /app</div><div class="layer-desc">Set working directory</div></div>
+            <div class="layer-size">—</div>
+          </div>
+          <div class="docker-layer" onclick="selectLayer(5)">
+            <div class="layer-icon">🐍</div>
+            <div><div class="layer-name">FROM python:3.11-slim</div><div class="layer-desc">Base image — Debian slim</div></div>
+            <div class="layer-size">~130 MB</div>
+          </div>
+        </div>
+
+        <div class="docker-detail mt16" id="dockerDetail">
+          Click any layer to learn what it does and why it's placed here.
+        </div>
+      </div>
+
+      <div class="code-box" style="height:fit-content;">
+        <div style="padding:18px 18px 8px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);">Dockerfile</div>
+        <div style="padding:0 18px 18px;"><pre><code><span class="cm"># syntax=docker/dockerfile:1</span>
+<span class="kw">FROM</span> python:3.11-slim
+
+<span class="cm"># Non-root user (security)</span>
+<span class="kw">RUN</span> useradd -m appuser
+
+<span class="kw">WORKDIR</span> /app
+
+<span class="cm"># Copy requirements BEFORE source code
+# so pip install is cached separately</span>
+<span class="kw">COPY</span> requirements.txt .
+<span class="kw">RUN</span> pip install --no-cache-dir -r requirements.txt
+
+<span class="cm"># Source code (changes most often — last layer)</span>
+<span class="kw">COPY</span> . .
+
+<span class="kw">USER</span> appuser
+<span class="kw">EXPOSE</span> 8000
+
+<span class="kw">CMD</span> [<span class="str">"uvicorn"</span>, <span class="str">"main:app"</span>,
+     <span class="str">"--host"</span>, <span class="str">"0.0.0.0"</span>,
+     <span class="str">"--port"</span>, <span class="str">"8000"</span>,
+     <span class="str">"--workers"</span>, <span class="str">"2"</span>]
+</code></pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CODE TABS -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Complete Implementation</div>
+    <h2 class="section-title">Production-Ready Code</h2>
+    <p class="section-sub">A full FastAPI ML service — schemas, lifespan loading, health checks, middleware, and deployment config.</p>
+
+    <div class="code-box">
+      <div class="code-tab-row">
+        <button class="code-tab active" onclick="switchCode('mainPanel','main',this)">main.py</button>
+        <button class="code-tab" onclick="switchCode('mainPanel','schemas',this)">schemas.py</button>
+        <button class="code-tab" onclick="switchCode('mainPanel','middleware',this)">Middleware</button>
+        <button class="code-tab" onclick="switchCode('mainPanel','test',this)">test_api.py</button>
+        <button class="code-tab" onclick="switchCode('mainPanel','compose',this)">docker-compose</button>
+        <button class="code-tab" onclick="switchCode('mainPanel','railway',this)">Railway Deploy</button>
+      </div>
+
+      <div id="mainPanel-main" class="code-body active"><pre><code><span class="kw">from</span> contextlib <span class="kw">import</span> asynccontextmanager
+<span class="kw">from</span> fastapi <span class="kw">import</span> <span class="cls">FastAPI</span>, <span class="cls">HTTPException</span>, BackgroundTasks
+<span class="kw">from</span> fastapi.middleware.cors <span class="kw">import</span> <span class="cls">CORSMiddleware</span>
+<span class="kw">from</span> transformers <span class="kw">import</span> pipeline
+<span class="kw">import</span> time, logging
+
+<span class="kw">from</span> schemas <span class="kw">import</span> <span class="cls">PredictRequest</span>, <span class="cls">PredictResponse</span>, <span class="cls">HealthResponse</span>
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+<span class="cm"># ── Model registry ───────────────────────────────</span>
+models: dict = {}
+
+<span class="dec">@asynccontextmanager</span>
+<span class="kw">async def</span> <span class="fn">lifespan</span>(app: <span class="cls">FastAPI</span>):
+    logger.info(<span class="str">"Loading model…"</span>)
+    models[<span class="str">"clf"</span>] = <span class="fn">pipeline</span>(
+        <span class="str">"text-classification"</span>,
+        model=<span class="str">"distilbert-base-uncased-finetuned-sst-2-english"</span>,
+        truncation=<span class="kw">True</span>, max_length=<span class="num">512</span>
+    )
+    logger.info(<span class="str">"Model ready ✓"</span>)
+    <span class="kw">yield</span>
+    models.clear()
+
+<span class="cm"># ── App ──────────────────────────────────────────</span>
+app = <span class="cls">FastAPI</span>(
+    title=<span class="str">"EKOS Inference API"</span>,
+    version=<span class="str">"1.0.0"</span>,
+    lifespan=lifespan
+)
+app.add_middleware(
+    <span class="cls">CORSMiddleware</span>,
+    allow_origins=[<span class="str">"*"</span>],
+    allow_methods=[<span class="str">"POST"</span>, <span class="str">"GET"</span>],
+    allow_headers=[<span class="str">"*"</span>],
+)
+
+<span class="cm"># ── Routes ───────────────────────────────────────</span>
+<span class="dec">@app.get</span>(<span class="str">"/health"</span>, response_model=<span class="cls">HealthResponse</span>)
+<span class="kw">async def</span> <span class="fn">health</span>():
+    <span class="kw">return</span> {
+        <span class="str">"status"</span>: <span class="str">"ok"</span>,
+        <span class="str">"model_loaded"</span>: <span class="str">"clf"</span> <span class="kw">in</span> models,
+        <span class="str">"version"</span>: app.version
+    }
+
+<span class="dec">@app.post</span>(<span class="str">"/predict"</span>, response_model=<span class="cls">PredictResponse</span>)
+<span class="kw">async def</span> <span class="fn">predict</span>(req: <span class="cls">PredictRequest</span>,
+                   bg: BackgroundTasks):
+    <span class="kw">if</span> <span class="str">"clf"</span> <span class="kw">not in</span> models:
+        <span class="kw">raise</span> <span class="cls">HTTPException</span>(<span class="num">503</span>, <span class="str">"Model not loaded"</span>)
+    t0 = time.perf_counter()
+    out = models[<span class="str">"clf"</span>](
+        req.text,
+        return_all_scores=req.return_probs
+    )
+    latency_ms = round((time.perf_counter() - t0) * <span class="num">1000</span>, <span class="num">2</span>)
+    bg.add_task(logger.info, <span class="str">f"Inference: {latency_ms}ms"</span>)
+    <span class="kw">return</span> {
+        <span class="str">"label"</span>: out[<span class="num">0</span>][<span class="str">"label"</span>] <span class="kw">if not</span> req.return_probs <span class="kw">else</span> <span class="kw">None</span>,
+        <span class="str">"score"</span>: out[<span class="num">0</span>][<span class="str">"score"</span>] <span class="kw">if not</span> req.return_probs <span class="kw">else</span> <span class="kw">None</span>,
+        <span class="str">"all_scores"</span>: out[<span class="num">0</span>] <span class="kw">if</span> req.return_probs <span class="kw">else</span> <span class="kw">None</span>,
+        <span class="str">"latency_ms"</span>: latency_ms
+    }
+</code></pre></div>
+
+      <div id="mainPanel-schemas" class="code-body"><pre><code><span class="kw">from</span> pydantic <span class="kw">import</span> <span class="cls">BaseModel</span>, Field, field_validator
+<span class="kw">from</span> typing <span class="kw">import</span> Optional, List
+
+<span class="cm"># ── Request ───────────────────────────────────────</span>
+<span class="kw">class</span> <span class="cls">PredictRequest</span>(<span class="cls">BaseModel</span>):
+    text: str = <span class="cls">Field</span>(
+        ...,
+        min_length=<span class="num">1</span>,
+        max_length=<span class="num">10000</span>,
+        description=<span class="str">"Input text to classify"</span>
+    )
+    model_id: str = <span class="cls">Field</span>(
+        <span class="str">"distilbert-base-sentiment"</span>,
+        description=<span class="str">"Model identifier"</span>
+    )
+    max_length: int = <span class="cls">Field</span>(<span class="num">128</span>, ge=<span class="num">1</span>, le=<span class="num">512</span>)
+    return_probs: bool = <span class="cls">Field</span>(<span class="kw">False</span>)
+
+    <span class="dec">@field_validator</span>(<span class="str">"text"</span>)
+    <span class="dec">@classmethod</span>
+    <span class="kw">def</span> <span class="fn">strip_whitespace</span>(cls, v: str) -> str:
+        stripped = v.strip()
+        <span class="kw">if not</span> stripped:
+            <span class="kw">raise</span> <span class="cls">ValueError</span>(<span class="str">"text must not be blank"</span>)
+        <span class="kw">return</span> stripped
+
+<span class="cm"># ── Response ──────────────────────────────────────</span>
+<span class="kw">class</span> <span class="cls">PredictResponse</span>(<span class="cls">BaseModel</span>):
+    label: Optional[str]    <span class="cm"># "POSITIVE" / "NEGATIVE"</span>
+    score: Optional[float]  <span class="cm"># confidence 0–1</span>
+    all_scores: Optional[List[dict]]  <span class="cm"># when return_probs=True</span>
+    latency_ms: float
+
+<span class="kw">class</span> <span class="cls">HealthResponse</span>(<span class="cls">BaseModel</span>):
+    status: str
+    model_loaded: bool
+    version: str
+
+<span class="cm"># Pydantic generates OpenAPI schema from these
+# → FastAPI serves it at /openapi.json + /docs</span>
+</code></pre></div>
+
+      <div id="mainPanel-middleware" class="code-body"><pre><code><span class="kw">import</span> time
+<span class="kw">from</span> fastapi <span class="kw">import</span> Request
+<span class="kw">from</span> starlette.middleware.base <span class="kw">import</span> <span class="cls">BaseHTTPMiddleware</span>
+
+<span class="cm"># ── Latency logging middleware ─────────────────────</span>
+<span class="kw">class</span> <span class="cls">TimingMiddleware</span>(<span class="cls">BaseHTTPMiddleware</span>):
+    <span class="kw">async def</span> <span class="fn">dispatch</span>(self, request: <span class="cls">Request</span>, call_next):
+        t0 = time.perf_counter()
+        response = <span class="kw">await</span> <span class="fn">call_next</span>(request)
+        ms = round((time.perf_counter() - t0) * <span class="num">1000</span>, <span class="num">2</span>)
+        response.headers[<span class="str">"X-Process-Time-Ms"</span>] = str(ms)
+        <span class="kw">return</span> response
+
+<span class="cm"># ── Rate limiting (simple in-memory) ──────────────</span>
+<span class="kw">from</span> collections <span class="kw">import</span> defaultdict
+<span class="kw">from</span> fastapi <span class="kw">import</span> <span class="cls">HTTPException</span>
+
+request_counts: dict = defaultdict(list)
+
+<span class="kw">class</span> <span class="cls">RateLimitMiddleware</span>(<span class="cls">BaseHTTPMiddleware</span>):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, app, max_req: int = <span class="num">60</span>, window: int = <span class="num">60</span>):
+        <span class="fn">super()</span>.__init__(app)
+        self.max_req, self.window = max_req, window
+
+    <span class="kw">async def</span> <span class="fn">dispatch</span>(self, request: <span class="cls">Request</span>, call_next):
+        ip = request.client.host
+        now = time.time()
+        calls = [t <span class="kw">for</span> t <span class="kw">in</span> request_counts[ip] <span class="kw">if</span> now - t < self.window]
+        <span class="kw">if</span> len(calls) >= self.max_req:
+            <span class="kw">raise</span> <span class="cls">HTTPException</span>(<span class="num">429</span>, <span class="str">"Rate limit exceeded"</span>)
+        calls.append(now)
+        request_counts[ip] = calls
+        <span class="kw">return</span> <span class="kw">await</span> <span class="fn">call_next</span>(request)
+
+<span class="cm"># Register both on the app:</span>
+app.add_middleware(<span class="cls">TimingMiddleware</span>)
+app.add_middleware(<span class="cls">RateLimitMiddleware</span>, max_req=<span class="num">60</span>)
+</code></pre></div>
+
+      <div id="mainPanel-test" class="code-body"><pre><code><span class="kw">import</span> pytest
+<span class="kw">from</span> fastapi.testclient <span class="kw">import</span> <span class="cls">TestClient</span>
+<span class="kw">from</span> unittest.mock <span class="kw">import</span> MagicMock, patch
+
+<span class="kw">from</span> main <span class="kw">import</span> app, models
+
+<span class="cm"># Mock the model so tests don't load HuggingFace</span>
+<span class="dec">@pytest.fixture</span>(autouse=<span class="kw">True</span>)
+<span class="kw">def</span> <span class="fn">mock_model</span>():
+    mock = <span class="cls">MagicMock</span>()
+    mock.return_value = [{<span class="str">"label"</span>: <span class="str">"POSITIVE"</span>, <span class="str">"score"</span>: <span class="num">0.987</span>}]
+    models[<span class="str">"clf"</span>] = mock
+    <span class="kw">yield</span>
+    models.pop(<span class="str">"clf"</span>, <span class="kw">None</span>)
+
+client = <span class="cls">TestClient</span>(app)
+
+<span class="kw">def</span> <span class="fn">test_health</span>():
+    r = client.get(<span class="str">"/health"</span>)
+    <span class="kw">assert</span> r.status_code == <span class="num">200</span>
+    <span class="kw">assert</span> r.json()[<span class="str">"model_loaded"</span>] <span class="kw">is</span> <span class="kw">True</span>
+
+<span class="kw">def</span> <span class="fn">test_predict_ok</span>():
+    r = client.post(<span class="str">"/predict"</span>,
+                    json={<span class="str">"text"</span>: <span class="str">"Great product!"</span>})
+    <span class="kw">assert</span> r.status_code == <span class="num">200</span>
+    data = r.json()
+    <span class="kw">assert</span> data[<span class="str">"label"</span>] == <span class="str">"POSITIVE"</span>
+    <span class="kw">assert</span> <span class="num">0</span> < data[<span class="str">"score"</span>] <= <span class="num">1</span>
+
+<span class="kw">def</span> <span class="fn">test_predict_empty_text</span>():
+    r = client.post(<span class="str">"/predict"</span>, json={<span class="str">"text"</span>: <span class="str">"  "</span>})
+    <span class="kw">assert</span> r.status_code == <span class="num">422</span>  <span class="cm"># Pydantic validation</span>
+
+<span class="kw">def</span> <span class="fn">test_predict_missing_text</span>():
+    r = client.post(<span class="str">"/predict"</span>, json={})
+    <span class="kw">assert</span> r.status_code == <span class="num">422</span>
+
+<span class="kw">def</span> <span class="fn">test_latency_header</span>():
+    r = client.get(<span class="str">"/health"</span>)
+    <span class="kw">assert</span> <span class="str">"x-process-time-ms"</span> <span class="kw">in</span> r.headers
+</code></pre></div>
+
+      <div id="mainPanel-compose" class="code-body"><pre><code><span class="cm"># docker-compose.yml</span>
+version: <span class="str">"3.9"</span>
+
+services:
+  api:
+    build: .
+    ports:
+      - <span class="str">"8000:8000"</span>
+    environment:
+      - MODEL_ID=distilbert-base-uncased-finetuned-sst-2-english
+      - WORKERS=2
+    volumes:
+      - model_cache:/root/.cache/huggingface
+    restart: unless-stopped
+    healthcheck:
+      test: [<span class="str">"CMD"</span>, <span class="str">"curl"</span>, <span class="str">"-f"</span>, <span class="str">"http://localhost:8000/health"</span>]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s   <span class="cm"># wait for model load</span>
+
+  <span class="cm"># Optional: Redis for rate limiting + caching</span>
+  redis:
+    image: redis:7-alpine
+    ports:
+      - <span class="str">"6379:6379"</span>
+    restart: unless-stopped
+
+volumes:
+  model_cache:    <span class="cm"># persist HuggingFace cache across restarts</span>
+
+<span class="cm"># Build & run:
+#   docker compose up --build
+# Scale the API (multiple replicas):
+#   docker compose up --scale api=3</span>
+</code></pre></div>
+
+      <div id="mainPanel-railway" class="code-body"><pre><code><span class="cm"># railway.toml — Railway.app deployment config</span>
+[build]
+builder = <span class="str">"DOCKERFILE"</span>
+dockerfilePath = <span class="str">"./Dockerfile"</span>
+
+[deploy]
+startCommand = <span class="str">"uvicorn main:app --host 0.0.0.0 --port $PORT"</span>
+healthcheckPath = <span class="str">"/health"</span>
+healthcheckTimeout = <span class="num">60</span>  <span class="cm"># model load time</span>
+restartPolicyType = <span class="str">"ON_FAILURE"</span>
+restartPolicyMaxRetries = <span class="num">3</span>
+
+<span class="cm">## ─────────────────────────────────────────────────
+## Alternative: Modal.com (serverless GPU inference)
+## ─────────────────────────────────────────────────</span>
+
+<span class="kw">import</span> modal
+
+app = modal.App(<span class="str">"ekos-inference"</span>)
+image = (modal.Image.debian_slim()
+         .pip_install(<span class="str">"fastapi"</span>, <span class="str">"transformers"</span>, <span class="str">"torch"</span>))
+
+<span class="dec">@app.function</span>(image=image, gpu=<span class="str">"T4"</span>, keep_warm=<span class="num">1</span>)
+<span class="dec">@modal.web_endpoint</span>(method=<span class="str">"POST"</span>)
+<span class="kw">def</span> <span class="fn">predict</span>(text: str) -> dict:
+    <span class="kw">from</span> transformers <span class="kw">import</span> pipeline
+    model = <span class="fn">pipeline</span>(<span class="str">"text-classification"</span>)
+    <span class="kw">return</span> model(text)[<span class="num">0</span>]
+
+<span class="cm"># Deploy: modal deploy main.py
+# Keep 1 warm GPU replica → cold start eliminated</span>
+</code></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- DEPLOYMENT OPTIONS -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Where to Deploy</div>
+    <h2 class="section-title">Deployment Platforms Compared</h2>
+    <p class="section-sub">From zero to production — pick the right platform for your scale, budget, and GPU requirements.</p>
+
+    <div class="grid2">
+      <div class="deploy-card" style="border-top-color: var(--teal);">
+        <h3>🚄 Railway</h3>
+        <p>Push-to-deploy from GitHub. Dockerfile support, persistent volumes, custom domains. Best for CPU inference at small-to-medium scale. Free tier available.</p>
+        <div class="deploy-tags">
+          <span class="tag tag-green">Free tier</span>
+          <span class="tag tag-green">Dockerfile</span>
+          <span class="tag tag-gold">CPU only</span>
+          <span class="tag tag-blue">~$5–20/mo</span>
+        </div>
+      </div>
+      <div class="deploy-card" style="border-top-color: var(--purple);">
+        <h3>⚡ Modal</h3>
+        <p>Serverless GPU inference with cold start mitigation via <code class="mono">keep_warm</code>. Pay per second of compute. Ideal for burst workloads or GPU-required models.</p>
+        <div class="deploy-tags">
+          <span class="tag tag-purple">GPU T4/A100</span>
+          <span class="tag tag-green">Pay-per-use</span>
+          <span class="tag tag-blue">Keep-warm</span>
+          <span class="tag tag-gold">No idle cost</span>
+        </div>
+      </div>
+      <div class="deploy-card" style="border-top-color: var(--blue);">
+        <h3>☁️ AWS ECS / Fargate</h3>
+        <p>Fully managed containers. Fargate = serverless; ECS on EC2 = persistent GPU (g4dn.xlarge). Best for compliance-sensitive or high-volume production workloads.</p>
+        <div class="deploy-tags">
+          <span class="tag tag-blue">GPU EC2</span>
+          <span class="tag tag-green">Auto-scaling</span>
+          <span class="tag tag-red">Complex setup</span>
+          <span class="tag tag-gold">$50–500+/mo</span>
+        </div>
+      </div>
+      <div class="deploy-card" style="border-top-color: var(--coral);">
+        <h3>🤗 HuggingFace Spaces</h3>
+        <p>Zero-config deploy directly from a HF repo. A100 GPU Spaces available. Great for demos, open-source models, and community-facing apps with built-in auth.</p>
+        <div class="deploy-tags">
+          <span class="tag tag-green">Free CPU tier</span>
+          <span class="tag tag-purple">GPU Spaces</span>
+          <span class="tag tag-blue">HF ecosystem</span>
+          <span class="tag tag-gold">$0–$20/mo</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHEAT SHEET -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Quick Reference</div>
+    <h2 class="section-title">FastAPI ML Cheat Sheet</h2>
+    <div class="cheat-grid">
+      <div class="cheat-card">
+        <h4>Essential Files</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code class="mono" style="font-size:0.8rem;">main.py</code> — FastAPI app + routes</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code class="mono" style="font-size:0.8rem;">schemas.py</code> — Pydantic request/response models</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code class="mono" style="font-size:0.8rem;">Dockerfile</code> — container spec</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code class="mono" style="font-size:0.8rem;">requirements.txt</code> — pinned deps</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code class="mono" style="font-size:0.8rem;">.env</code> — secrets (never in image)</div>
+      </div>
+      <div class="cheat-card">
+        <h4>Model Loading Rules</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Always load in <code class="mono" style="font-size:0.8rem;">lifespan()</code>, not at module level</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Use global dict or <code class="mono" style="font-size:0.8rem;">@lru_cache</code> — never per-request</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Move model to GPU in lifespan, not in handler</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Set <code class="mono" style="font-size:0.8rem;">start_period</code> in health check ≥ load time</div>
+      </div>
+      <div class="cheat-card">
+        <h4>Pydantic Patterns</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Use <code class="mono" style="font-size:0.8rem;">Field(ge=0, le=512)</code> for numeric bounds</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Validators strip and normalize before hitting model</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Return 422 automatically on type/validation errors</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code class="mono" style="font-size:0.8rem;">response_model=</code> filters and validates output too</div>
+      </div>
+      <div class="cheat-card">
+        <h4>Performance Tips</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Use <code class="mono" style="font-size:0.8rem;">--workers 2</code> for CPU; 1 per GPU for GPU</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Batch requests with a queue (e.g. Celery + Redis)</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>torch.no_grad() in inference — saves 30–40% memory</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Cache model outputs for repeated identical inputs</div>
+      </div>
+      <div class="cheat-card">
+        <h4>Docker Best Practices</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span>requirements.txt before source code for layer caching</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Non-root USER in final image — security requirement</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code class="mono" style="font-size:0.8rem;">python:3.11-slim</code> not full — saves ~600MB</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Mount HF cache as volume — avoid re-downloading</div>
+      </div>
+      <div class="cheat-card">
+        <h4>Key URLs (local dev)</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code class="mono" style="font-size:0.8rem;">/docs</code> — Swagger UI, try endpoints</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code class="mono" style="font-size:0.8rem;">/redoc</code> — ReDoc reference docs</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code class="mono" style="font-size:0.8rem;">/openapi.json</code> — raw OpenAPI schema</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code class="mono" style="font-size:0.8rem;">/health</code> — load balancer probe target</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Chapter 10 — FastAPI Deployment · AI Training Workbook · Jawnvion LLC
+  </div>
+</footer>
+
+<script>
+/* ── tab switching ── */
+function switchCode(panelId, key, btn) {
+  btn.closest('.code-box').querySelectorAll('.code-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  btn.closest('.code-box').querySelectorAll('.code-body').forEach(p => p.classList.remove('active'));
+  document.getElementById(panelId + '-' + key).classList.add('active');
+}
+
+/* ── request flow ── */
+const flowDescriptions = [
+  '<strong style="color:var(--coral)">Client Request</strong> — Your client (browser, mobile app, another service) sends an HTTP POST to <code>/predict</code> with a JSON body. The ASGI server (uvicorn) receives the raw bytes.',
+  '<strong style="color:var(--coral)">Middleware Stack</strong> — CORS headers are checked, API keys validated, rate limit counted. Bad requests are rejected here before any model code runs. Timing middleware stamps <code>t0</code>.',
+  '<strong style="color:var(--coral)">Pydantic Validation</strong> — FastAPI deserializes the JSON body against your <code>PredictRequest</code> schema. Missing fields? Wrong type? Returns 422 Unprocessable Entity with field-level error detail.',
+  '<strong style="color:var(--coral)">Route Handler</strong> — Your <code>async def predict()</code> function runs. It checks that the model is loaded, then awaits the inference call. BackgroundTasks registered here run after the response is sent.',
+  '<strong style="color:var(--coral)">Model Inference</strong> — The tokenizer encodes the text, the model forward pass runs (on CPU or GPU), logits → softmax → label + score. This is the dominant latency — everything else is microseconds.',
+  '<strong style="color:var(--coral)">Serialize Response</strong> — The result dict is validated against <code>PredictResponse</code> by Pydantic, then serialized to JSON. <code>response_model=</code> strips any extra fields before they leave the server.',
+  '<strong style="color:var(--coral)">Client Response</strong> — HTTP 200 with the JSON payload and timing header (<code>X-Process-Time-Ms</code>) delivered. Connection closed (or kept alive for HTTP/2). Total wall-clock: ~15ms on CPU, ~5ms on GPU.'
+];
+let currentStep = -1, animTimer = null;
+
+function selectStep(idx) {
+  clearInterval(animTimer);
+  document.getElementById('animateBtn').classList.remove('running');
+  setStep(idx);
+}
+function setStep(idx) {
+  currentStep = idx;
+  for (let i = 0; i < 7; i++) {
+    document.getElementById('fi' + i).classList.toggle('active', i === idx);
+    document.getElementById('fl' + i).classList.toggle('active', i === idx);
+    if (i < 6) document.getElementById('fa' + i).classList.toggle('active', i === idx);
+  }
+  document.getElementById('flowDesc').innerHTML = idx >= 0 ? flowDescriptions[idx] : 'Click a step above or press Animate.';
+}
+function animateFlow() {
+  clearInterval(animTimer);
+  setStep(0);
+  let step = 0;
+  document.getElementById('animateBtn').classList.add('running');
+  animTimer = setInterval(() => {
+    step++;
+    if (step >= 7) {
+      clearInterval(animTimer);
+      document.getElementById('animateBtn').classList.remove('running');
+      return;
+    }
+    setStep(step);
+  }, 900);
+}
+function resetFlow() {
+  clearInterval(animTimer);
+  document.getElementById('animateBtn').classList.remove('running');
+  setStep(-1);
+}
+
+/* ── API playground ── */
+function sendRequest() {
+  const text = document.getElementById('pgText').value.trim();
+  const model = document.getElementById('pgModel').value;
+  const maxLen = +document.getElementById('pgMaxLen').value;
+  const probs = document.getElementById('pgProbs').value === 'true';
+  const btn = document.getElementById('pgSendBtn');
+  const statusEl = document.getElementById('pgStatus');
+  const respEl = document.getElementById('pgResponse');
+
+  if (!text) {
+    statusEl.innerHTML = '<span class="status-badge status-422">422 Unprocessable Entity</span>';
+    respEl.textContent = JSON.stringify({
+      detail: [{
+        type: "string_too_short",
+        loc: ["body", "text"],
+        msg: "text must not be blank",
+        input: "  "
+      }]
+    }, null, 2);
+    return;
+  }
+  if (maxLen < 1 || maxLen > 512) {
+    statusEl.innerHTML = '<span class="status-badge status-422">422 Unprocessable Entity</span>';
+    respEl.textContent = JSON.stringify({
+      detail: [{ type: "less_than_equal", loc: ["body", "max_length"], msg: "Input should be less than or equal to 512" }]
+    }, null, 2);
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Inferring…';
+  respEl.textContent = 'Waiting…';
+  statusEl.innerHTML = '';
+
+  // Simulate realistic latency
+  const latency = 45 + Math.floor(Math.random() * 80);
+  setTimeout(() => {
+    const isPositive = /great|good|excel|amaz|love|best|fantastic|wonderful|outstanding|superb|perfect|brilliant/i.test(text);
+    const isNegative = /bad|terrible|awful|worst|hate|horrible|poor|disappointing|useless|broken|fail/i.test(text);
+    const label = isNegative ? 'NEGATIVE' : 'POSITIVE';
+    const score = isPositive ? 0.9 + Math.random() * 0.09 :
+                  isNegative ? 0.85 + Math.random() * 0.13 :
+                               0.55 + Math.random() * 0.35;
+    const clampedScore = Math.min(0.999, score);
+
+    let response;
+    if (probs) {
+      response = {
+        label: null,
+        score: null,
+        all_scores: [
+          { label: 'POSITIVE', score: clampedScore },
+          { label: 'NEGATIVE', score: +(1 - clampedScore).toFixed(4) }
+        ],
+        latency_ms: latency
+      };
+    } else {
+      response = {
+        label,
+        score: +clampedScore.toFixed(4),
+        all_scores: null,
+        latency_ms: latency
+      };
+    }
+
+    statusEl.innerHTML = `<span class="status-badge status-200">200 OK</span><span class="latency-badge">${latency}ms</span>`;
+    respEl.textContent = JSON.stringify(response, null, 2);
+    btn.disabled = false;
+    btn.textContent = 'Send Request';
+  }, latency + 200);
+}
+
+function sendHealth() {
+  const t = Date.now();
+  document.getElementById('healthResponse').textContent = 'Waiting…';
+  document.getElementById('healthStatus').innerHTML = '';
+  setTimeout(() => {
+    const ms = Date.now() - t;
+    document.getElementById('healthStatus').innerHTML = `<span class="status-badge status-200">200 OK</span><span class="latency-badge">${ms}ms</span>`;
+    document.getElementById('healthResponse').textContent = JSON.stringify({
+      status: "ok",
+      model_loaded: true,
+      version: "1.0.0"
+    }, null, 2);
+  }, 80 + Math.random() * 40);
+}
+
+/* ── model loading patterns ── */
+function switchPattern(key, btn) {
+  document.querySelectorAll('.pattern-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.pattern-panel').forEach(p => {
+    p.classList.remove('active');
+    p.style.display = 'none';
+  });
+  const el = document.getElementById('patternPanel-' + key);
+  el.classList.add('active');
+  el.style.display = '';
+}
+// init display
+document.querySelectorAll('.pattern-panel').forEach(p => {
+  if (!p.classList.contains('active')) p.style.display = 'none';
+});
+
+/* ── docker layers ── */
+const layerDetails = [
+  '<strong style="color:var(--coral)">COPY . .</strong> — Source code goes last. This is the most frequently changed layer; by placing it last, all the expensive layers above (like pip install) stay cached when you only change application code. Rebuilds take seconds instead of minutes.',
+  '<strong style="color:var(--coral)">RUN pip install -r requirements.txt</strong> — This is your heaviest layer — PyTorch alone is ~2 GB. It\'s placed before COPY . . but after COPY requirements.txt so it\'s cached until requirements change. <code>--no-cache-dir</code> prevents doubling the layer size.',
+  '<strong style="color:var(--coral)">COPY requirements.txt .</strong> — Copy only the requirements file first. Docker checks if this file changed before deciding whether to re-run pip install. Without this, any source change would invalidate the pip layer.',
+  '<strong style="color:var(--coral)">RUN useradd -m appuser</strong> — Never run containers as root. Most cloud platforms and security scanners require a non-root user. This layer creates a dedicated app user with a home directory.',
+  '<strong style="color:var(--coral)">WORKDIR /app</strong> — Sets the working directory for all subsequent instructions. Also creates the directory if it doesn\'t exist. All relative paths in COPY, RUN, and CMD resolve from here.',
+  '<strong style="color:var(--coral)">FROM python:3.11-slim</strong> — The base image. <code>slim</code> strips docs, test files, and unused locales — ~130MB vs ~900MB for the full image. For GPU models, use <code>nvidia/cuda:12.1-runtime-slim</code> instead.'
+];
+function selectLayer(idx) {
+  document.querySelectorAll('.docker-layer').forEach((l, i) => l.classList.toggle('highlight', i === idx));
+  document.getElementById('dockerDetail').innerHTML = layerDetails[idx];
+}
+
+</script>
+
+<!-- JAWNVION FOOTER -->
+<footer style="border-top:1px solid #1A2E4A;padding:32px 28px;margin-top:80px;text-align:center;background:#080E1B;">
+  <div style="max-width:960px;margin:0 auto;">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.15em;color:#00C9A7;text-transform:uppercase;margin-bottom:8px;">JAWNVION™ LLC</div>
+    <div style="font-size:13px;color:#5E7A9A;line-height:1.6;">
+      AI Engineer's Workbook — Interactive Lab Companion<br>
+      © 2026 JAWNVION LLC. All Rights Reserved. Unauthorized reproduction or redistribution is prohibited.<br>
+      <a href="mailto:peter@jawnvion.com" style="color:#00C9A7;text-decoration:none;">peter@jawnvion.com</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

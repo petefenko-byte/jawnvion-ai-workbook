@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Chapter 1 — How AI Learns</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* ── Reset & Tokens ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #080E1B;
+  --bg2:       #0F1829;
+  --bg3:       #162035;
+  --accent:    #00C9A7;
+  --accent2:   #00A890;
+  --blue:      #8099FF;
+  --red:       #FF6B6B;
+  --gold:      #FFB44F;
+  --text:      #E8EFF8;
+  --muted:     #6A8CAF;
+  --border:    rgba(255,255,255,0.06);
+  --glow:      0 0 40px rgba(0,201,167,0.15);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ── Typography ── */
+h1, h2, h3 { line-height: 1.2; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* ── Nav progress bar ── */
+#progress-bar {
+  position: fixed; top: 0; left: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--blue));
+  width: 0%; z-index: 100;
+  transition: width 0.1s linear;
+}
+
+/* ── Chapter nav ── */
+.chapter-nav {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 6px; z-index: 99;
+  background: rgba(8,14,27,0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  padding: 6px 10px;
+}
+.nav-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  cursor: pointer; transition: all 0.25s;
+  border: none;
+}
+.nav-dot.active { background: var(--accent); transform: scale(1.3); }
+.nav-dot:hover { background: rgba(0,201,167,0.5); }
+
+/* ── Sections ── */
+.section {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 80px 24px;
+  position: relative;
+}
+
+.section-inner {
+  width: 100%; max-width: 860px;
+  display: flex; flex-direction: column;
+  gap: 40px;
+}
+
+/* ── Section tag ── */
+.sec-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--accent);
+  padding: 5px 12px;
+  border: 1px solid rgba(0,201,167,0.3);
+  border-radius: 20px;
+  width: fit-content;
+}
+.sec-tag .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+/* ── Heading styles ── */
+.big-heading {
+  font-size: clamp(32px, 6vw, 58px);
+  font-weight: 800;
+  color: var(--text);
+}
+.big-heading span { color: var(--accent); }
+.big-heading .dim { color: var(--muted); }
+
+.section-heading {
+  font-size: clamp(24px, 4vw, 38px);
+  font-weight: 800;
+}
+
+.lead {
+  font-size: 18px;
+  color: var(--muted);
+  line-height: 1.7;
+  max-width: 600px;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 32px;
+}
+.card-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 640px) {
+  .card-row { grid-template-columns: 1fr; }
+}
+
+/* ── Reveal animation ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal:nth-child(2) { transition-delay: 0.1s; }
+.reveal:nth-child(3) { transition-delay: 0.2s; }
+.reveal:nth-child(4) { transition-delay: 0.3s; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SECTION 0 — HERO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#s0 { background: var(--bg); text-align: center; }
+#s0::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 50% 40%, rgba(0,201,167,0.1) 0%, transparent 65%);
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--accent); border: 1px solid rgba(0,201,167,0.35);
+  padding: 5px 14px; border-radius: 4px; margin-bottom: 28px;
+}
+.hero-sub {
+  font-size: 18px; color: var(--muted); max-width: 520px;
+  margin: 0 auto 40px;
+}
+.scroll-hint {
+  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: var(--muted); font-size: 12px;
+  animation: bob 2.5s ease-in-out infinite;
+}
+@keyframes bob {
+  0%,100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(8px); }
+}
+.scroll-hint svg { opacity: 0.4; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SECTION 1 — The Three Layers
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#s1 { background: var(--bg); }
+
+.layers-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  align-items: center;
+}
+@media (max-width: 680px) { .layers-layout { grid-template-columns: 1fr; } }
+
+.layers-diagram {
+  aspect-ratio: 1;
+  max-width: 340px;
+  width: 100%;
+  position: relative;
+}
+.layers-diagram svg { width: 100%; height: 100%; }
+
+.layer-cards { display: flex; flex-direction: column; gap: 14px; }
+
+.layer-card {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 16px 18px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.25s, background 0.25s;
+}
+.layer-card:hover { border-color: rgba(0,201,167,0.35); background: var(--bg3); }
+.layer-card.ai-card:hover  { border-color: rgba(0,201,167,0.2); }
+.layer-card.ml-card:hover  { border-color: rgba(128,153,255,0.4); }
+.layer-card.dl-card        { border-color: rgba(0,201,167,0.3); background: var(--bg3); }
+
+.lc-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.lc-icon.ai { background: rgba(0,201,167,0.1); }
+.lc-icon.ml { background: rgba(128,153,255,0.1); }
+.lc-icon.dl { background: rgba(0,201,167,0.18); }
+
+.lc-text h4 { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.lc-text p  { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.lc-text .ai-c { color: var(--accent); }
+.lc-text .ml-c { color: var(--blue); }
+.lc-text .dl-c { color: var(--accent); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SECTION 2 — What is a Model?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#s2 { background: var(--bg); }
+
+.weights-demo {
+  display: flex; flex-direction: column; gap: 20px;
+}
+.weight-row {
+  display: flex; align-items: center; gap: 16px;
+}
+.w-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; color: var(--muted);
+  width: 80px; flex-shrink: 0;
+}
+.w-bar-track {
+  flex: 1; height: 10px; background: var(--bg3);
+  border-radius: 999px; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.w-bar {
+  height: 100%; border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1);
+}
+.w-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; width: 52px; text-align: right;
+  color: var(--text);
+}
+
+.model-equation {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px 28px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  text-align: center;
+  color: var(--muted);
+  line-height: 2;
+}
+.model-equation .hl { color: var(--accent); font-weight: 600; }
+.model-equation .hl2 { color: var(--blue); font-weight: 600; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SECTION 3 — Loss Functions
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#s3 { background: var(--bg); }
+
+.loss-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 680px) { .loss-layout { grid-template-columns: 1fr; } }
+
+.target-demo {
+  aspect-ratio: 1;
+  max-width: 300px;
+  width: 100%;
+  position: relative;
+}
+.target-demo svg { width: 100%; height: 100%; }
+
+.loss-examples { display: flex; flex-direction: column; gap: 14px; }
+
+.loss-example {
+  padding: 16px 18px;
+  border-radius: 12px;
+  border-left: 3px solid;
+  background: var(--bg2);
+}
+.loss-example.good { border-color: var(--accent); }
+.loss-example.ok   { border-color: var(--gold); }
+.loss-example.bad  { border-color: var(--red); }
+
+.le-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.le-header span { font-size: 13px; font-weight: 700; }
+.le-loss {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; font-weight: 600;
+}
+.loss-example.good .le-loss { color: var(--accent); }
+.loss-example.ok   .le-loss { color: var(--gold); }
+.loss-example.bad  .le-loss { color: var(--red); }
+.le-desc { font-size: 12px; color: var(--muted); }
+
+.mse-formula {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--muted);
+}
+.mse-formula .f-title {
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
+}
+.mse-formula .formula {
+  font-size: 15px;
+  color: var(--text);
+  text-align: center;
+  margin: 4px 0;
+}
+.mse-formula .formula .r { color: var(--red); }
+.mse-formula .formula .p { color: var(--accent); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SECTION 4 — Gradient Descent (INTERACTIVE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#s4 { background: var(--bg); }
+
+.gd-layout {
+  display: flex; flex-direction: column; gap: 24px;
+}
+
+.gd-canvas-wrap {
+  position: relative;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 8px;
+  overflow: hidden;
+}
+#gd-canvas {
+  display: block;
+  width: 100%;
+  border-radius: 10px;
+}
+
+.gd-controls {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+
+.gd-btn {
+  padding: 12px 28px;
+  border-radius: 10px;
+  border: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.gd-btn.primary {
+  background: var(--accent);
+  color: #0B1221;
+}
+.gd-btn.primary:hover { background: var(--accent2); transform: translateY(-1px); }
+.gd-btn.primary:active { transform: translateY(0); }
+.gd-btn.secondary {
+  background: var(--bg3);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.gd-btn.secondary:hover { color: var(--text); border-color: rgba(0,201,167,0.3); }
+.gd-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.gd-stats {
+  display: flex; gap: 20px; flex-wrap: wrap;
+}
+.gd-stat {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 18px;
+  min-width: 110px;
+}
+.gd-stat .stat-label {
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.gd-stat .stat-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px; font-weight: 600;
+  color: var(--accent);
+}
+
+.gd-log {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  min-height: 48px;
+  line-height: 1.6;
+  max-height: 80px;
+  overflow-y: auto;
+}
+.gd-log .log-entry { margin-bottom: 2px; }
+.gd-log .log-entry .step-num { color: var(--blue); }
+.gd-log .log-entry .loss-val { color: var(--accent); }
+.gd-log .log-entry .converged { color: var(--gold); font-weight: 600; }
+
+/* LR slider */
+.lr-row {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 13px;
+}
+.lr-row label {
+  color: var(--muted); white-space: nowrap;
+  font-size: 12px;
+}
+.lr-row .lr-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; color: var(--accent);
+  width: 40px;
+}
+input[type=range] {
+  flex: 1;
+  accent-color: var(--accent);
+  height: 4px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SECTION 5 — The Loop
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#s5 { background: var(--bg); }
+
+.loop-diagram {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  aspect-ratio: 1.2;
+}
+.loop-diagram svg { width: 100%; height: 100%; }
+
+.loop-steps {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 8px;
+}
+@media (max-width: 580px) { .loop-steps { grid-template-columns: 1fr; } }
+
+.loop-step {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.ls-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 600;
+  color: #0B1221;
+  background: var(--accent);
+  width: 24px; height: 24px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.ls-text h4 { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.ls-text p  { font-size: 12px; color: var(--muted); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   SECTION 6 — Finish
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#s6 {
+  background: var(--bg);
+  text-align: center;
+}
+#s6::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 60%, rgba(0,201,167,0.08) 0%, transparent 65%);
+  pointer-events: none;
+}
+.next-card {
+  background: var(--bg2);
+  border: 1px solid rgba(0,201,167,0.25);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: left;
+  display: flex; gap: 20px; align-items: center;
+}
+.next-badge {
+  width: 52px; height: 52px; border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; font-weight: 600; color: #0B1221;
+  flex-shrink: 0;
+}
+.next-text h3 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.next-text p  { font-size: 13px; color: var(--muted); }
+
+/* ── Divider line ── */
+.divider {
+  width: 60px; height: 3px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  border-radius: 2px;
+}
+
+/* ── Footer ── */
+footer {
+  background: #04080F;
+  padding: 28px 40px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+}
+footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body><div style="background:linear-gradient(135deg,#060d1e 0%,#0d2240 100%);color:#fff;padding:32px 40px 24px;font-family:'Segoe UI',Arial,sans-serif;border-bottom:4px solid #4fc3f7;margin-bottom:0;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div style="font-size:12px;color:#4fc3f7;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">JAWNVION LLC &nbsp;·&nbsp; LLM Engineering Series</div>
+      <div style="font-size:28px;font-weight:900;line-height:1.1;margin-bottom:6px;">17 Interactive Colab Labs</div>
+      <div style="font-size:14px;color:#8ab8d4;">Run in-browser &nbsp;·&nbsp; No setup required &nbsp;·&nbsp; Production LLM skills</div>
+    </div>
+    <div style="text-align:right;font-size:12px;color:#6090b0;line-height:1.8;">
+      <div>www.jawnvion.com</div>
+      <div>peter@jawnvion.com</div>
+      <div>© 2026 JAWNVION LLC</div>
+    </div>
+  </div>
+</div>
+
+
+<div id="progress-bar"></div>
+
+<!-- Chapter nav dots -->
+<nav class="chapter-nav" aria-label="Page sections">
+  <button class="nav-dot active" onclick="scrollTo(0)" title="Intro"></button>
+  <button class="nav-dot" onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})" title="Three Layers"></button>
+  <button class="nav-dot" onclick="document.getElementById('s2').scrollIntoView({behavior:'smooth'})" title="What is a Model"></button>
+  <button class="nav-dot" onclick="document.getElementById('s3').scrollIntoView({behavior:'smooth'})" title="Loss Functions"></button>
+  <button class="nav-dot" onclick="document.getElementById('s4').scrollIntoView({behavior:'smooth'})" title="Gradient Descent"></button>
+  <button class="nav-dot" onclick="document.getElementById('s5').scrollIntoView({behavior:'smooth'})" title="Training Loop"></button>
+  <button class="nav-dot" onclick="document.getElementById('s6').scrollIntoView({behavior:'smooth'})" title="What's Next"></button>
+</nav>
+
+<!-- ════════════════ S0: HERO ════════════════ -->
+<section class="section" id="s0">
+  <div class="section-inner" style="text-align:center; align-items:center;">
+    <div class="reveal">
+      <div class="hero-badge">JAWNVION LLC · AI Training Workbook · Chapter 1</div>
+    </div>
+    <h1 class="big-heading reveal">
+      How Does AI<br><span>Actually Learn?</span>
+    </h1>
+    <p class="hero-sub reveal">
+      A plain-English visual walkthrough — from "what even is AI?" to the exact math
+      your computer runs to get smarter with every example it sees.
+    </p>
+    <div class="reveal" style="display:flex; gap:32px; justify-content:center; flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:600; color:var(--accent);">3</div>
+        <div style="font-size:12px; color:var(--muted);">Core Concepts</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:600; color:var(--blue);">1</div>
+        <div style="font-size:12px; color:var(--muted);">Live Demo</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:600; color:var(--gold);">0</div>
+        <div style="font-size:12px; color:var(--muted);">Math required</div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll to explore</span>
+    <svg width="16" height="24" viewBox="0 0 16 24" fill="none">
+      <path d="M8 5v14M3 14l5 5 5-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ════════════════ S1: THREE LAYERS ════════════════ -->
+<section class="section" id="s1">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="sec-tag"><span class="dot"></span>Concept 1 of 3</div>
+    </div>
+    <h2 class="section-heading reveal">
+      AI, Machine Learning,<br>and Deep Learning<br><span style="color:var(--muted);font-weight:400;font-size:0.65em">— they're not the same thing</span>
+    </h2>
+    <div class="divider reveal"></div>
+    <div class="layers-layout reveal">
+      <div class="layers-diagram">
+        <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" fill="none">
+          <!-- AI outer ring -->
+          <circle cx="150" cy="150" r="138" fill="rgba(0,201,167,0.04)" stroke="rgba(0,201,167,0.2)" stroke-width="1.5" stroke-dasharray="6 4"/>
+          <text x="150" y="30" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="13" font-weight="700" fill="rgba(0,201,167,0.45)">ARTIFICIAL INTELLIGENCE</text>
+          <text x="150" y="45" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="10" fill="rgba(0,201,167,0.3)">any technique that makes computers "smart"</text>
+          <!-- ML middle ring -->
+          <circle cx="150" cy="160" r="96" fill="rgba(128,153,255,0.05)" stroke="rgba(128,153,255,0.3)" stroke-width="1.5"/>
+          <text x="150" y="82" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="12" font-weight="700" fill="rgba(128,153,255,0.7)">MACHINE LEARNING</text>
+          <text x="150" y="96" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="9" fill="rgba(128,153,255,0.4)">learns from examples</text>
+          <!-- DL inner -->
+          <circle cx="150" cy="168" r="56" fill="rgba(0,201,167,0.12)" stroke="#00C9A7" stroke-width="2"/>
+          <text x="150" y="162" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="13" font-weight="800" fill="#00C9A7">DEEP</text>
+          <text x="150" y="178" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="13" font-weight="800" fill="#00C9A7">LEARNING</text>
+          <text x="150" y="194" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="8" fill="rgba(0,201,167,0.55)">neural networks</text>
+          <!-- Corner labels -->
+          <text x="25" y="255" font-family="Plus Jakarta Sans,sans-serif" font-size="9" fill="rgba(0,201,167,0.25)">rule-based systems</text>
+          <text x="180" y="255" font-family="Plus Jakarta Sans,sans-serif" font-size="9" fill="rgba(128,153,255,0.3)">decision trees</text>
+          <!-- Animated glow -->
+          <circle cx="150" cy="168" r="58" fill="none" stroke="rgba(0,201,167,0.15)" stroke-width="8">
+            <animate attributeName="r" values="56;64;56" dur="3s" repeatCount="indefinite"/>
+            <animate attributeName="stroke-opacity" values="0.15;0;0.15" dur="3s" repeatCount="indefinite"/>
+          </circle>
+        </svg>
+      </div>
+
+      <div class="layer-cards">
+        <div class="layer-card ai-card">
+          <div class="lc-icon ai">🧠</div>
+          <div class="lc-text">
+            <h4><span class="ai-c">Artificial Intelligence</span></h4>
+            <p>Any technique that makes a computer do something that normally requires human intelligence — from chess engines to spell-checkers to voice assistants.</p>
+          </div>
+        </div>
+        <div class="layer-card ml-card">
+          <div class="lc-icon ml">📊</div>
+          <div class="lc-text">
+            <h4><span class="ml-c">Machine Learning</span></h4>
+            <p>A subset of AI where the computer <em>learns rules from data</em> instead of having rules written by hand. You show it 1,000 emails marked spam/not-spam — it figures out the pattern.</p>
+          </div>
+        </div>
+        <div class="layer-card dl-card">
+          <div class="lc-icon dl">⚡</div>
+          <div class="lc-text">
+            <h4><span class="dl-c">Deep Learning</span></h4>
+            <p>A subset of ML using <em>neural networks</em> — layers of math inspired by the brain. This is what powers LLMs like ChatGPT, image recognition, speech-to-text, and everything in this course.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card reveal" style="background:var(--bg3); border-color:rgba(0,201,167,0.15);">
+      <p style="font-size:14px; color:var(--muted); font-style:italic;">
+        💡 <strong style="color:var(--text);">One-sentence version:</strong> AI is the goal, machine learning is the method, deep learning is the most powerful tool for that method. Every chapter in this course lives inside the innermost circle.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ S2: WHAT IS A MODEL? ════════════════ -->
+<section class="section" id="s2">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="sec-tag"><span class="dot"></span>Before we can talk about learning…</div>
+    </div>
+    <h2 class="section-heading reveal">What Is a <span style="color:var(--accent)">Model</span>,<br>Exactly?</h2>
+    <div class="divider reveal"></div>
+
+    <div class="card reveal">
+      <p style="font-size:15px; line-height:1.8; color:var(--muted);">
+        Think of a model as a <strong style="color:var(--text)">machine with thousands of dials</strong>. Each dial (called a <strong style="color:var(--accent)">weight</strong>) changes how strongly the machine responds to a piece of input. At first, all the dials are set randomly. Training is simply the process of <strong style="color:var(--text)">slowly turning each dial in the right direction</strong> until the machine's output is useful.
+      </p>
+    </div>
+
+    <div class="reveal">
+      <p style="font-size:12px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:16px; font-family:'JetBrains Mono',monospace;">
+        Model weights — before training (random)
+      </p>
+      <div id="weights-demo" class="weights-demo card">
+        <div class="weight-row">
+          <span class="w-label">w₁ (shape)</span>
+          <div class="w-bar-track"><div class="w-bar" id="wb1" style="width:73%; background:var(--accent);"></div></div>
+          <span class="w-val" id="wv1">0.73</span>
+        </div>
+        <div class="weight-row">
+          <span class="w-label">w₂ (color)</span>
+          <div class="w-bar-track"><div class="w-bar" id="wb2" style="width:22%; background:var(--blue);"></div></div>
+          <span class="w-val" id="wv2">0.22</span>
+        </div>
+        <div class="weight-row">
+          <span class="w-label">w₃ (texture)</span>
+          <div class="w-bar-track"><div class="w-bar" id="wb3" style="width:58%; background:var(--gold);"></div></div>
+          <span class="w-val" id="wv3">0.58</span>
+        </div>
+        <div class="weight-row">
+          <span class="w-label">w₄ (size)</span>
+          <div class="w-bar-track"><div class="w-bar" id="wb4" style="width:41%; background:var(--accent);"></div></div>
+          <span class="w-val" id="wv4">0.41</span>
+        </div>
+        <div class="weight-row">
+          <span class="w-label">w₅ (edge)</span>
+          <div class="w-bar-track"><div class="w-bar" id="wb5" style="width:88%; background:var(--blue);"></div></div>
+          <span class="w-val" id="wv5">0.88</span>
+        </div>
+        <div style="margin-top:8px; text-align:right;">
+          <button class="gd-btn secondary" onclick="randomizeWeights()" style="padding:8px 16px; font-size:12px;">↻ Randomize weights</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="model-equation reveal">
+      <div>output = <span class="hl">w₁</span>·input₁ + <span class="hl">w₂</span>·input₂ + <span class="hl">w₃</span>·input₃ + … + bias</div>
+      <div style="font-size:11px; margin-top:8px; color:rgba(106,140,175,0.6);">
+        this runs millions of times per second per layer — one layer per row of weights
+      </div>
+    </div>
+
+    <div class="card-row reveal">
+      <div class="card" style="border-color:rgba(0,201,167,0.2);">
+        <p style="font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:8px; font-family:'JetBrains Mono',monospace;">TinyLlama (Ch5)</p>
+        <p style="font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:600; color:var(--accent);">1.1B</p>
+        <p style="font-size:12px; color:var(--muted); margin-top:4px;">weights to tune</p>
+      </div>
+      <div class="card" style="border-color:rgba(128,153,255,0.2);">
+        <p style="font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:8px; font-family:'JetBrains Mono',monospace;">GPT-4 (est.)</p>
+        <p style="font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:600; color:var(--blue);">~1.8T</p>
+        <p style="font-size:12px; color:var(--muted); margin-top:4px;">weights to tune</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ S3: LOSS FUNCTIONS ════════════════ -->
+<section class="section" id="s3">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="sec-tag"><span class="dot"></span>Concept 2 of 3</div>
+    </div>
+    <h2 class="section-heading reveal">The <span style="color:var(--red)">Loss</span> Function:<br>Measuring How Wrong You Are</h2>
+    <div class="divider reveal"></div>
+
+    <div class="card reveal">
+      <p style="font-size:15px; line-height:1.8; color:var(--muted);">
+        Before the model can improve, it needs a <strong style="color:var(--text)">score for how badly it's doing</strong>. That score is called <strong style="color:var(--red)">loss</strong> (or error). Think of it like archery — the loss is the distance between where your arrow <em>landed</em> and where you were <em>aiming</em>.
+        <br><br>
+        <strong style="color:var(--text)">Low loss = close to the bullseye. High loss = way off.</strong> The model's entire job is to drive this number toward zero.
+      </p>
+    </div>
+
+    <div class="loss-layout reveal">
+      <!-- Archery Target -->
+      <div class="target-demo">
+        <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" fill="none">
+          <!-- Target rings -->
+          <circle cx="150" cy="150" r="135" fill="rgba(255,107,107,0.06)" stroke="rgba(255,107,107,0.2)" stroke-width="1.5"/>
+          <circle cx="150" cy="150" r="108" fill="rgba(255,180,60,0.06)" stroke="rgba(255,180,60,0.2)" stroke-width="1.5"/>
+          <circle cx="150" cy="150" r="81"  fill="rgba(0,201,167,0.06)" stroke="rgba(0,201,167,0.2)" stroke-width="1.5"/>
+          <circle cx="150" cy="150" r="54"  fill="rgba(0,201,167,0.1)" stroke="rgba(0,201,167,0.3)" stroke-width="1.5"/>
+          <circle cx="150" cy="150" r="27"  fill="rgba(0,201,167,0.2)" stroke="#00C9A7" stroke-width="2"/>
+          <circle cx="150" cy="150" r="6"   fill="#00C9A7"/>
+          <!-- Axes -->
+          <line x1="150" y1="5" x2="150" y2="295" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <line x1="5" y1="150" x2="295" y2="150" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+          <!-- Arrow 1: Good prediction — close to center -->
+          <line x1="168" y1="135" x2="163" y2="140" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="162" cy="141" r="5" fill="var(--accent)" opacity="0.85"/>
+          <text x="178" y="132" font-family="Plus Jakarta Sans,sans-serif" font-size="10" fill="var(--accent)">good ✓</text>
+          <!-- Arrow 2: OK prediction -->
+          <line x1="195" y1="105" x2="190" y2="115" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="189" cy="116" r="5" fill="var(--gold)" opacity="0.8"/>
+          <text x="200" y="104" font-family="Plus Jakarta Sans,sans-serif" font-size="10" fill="var(--gold)">ok</text>
+          <!-- Arrow 3: Bad prediction — far from center -->
+          <line x1="240" y1="230" x2="232" y2="225" stroke="var(--red)" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="231" cy="224" r="6" fill="var(--red)" opacity="0.8"/>
+          <text x="242" y="243" font-family="Plus Jakarta Sans,sans-serif" font-size="10" fill="var(--red)">high loss ✗</text>
+          <!-- Loss distance line -->
+          <line x1="150" y1="150" x2="231" y2="224" stroke="rgba(255,107,107,0.4)" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <text x="178" y="200" font-family="JetBrains Mono,monospace" font-size="9" fill="rgba(255,107,107,0.6)">loss = 8.4</text>
+        </svg>
+      </div>
+
+      <div class="loss-examples">
+        <div class="loss-example good">
+          <div class="le-header">
+            <span>Prediction: "cat" · Truth: "cat"</span>
+            <span class="le-loss">loss = 0.02</span>
+          </div>
+          <p class="le-desc">Almost perfect — barely needed to adjust the weights. The arrow hit the bullseye.</p>
+        </div>
+        <div class="loss-example ok">
+          <div class="le-header">
+            <span>Prediction: "dog" · Truth: "cat"</span>
+            <span class="le-loss">loss = 2.4</span>
+          </div>
+          <p class="le-desc">Wrong, but related — both are small furry animals. The model had some idea but guessed wrong.</p>
+        </div>
+        <div class="loss-example bad">
+          <div class="le-header">
+            <span>Prediction: "airplane" · Truth: "cat"</span>
+            <span class="le-loss">loss = 8.4</span>
+          </div>
+          <p class="le-desc">Way off. The model is basically guessing randomly. Lots of weight adjustment needed.</p>
+        </div>
+
+        <div class="mse-formula">
+          <div class="f-title">Mean Squared Error — the most common loss function</div>
+          <div class="formula">Loss = (<span class="r">predicted</span> − <span class="p">actual</span>)²</div>
+          <div style="font-size:11px; color:rgba(106,140,175,0.5); margin-top:6px;">squaring makes all errors positive and punishes big mistakes harder</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ S4: GRADIENT DESCENT — INTERACTIVE ════════════════ -->
+<section class="section" id="s4">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="sec-tag"><span class="dot"></span>Concept 3 of 3 · Interactive</div>
+    </div>
+    <h2 class="section-heading reveal">Gradient Descent:<br><span style="color:var(--accent)">How the Model Fixes Itself</span></h2>
+    <div class="divider reveal"></div>
+
+    <div class="card reveal">
+      <p style="font-size:15px; line-height:1.8; color:var(--muted);">
+        Now the model knows how wrong it is (loss). But how does it get less wrong? <strong style="color:var(--text)">Gradient descent</strong> — it checks which direction makes the loss go down, then takes a small step in that direction. Repeat a million times. That's training.
+        <br><br>
+        Imagine you're blindfolded on a hilly landscape and want to reach the lowest valley. You feel the slope under your feet and take a step downhill. That step size is the <strong style="color:var(--accent)">learning rate</strong>. Too big and you overshoot; too small and it takes forever.
+      </p>
+    </div>
+
+    <div class="gd-layout reveal">
+      <!-- Canvas -->
+      <div class="gd-canvas-wrap">
+        <canvas id="gd-canvas" width="820" height="320"></canvas>
+      </div>
+
+      <!-- Log -->
+      <div id="gd-log" class="gd-log">
+        <div class="log-entry" style="color:rgba(106,140,175,0.5);">Press "Take a Step" to start training…</div>
+      </div>
+
+      <!-- Stats -->
+      <div class="gd-stats">
+        <div class="gd-stat">
+          <div class="stat-label">Step</div>
+          <div class="stat-val" id="stat-step">0</div>
+        </div>
+        <div class="gd-stat">
+          <div class="stat-label">Loss</div>
+          <div class="stat-val" id="stat-loss">—</div>
+        </div>
+        <div class="gd-stat" style="min-width:140px;">
+          <div class="stat-label">Status</div>
+          <div class="stat-val" id="stat-status" style="font-size:14px; padding-top:4px; color:var(--muted);">Not started</div>
+        </div>
+      </div>
+
+      <!-- LR slider -->
+      <div class="card" style="padding:16px 20px;">
+        <div class="lr-row">
+          <label>Learning Rate:</label>
+          <input type="range" id="lr-slider" min="1" max="10" value="4" oninput="updateLR(this.value)">
+          <span class="lr-val" id="lr-display">0.4</span>
+        </div>
+        <p style="font-size:11px; color:var(--muted); margin-top:8px; font-family:'JetBrains Mono',monospace;">
+          Too high → overshoots the minimum &nbsp;·&nbsp; Too low → slow convergence
+        </p>
+      </div>
+
+      <!-- Controls -->
+      <div class="gd-controls">
+        <button class="gd-btn primary" id="btn-step" onclick="takeStep()">⬇ Take a Step</button>
+        <button class="gd-btn primary" id="btn-auto" onclick="autoRun()">▶ Auto-Run</button>
+        <button class="gd-btn secondary" onclick="resetGD()">↺ Reset</button>
+      </div>
+    </div>
+
+    <div class="card reveal" style="border-color:rgba(128,153,255,0.2); background:var(--bg3);">
+      <p style="font-size:13px; color:var(--muted);">
+        💡 <strong style="color:var(--text);">Try it:</strong> Run to convergence at the default learning rate, then reset and try a very high learning rate (slider to max). Watch it overshoot — that's exactly why picking the right learning rate is one of the most important decisions in ML.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ S5: THE TRAINING LOOP ════════════════ -->
+<section class="section" id="s5">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="sec-tag"><span class="dot"></span>Putting It All Together</div>
+    </div>
+    <h2 class="section-heading reveal">The Training <span style="color:var(--accent)">Loop</span></h2>
+    <div class="divider reveal"></div>
+
+    <div class="loop-diagram reveal">
+      <svg viewBox="0 0 600 340" xmlns="http://www.w3.org/2000/svg" fill="none">
+        <defs>
+          <marker id="loopArr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="rgba(0,201,167,0.6)"/>
+          </marker>
+        </defs>
+
+        <!-- Step boxes -->
+        <!-- 1. Data -->
+        <rect x="10" y="130" width="120" height="60" rx="10" fill="rgba(0,201,167,0.1)" stroke="rgba(0,201,167,0.4)" stroke-width="1.5"/>
+        <text x="70" y="156" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="var(--accent)">① Data</text>
+        <text x="70" y="173" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="9" fill="rgba(0,201,167,0.6)">feed examples</text>
+
+        <!-- 2. Forward pass -->
+        <rect x="168" y="40" width="130" height="60" rx="10" fill="rgba(128,153,255,0.08)" stroke="rgba(128,153,255,0.4)" stroke-width="1.5"/>
+        <text x="233" y="66" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="var(--blue)">② Forward Pass</text>
+        <text x="233" y="82" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="9" fill="rgba(128,153,255,0.6)">model makes prediction</text>
+
+        <!-- 3. Loss -->
+        <rect x="358" y="130" width="120" height="60" rx="10" fill="rgba(255,107,107,0.08)" stroke="rgba(255,107,107,0.4)" stroke-width="1.5"/>
+        <text x="418" y="156" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="var(--red)">③ Loss</text>
+        <text x="418" y="173" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="9" fill="rgba(255,107,107,0.6)">measure the error</text>
+
+        <!-- 4. Backward -->
+        <rect x="168" y="230" width="130" height="60" rx="10" fill="rgba(255,180,60,0.08)" stroke="rgba(255,180,60,0.4)" stroke-width="1.5"/>
+        <text x="233" y="256" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="var(--gold)">④ Backward Pass</text>
+        <text x="233" y="272" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="9" fill="rgba(255,180,60,0.6)">compute gradients</text>
+
+        <!-- Center: update weights -->
+        <circle cx="240" cy="160" r="46" fill="rgba(0,201,167,0.08)" stroke="rgba(0,201,167,0.3)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="240" y="155" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="10" font-weight="700" fill="rgba(0,201,167,0.7)">⑤ Update</text>
+        <text x="240" y="169" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="10" font-weight="700" fill="rgba(0,201,167,0.7)">Weights</text>
+
+        <!-- Arrows -->
+        <!-- Data → Forward -->
+        <path d="M110,145 C130,145 145,95 166,75" stroke="rgba(0,201,167,0.4)" stroke-width="1.5" marker-end="url(#loopArr)"/>
+        <!-- Forward → Loss -->
+        <path d="M298,70 C330,70 345,130 356,145" stroke="rgba(128,153,255,0.4)" stroke-width="1.5" marker-end="url(#loopArr)"/>
+        <!-- Loss → Backward -->
+        <path d="M358,175 C340,200 316,235 300,250" stroke="rgba(255,107,107,0.4)" stroke-width="1.5" marker-end="url(#loopArr)"/>
+        <!-- Backward → Data (loop) -->
+        <path d="M168,262 C100,275 60,240 40,200 C22,165 22,175 40,165" stroke="rgba(255,180,60,0.4)" stroke-width="1.5" marker-end="url(#loopArr)"/>
+        <!-- Center arrows to/from update -->
+        <path d="M130,155 L190,157" stroke="rgba(0,201,167,0.3)" stroke-width="1" stroke-dasharray="3 2"/>
+        <path d="M290,160 L360,158" stroke="rgba(0,201,167,0.3)" stroke-width="1" stroke-dasharray="3 2"/>
+        <path d="M233,205 L238,210" stroke="rgba(0,201,167,0.3)" stroke-width="1" stroke-dasharray="3 2"/>
+
+        <!-- "repeat" label -->
+        <text x="38" y="210" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9" fill="rgba(255,180,60,0.45)" transform="rotate(-80,38,210)">repeat ∞</text>
+      </svg>
+    </div>
+
+    <div class="loop-steps reveal">
+      <div class="loop-step">
+        <div class="ls-num">①</div>
+        <div class="ls-text">
+          <h4>Feed Data</h4>
+          <p>Show the model a training example — a sentence, image, or Q&amp;A pair.</p>
+        </div>
+      </div>
+      <div class="loop-step">
+        <div class="ls-num" style="background:var(--blue);">②</div>
+        <div class="ls-text">
+          <h4>Forward Pass</h4>
+          <p>The current weights produce a prediction — usually wrong at first.</p>
+        </div>
+      </div>
+      <div class="loop-step">
+        <div class="ls-num" style="background:var(--red);">③</div>
+        <div class="ls-text">
+          <h4>Compute Loss</h4>
+          <p>Measure how wrong the prediction was — get a single number (the loss).</p>
+        </div>
+      </div>
+      <div class="loop-step">
+        <div class="ls-num" style="background:var(--gold);">④</div>
+        <div class="ls-text">
+          <h4>Backward Pass</h4>
+          <p>Use calculus to find which direction to nudge each weight to lower the loss.</p>
+        </div>
+      </div>
+      <div class="loop-step" style="grid-column: span 2;">
+        <div class="ls-num">⑤</div>
+        <div class="ls-text">
+          <h4>Update Weights &amp; Repeat</h4>
+          <p>Nudge every weight a tiny bit in the right direction. Then go back to step ①. Do this millions of times. That's what it means to "train" a model. Every step the loss goes down a little — and the model gets a little smarter.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════ S6: WHAT'S NEXT ════════════════ -->
+<section class="section" id="s6">
+  <div class="section-inner" style="text-align:center; align-items:center;">
+    <div class="reveal">
+      <div class="sec-tag"><span class="dot"></span>Chapter 1 Complete</div>
+    </div>
+    <h2 class="big-heading reveal">You now understand<br><span>how AI learns.</span></h2>
+    <p class="hero-sub reveal">
+      A model is weights. Loss measures the error. Gradient descent reduces the error step by step. Every AI system on the planet — from Google Search to GPT-4 — runs this same loop, just at much larger scale.
+    </p>
+
+    <div class="card-row reveal" style="width:100%; max-width:600px;">
+      <div class="card" style="text-align:left; border-color:rgba(0,201,167,0.2);">
+        <p style="font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:10px; font-family:'JetBrains Mono',monospace;">You learned</p>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:8px;">
+          <li style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--accent);">✓</span>AI vs ML vs Deep Learning</li>
+          <li style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--accent);">✓</span>What a model weight is</li>
+          <li style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--accent);">✓</span>What loss measures</li>
+          <li style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--accent);">✓</span>How gradient descent works</li>
+          <li style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--accent);">✓</span>The training loop</li>
+        </ul>
+      </div>
+      <div class="card" style="text-align:left; border-color:rgba(128,153,255,0.2);">
+        <p style="font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:10px; font-family:'JetBrains Mono',monospace;">In the notebook</p>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:8px;">
+          <li style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--blue);">→</span>Code gradient descent from scratch</li>
+          <li style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--blue);">→</span>Plot the loss curve live</li>
+          <li style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--blue);">→</span>Try different learning rates</li>
+          <li style="font-size:13px; display:flex; gap:8px;"><span style="color:var(--blue);">→</span>Watch the model converge</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="next-card reveal" style="width:100%; max-width:600px; text-align:left;">
+      <div class="next-badge">Ch2</div>
+      <div class="next-text">
+        <h3>Up Next: Python &amp; Data Science Toolkit</h3>
+        <p>Before you can train a model you need data. Chapter 2 teaches NumPy, Pandas, and Matplotlib — the three tools every ML engineer uses every day — using a real Q&amp;A dataset from Stanford.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p><strong style="color:rgba(255,255,255,0.6);">JAWNVION LLC — AI Engineering: From Fundamentals to Production</strong><br>
+  Chapter 1 of 14 · <a href="mailto:peter@jawnvion.com">peter@jawnvion.com</a></p>
+</footer>
+
+
+<script>
+/* ── Progress bar & nav dots ── */
+const sections = ['s0','s1','s2','s3','s4','s5','s6'];
+const dots = document.querySelectorAll('.nav-dot');
+
+function updateProgress() {
+  const h = document.documentElement.scrollHeight - window.innerHeight;
+  document.getElementById('progress-bar').style.width = (window.scrollY / h * 100) + '%';
+
+  // nav dots
+  sections.forEach((id, i) => {
+    const el = document.getElementById(id);
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.5 && rect.bottom > 0) {
+      dots.forEach(d => d.classList.remove('active'));
+      dots[i].classList.add('active');
+    }
+  });
+}
+window.addEventListener('scroll', updateProgress, { passive: true });
+
+/* ── Reveal on scroll ── */
+const revealEls = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.12 });
+revealEls.forEach(el => observer.observe(el));
+
+/* ── Weight randomizer ── */
+function randomizeWeights() {
+  const ids = [['wb1','wv1'],['wb2','wv2'],['wb3','wv3'],['wb4','wv4'],['wb5','wv5']];
+  ids.forEach(([bid, vid]) => {
+    const v = Math.random();
+    document.getElementById(bid).style.width = (v * 100) + '%';
+    document.getElementById(vid).textContent = v.toFixed(2);
+  });
+}
+
+/* ── LR slider ── */
+function updateLR(v) {
+  document.getElementById('lr-display').textContent = (v / 10).toFixed(1);
+}
+
+/* ════════════════ GRADIENT DESCENT DEMO ════════════════ */
+const canvas = document.getElementById('gd-canvas');
+const ctx = canvas.getContext('2d');
+
+// Parabola: loss(x) = (x - 3)^2 + 0.4   (min at x=3)
+const TARGET_X = 3.0;
+const fn  = x => (x - TARGET_X) ** 2 + 0.4;
+const dfn = x => 2 * (x - TARGET_X);      // derivative
+
+let gdX     = -2.5;    // start far left
+let gdStep  = 0;
+let gdLog   = [];
+let gdAutoTimer = null;
+let gdConverged = false;
+
+const CANVAS_W = 820, CANVAS_H = 320;
+const PAD_L = 60, PAD_R = 30, PAD_T = 30, PAD_B = 50;
+const PLOT_W = CANVAS_W - PAD_L - PAD_R;
+const PLOT_H = CANVAS_H - PAD_T - PAD_B;
+
+// x range: -3 to 9, y range: 0 to 40
+const X_MIN = -3, X_MAX = 9;
+const Y_MIN = -1, Y_MAX = 42;
+
+function toCanvas(x, y) {
+  return [
+    PAD_L + (x - X_MIN) / (X_MAX - X_MIN) * PLOT_W,
+    PAD_T + (1 - (y - Y_MIN) / (Y_MAX - Y_MIN)) * PLOT_H
+  ];
+}
+
+// History of positions for trail
+let trail = [];
+
+function drawGD() {
+  ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+  // Background
+  ctx.fillStyle = '#0F1829';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let gx = -2; gx <= 8; gx += 2) {
+    const [cx] = toCanvas(gx, 0);
+    ctx.beginPath(); ctx.moveTo(cx, PAD_T); ctx.lineTo(cx, PAD_T + PLOT_H); ctx.stroke();
+  }
+  for (let gy = 0; gy <= 40; gy += 10) {
+    const [, cy] = toCanvas(0, gy);
+    ctx.beginPath(); ctx.moveTo(PAD_L, cy); ctx.lineTo(PAD_L + PLOT_W, cy); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1.5;
+  // X axis
+  const [,yAxis] = toCanvas(0, 0);
+  ctx.beginPath(); ctx.moveTo(PAD_L, yAxis); ctx.lineTo(PAD_L + PLOT_W, yAxis); ctx.stroke();
+  // Y axis
+  const [xAxis] = toCanvas(0, 0);
+  ctx.beginPath(); ctx.moveTo(xAxis, PAD_T); ctx.lineTo(xAxis, PAD_T + PLOT_H); ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = 'rgba(106,140,175,0.6)';
+  ctx.font = '11px JetBrains Mono, monospace';
+  ctx.textAlign = 'right';
+  for (let gy = 0; gy <= 40; gy += 10) {
+    const [, cy] = toCanvas(0, gy);
+    ctx.fillText(gy, PAD_L - 8, cy + 4);
+  }
+  ctx.textAlign = 'center';
+  for (let gx = -2; gx <= 8; gx += 2) {
+    const [cx, cy] = toCanvas(gx, 0);
+    ctx.fillText(gx, cx, cy + 18);
+  }
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(106,140,175,0.45)';
+  ctx.font = '12px Plus Jakarta Sans, sans-serif';
+  ctx.fillText('Weight value (w)', PAD_L + PLOT_W / 2, CANVAS_H - 8);
+  ctx.save();
+  ctx.translate(14, PAD_T + PLOT_H / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Loss', 0, 0);
+  ctx.restore();
+
+  // Minimum marker
+  const [mx, my] = toCanvas(TARGET_X, fn(TARGET_X));
+  ctx.strokeStyle = 'rgba(0,201,167,0.2)';
+  ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(mx, PAD_T); ctx.lineTo(mx, my); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(0,201,167,0.35)';
+  ctx.font = '10px JetBrains Mono, monospace'; ctx.textAlign = 'center';
+  ctx.fillText('global minimum', mx, PAD_T - 8);
+
+  // Parabola curve
+  const grad = ctx.createLinearGradient(PAD_L, 0, PAD_L + PLOT_W, 0);
+  grad.addColorStop(0, 'rgba(255,107,107,0.7)');
+  grad.addColorStop(0.5, 'rgba(255,180,60,0.7)');
+  grad.addColorStop(1, 'rgba(0,201,167,0.7)');
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  for (let i = 0; i <= 200; i++) {
+    const x = X_MIN + i / 200 * (X_MAX - X_MIN);
+    const [cx, cy] = toCanvas(x, fn(x));
+    if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+  }
+  ctx.stroke();
+
+  // Trail
+  if (trail.length > 1) {
+    for (let i = 1; i < trail.length; i++) {
+      const [x1, y1] = toCanvas(trail[i-1], fn(trail[i-1]));
+      const [x2, y2] = toCanvas(trail[i], fn(trail[i]));
+      const alpha = 0.15 + 0.7 * (i / trail.length);
+      ctx.strokeStyle = `rgba(0,201,167,${alpha})`;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // Gradient arrow at current position
+  if (gdStep > 0 && !gdConverged) {
+    const grad_val = dfn(gdX);
+    const lr = getLR();
+    const step = -lr * grad_val;
+    const nx = gdX + step;
+    const [cx, cy] = toCanvas(gdX, fn(gdX));
+    const [nx2, ny2] = toCanvas(Math.max(X_MIN, Math.min(X_MAX, nx)), fn(Math.max(X_MIN, Math.min(X_MAX, nx))));
+    ctx.strokeStyle = 'rgba(128,153,255,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3,2]);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(nx2, ny2); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Current position dot
+  const [bx, by] = toCanvas(gdX, fn(gdX));
+  // Glow
+  const glowGrad = ctx.createRadialGradient(bx, by, 0, bx, by, 24);
+  glowGrad.addColorStop(0, 'rgba(0,201,167,0.35)');
+  glowGrad.addColorStop(1, 'rgba(0,201,167,0)');
+  ctx.fillStyle = glowGrad;
+  ctx.beginPath(); ctx.arc(bx, by, 24, 0, Math.PI*2); ctx.fill();
+  // Dot
+  ctx.fillStyle = gdConverged ? '#00C9A7' : '#FFFFFF';
+  ctx.beginPath(); ctx.arc(bx, by, 9, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = gdConverged ? '#00A890' : '#00C9A7';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.arc(bx, by, 9, 0, Math.PI*2); ctx.stroke();
+
+  // Loss label near dot
+  ctx.fillStyle = gdConverged ? '#00C9A7' : 'rgba(255,255,255,0.85)';
+  ctx.font = 'bold 12px JetBrains Mono, monospace';
+  ctx.textAlign = 'left';
+  const labelX = bx + 14, labelY = by - 10;
+  ctx.fillText(`loss=${fn(gdX).toFixed(3)}`, labelX, labelY);
+
+  if (gdConverged) {
+    ctx.fillStyle = 'rgba(0,201,167,0.9)';
+    ctx.font = 'bold 14px Plus Jakarta Sans, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('✓ Converged!', bx, by - 28);
+  }
+}
+
+function getLR() {
+  return parseInt(document.getElementById('lr-slider').value) / 10;
+}
+
+function addLog(msg) {
+  const logEl = document.getElementById('gd-log');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = msg;
+  logEl.appendChild(entry);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function updateStats() {
+  document.getElementById('stat-step').textContent = gdStep;
+  document.getElementById('stat-loss').textContent = fn(gdX).toFixed(4);
+}
+
+function takeStep() {
+  if (gdConverged) return;
+  const lr = getLR();
+  const grad_val = dfn(gdX);
+  const step = -lr * grad_val;
+  trail.push(gdX);
+  gdX += step;
+  gdStep++;
+
+  const loss = fn(gdX);
+  addLog(`<span class="step-num">step ${String(gdStep).padStart(3,'0')}</span>  →  w=${gdX.toFixed(4)}  loss=<span class="loss-val">${loss.toFixed(4)}</span>`);
+
+  if (Math.abs(grad_val) < 0.02 || loss < 0.42) {
+    gdConverged = true;
+    document.getElementById('stat-status').textContent = '✓ Converged';
+    document.getElementById('stat-status').style.color = 'var(--accent)';
+    addLog(`<span class="converged">✓ Converged at step ${gdStep}! Loss = ${loss.toFixed(4)}</span>`);
+    if (gdAutoTimer) { clearInterval(gdAutoTimer); gdAutoTimer = null; }
+    document.getElementById('btn-auto').disabled = true;
+  }
+
+  updateStats();
+  drawGD();
+}
+
+let autoRunning = false;
+function autoRun() {
+  if (gdConverged) return;
+  if (autoRunning) {
+    clearInterval(gdAutoTimer); gdAutoTimer = null;
+    autoRunning = false;
+    document.getElementById('btn-auto').textContent = '▶ Auto-Run';
+    return;
+  }
+  autoRunning = true;
+  document.getElementById('btn-auto').textContent = '⏸ Pause';
+  gdAutoTimer = setInterval(() => {
+    takeStep();
+    if (gdConverged) {
+      clearInterval(gdAutoTimer); gdAutoTimer = null;
+      autoRunning = false;
+      document.getElementById('btn-auto').textContent = '▶ Auto-Run';
+    }
+  }, 180);
+}
+
+function resetGD() {
+  if (gdAutoTimer) { clearInterval(gdAutoTimer); gdAutoTimer = null; }
+  autoRunning = false;
+  gdX = -2.5; gdStep = 0; gdConverged = false; trail = [];
+  document.getElementById('stat-step').textContent = '0';
+  document.getElementById('stat-loss').textContent = '—';
+  document.getElementById('stat-status').textContent = 'Not started';
+  document.getElementById('stat-status').style.color = 'var(--muted)';
+  document.getElementById('gd-log').innerHTML = '<div class="log-entry" style="color:rgba(106,140,175,0.5);">Press "Take a Step" to start training…</div>';
+  document.getElementById('btn-auto').disabled = false;
+  document.getElementById('btn-auto').textContent = '▶ Auto-Run';
+  drawGD();
+}
+
+// Initial draw
+drawGD();
+</script>
+</body>
+</html>

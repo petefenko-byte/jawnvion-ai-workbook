@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Chapter 7: Direct Preference Optimization</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --navy: #080E1B;
+    --navy2: #0D1528;
+    --navy3: #111C35;
+    --navy4: #1A2640;
+    --coral: #FF6B9D;
+    --coral2: #E8537F;
+    --coral-dim: rgba(255,107,157,0.12);
+    --coral-glow: rgba(255,107,157,0.2);
+    --teal: #00C9A7;
+    --teal-dim: rgba(0,201,167,0.1);
+    --gold: #FFB44F;
+    --gold-dim: rgba(255,180,79,0.1);
+    --purple: #C084FC;
+    --purple-dim: rgba(192,132,252,0.1);
+    --green: #4ADE80;
+    --green-dim: rgba(74,222,128,0.12);
+    --red: #FF6B6B;
+    --red-dim: rgba(255,107,107,0.12);
+    --text: #E8EDF5;
+    --text-muted: #7A8BA8;
+    --text-dim: #4A5A72;
+    --border: rgba(255,107,157,0.15);
+    --border-subtle: rgba(255,255,255,0.06);
+    --font: 'Plus Jakarta Sans', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--navy); color: var(--text); font-family: var(--font); overflow-x: hidden; }
+
+  /* HERO */
+  .hero {
+    position: relative; padding: 80px 40px 64px;
+    text-align: center; overflow: hidden;
+    border-bottom: 1px solid var(--border);
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,107,157,0.08) 0%, transparent 70%);
+  }
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,107,157,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,107,157,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .hero-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--coral); margin-bottom: 20px; position: relative; }
+  .hero h1 { font-size: clamp(32px, 6vw, 64px); font-weight: 800; line-height: 1.1; position: relative; margin-bottom: 20px; }
+  .hero h1 span { color: var(--coral); }
+  .hero-sub { font-size: 18px; color: var(--text-muted); max-width: 620px; margin: 0 auto 40px; line-height: 1.6; position: relative; }
+  .hero-badges { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; position: relative; }
+  .badge { padding: 6px 16px; border-radius: 100px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+  .badge-coral { background: var(--coral-dim); color: var(--coral); border: 1px solid rgba(255,107,157,0.3); }
+  .badge-teal { background: var(--teal-dim); color: var(--teal); border: 1px solid rgba(0,201,167,0.25); }
+  .badge-gold { background: var(--gold-dim); color: var(--gold); border: 1px solid rgba(255,180,79,0.25); }
+  .badge-purple { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(192,132,252,0.25); }
+
+  /* PROGRESS */
+  .progress-bar-wrap { background: var(--navy2); padding: 16px 40px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; gap: 16px; }
+  .progress-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+  .progress-track { flex: 1; height: 4px; background: var(--navy4); border-radius: 2px; }
+  .progress-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--teal), var(--coral)); width: 50%; }
+  .progress-pct { font-size: 12px; font-weight: 700; color: var(--coral); white-space: nowrap; }
+
+  /* LAYOUT */
+  .main { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+  .section { margin-top: 72px; }
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--coral); margin-bottom: 8px; }
+  .section-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; line-height: 1.2; }
+  .section-desc { font-size: 15px; color: var(--text-muted); line-height: 1.6; max-width: 700px; margin-bottom: 32px; }
+  .card { background: var(--navy2); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 28px; }
+  .card-coral { border-color: rgba(255,107,157,0.2); }
+
+  /* RLHF vs DPO comparison */
+  .arch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .arch-card { background: var(--navy3); border-radius: 14px; padding: 20px; border: 1px solid var(--border-subtle); }
+  .arch-card-title { font-size: 13px; font-weight: 800; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
+  .arch-step {
+    display: flex; align-items: flex-start; gap: 10px; padding: 8px;
+    border-radius: 8px; margin-bottom: 6px;
+    transition: background 0.2s;
+  }
+  .arch-step-num { width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .arch-step-text { font-size: 13px; line-height: 1.4; color: var(--text-muted); }
+  .arch-step-text strong { color: var(--text); }
+  .step-rlhf .arch-step-num { background: rgba(255,107,107,0.2); color: var(--red); }
+  .step-dpo .arch-step-num { background: var(--coral-dim); color: var(--coral); }
+  .arch-verdict { margin-top: 14px; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; }
+  .verdict-bad { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,107,107,0.2); }
+  .verdict-good { background: var(--green-dim); color: var(--green); border: 1px solid rgba(74,222,128,0.2); }
+
+  /* PREFERENCE PAIR VISUALIZER */
+  .pair-prompt {
+    background: var(--navy3); border: 1px solid var(--border-subtle);
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;
+    font-size: 14px; line-height: 1.5;
+  }
+  .pair-prompt-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+  .pair-responses { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .pair-response {
+    border-radius: 10px; padding: 16px; font-size: 13px; line-height: 1.6;
+    border: 1.5px solid; transition: all 0.3s;
+    position: relative;
+  }
+  .pair-response-chosen { background: var(--green-dim); border-color: rgba(74,222,128,0.35); }
+  .pair-response-rejected { background: var(--red-dim); border-color: rgba(255,107,107,0.25); }
+  .pair-badge {
+    display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+    text-transform: uppercase; padding: 3px 8px; border-radius: 4px; margin-bottom: 8px;
+  }
+  .badge-chosen { background: rgba(74,222,128,0.2); color: var(--green); }
+  .badge-rejected { background: rgba(255,107,107,0.2); color: var(--red); }
+  .pair-response-text { color: var(--text-muted); }
+  .pair-nav { display: flex; gap: 10px; margin-top: 16px; align-items: center; }
+  .pair-counter { font-family: var(--mono); font-size: 12px; color: var(--text-dim); margin-left: auto; }
+  .btn { padding: 8px 20px; border-radius: 8px; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
+  .btn-coral { background: var(--coral); color: white; }
+  .btn-coral:hover { background: var(--coral2); }
+  .btn-outline { background: transparent; color: var(--text-muted); border: 1px solid var(--border-subtle); }
+  .btn-outline:hover { border-color: var(--coral); color: var(--coral); }
+
+  /* LOSS FUNCTION CANVAS */
+  #lossCanvas { width: 100%; border-radius: 12px; display: block; }
+  .beta-control { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+  .beta-label { font-size: 13px; color: var(--text-muted); }
+  input[type=range] { -webkit-appearance: none; height: 4px; background: var(--navy4); border-radius: 2px; flex: 1; min-width: 100px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--coral); cursor: pointer; border: 2px solid var(--navy); }
+  .beta-val { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--coral); min-width: 36px; text-align: right; }
+
+  /* FORMULA */
+  .formula-card {
+    background: var(--navy3); border: 1px solid rgba(255,107,157,0.2);
+    border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 20px;
+  }
+  .formula-text { font-family: var(--mono); font-size: 16px; color: var(--text); line-height: 1.8; }
+  .formula-coral { color: var(--coral); }
+  .formula-green { color: var(--green); }
+  .formula-red { color: var(--red); }
+  .formula-teal { color: var(--teal); }
+  .formula-gold { color: var(--gold); }
+  .formula-parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 16px; }
+  .formula-part { background: var(--navy4); border-radius: 8px; padding: 12px; font-size: 12px; line-height: 1.5; color: var(--text-muted); }
+  .formula-part strong { display: block; margin-bottom: 4px; }
+
+  /* TRAINING ANIMATION */
+  #trainCanvas { width: 100%; border-radius: 12px; display: block; }
+  .train-controls { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+  .step-indicator { font-family: var(--mono); font-size: 12px; color: var(--text-muted); margin-left: auto; }
+  .step-highlight { color: var(--coral); }
+
+  /* DATASET FORMAT */
+  .dataset-example {
+    background: var(--navy4); border: 1px solid rgba(255,107,157,0.15);
+    border-radius: 12px; padding: 20px; font-family: var(--mono); font-size: 13px;
+    line-height: 1.7; overflow-x: auto;
+  }
+  .ds-key { color: var(--coral); }
+  .ds-str { color: var(--green); }
+  .ds-bracket { color: var(--text-muted); }
+  .ds-comment { color: var(--text-dim); font-style: italic; }
+
+  /* CODE TABS */
+  .code-tabs { display: flex; gap: 0; }
+  .code-tab { padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-subtle); color: var(--text-muted); background: var(--navy3); transition: all 0.15s; }
+  .code-tab:first-child { border-radius: 8px 0 0 0; }
+  .code-tab:last-child { border-radius: 0 8px 0 0; }
+  .code-tab.active { background: var(--navy4); color: var(--coral); border-color: rgba(255,107,157,0.3); border-bottom-color: var(--navy4); }
+  .code-panel { display: none; background: var(--navy4); border: 1px solid rgba(255,107,157,0.15); border-top: none; border-radius: 0 0 12px 12px; padding: 24px; overflow-x: auto; }
+  .code-panel.active { display: block; }
+  pre { font-family: var(--mono); font-size: 13px; line-height: 1.7; white-space: pre; }
+  .kw { color: #C084FC; } .fn { color: #60CDFF; } .str { color: #4ADE80; }
+  .cm { color: #4A5A72; font-style: italic; } .num { color: var(--gold); }
+  .cls { color: #FFB44F; } .var { color: #E8EDF5; }
+  .hi { color: var(--coral); }
+
+  /* STAT CARDS */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+  .stat-card { background: var(--navy3); border-radius: 10px; padding: 18px; border: 1px solid var(--border-subtle); text-align: center; }
+  .stat-val { font-size: 26px; font-weight: 800; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  .stat-label { font-size: 12px; color: var(--text-muted); }
+
+  /* CHEAT SHEET */
+  .cheat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+  .cheat-card { background: var(--navy3); border-radius: 10px; padding: 16px; border: 1px solid var(--border-subtle); }
+  .cheat-card-title { font-size: 11px; font-weight: 700; color: var(--coral); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+  .cheat-line { font-family: var(--mono); font-size: 12px; color: var(--text-muted); padding: 3px 0; line-height: 1.5; }
+  .cheat-line span { color: var(--teal); }
+
+  /* NEXT */
+  .next-card { background: linear-gradient(135deg, var(--navy2) 0%, rgba(0,201,167,0.06) 100%); border: 1px solid rgba(0,201,167,0.2); border-radius: 16px; padding: 32px; text-align: center; margin-top: 72px; }
+  .next-eyebrow { font-size: 11px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .next-title { font-size: 24px; font-weight: 800; color: var(--teal); margin-bottom: 6px; }
+  .next-sub { font-size: 14px; color: var(--text-muted); }
+
+  .footer { text-align: center; padding: 40px 24px 20px; border-top: 1px solid var(--border-subtle); margin-top: 80px; }
+  .footer-brand { font-weight: 800; font-size: 20px; letter-spacing: 1px; color: var(--coral); }
+  .footer-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+  @media (max-width: 640px) {
+    .arch-grid, .pair-responses { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body><div style="background:linear-gradient(135deg,#060d1e 0%,#0d2240 100%);color:#fff;padding:32px 40px 24px;font-family:'Segoe UI',Arial,sans-serif;border-bottom:4px solid #4fc3f7;margin-bottom:0;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div style="font-size:12px;color:#4fc3f7;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">JAWNVION LLC &nbsp;·&nbsp; LLM Engineering Series</div>
+      <div style="font-size:28px;font-weight:900;line-height:1.1;margin-bottom:6px;">17 Interactive Colab Labs</div>
+      <div style="font-size:14px;color:#8ab8d4;">Run in-browser &nbsp;·&nbsp; No setup required &nbsp;·&nbsp; Production LLM skills</div>
+    </div>
+    <div style="text-align:right;font-size:12px;color:#6090b0;line-height:1.8;">
+      <div>www.jawnvion.com</div>
+      <div>peter@jawnvion.com</div>
+      <div>© 2026 JAWNVION LLC</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-eyebrow">AI Training Workbook · Chapter 07</div>
+  <h1>Direct Preference<br><span>Optimization</span></h1>
+  <p class="hero-sub">Align language models to human preferences without a separate reward model — simpler, stabler, and surprisingly effective.</p>
+  <div class="hero-badges">
+    <span class="badge badge-coral">No Reward Model</span>
+    <span class="badge badge-teal">Preference Pairs</span>
+    <span class="badge badge-gold">Bradley-Terry Model</span>
+    <span class="badge badge-purple">TRL · DPOTrainer</span>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-bar-wrap">
+  <span class="progress-label">Course Progress</span>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+  <span class="progress-pct">7 / 14 chapters &nbsp;·&nbsp; 50%</span>
+</div>
+
+<div class="main">
+
+  <!-- SECTION 1: THE PROBLEM WITH RLHF -->
+  <div class="section">
+    <div class="section-label">The Problem</div>
+    <div class="section-title">RLHF Is Complex — DPO Simplifies It</div>
+    <p class="section-desc">Reinforcement Learning from Human Feedback (RLHF) works but requires training three separate models and fighting PPO instability. DPO collapses the entire pipeline into one supervised loss.</p>
+    <div class="arch-grid">
+      <div class="arch-card">
+        <div class="arch-card-title" style="color:var(--red);">❌ RLHF Pipeline</div>
+        <div class="arch-step step-rlhf"><div class="arch-step-num">1</div><div class="arch-step-text"><strong>SFT Model</strong> — supervised fine-tune on demonstrations</div></div>
+        <div class="arch-step step-rlhf"><div class="arch-step-num">2</div><div class="arch-step-text"><strong>Reward Model</strong> — train a separate classifier on preference pairs</div></div>
+        <div class="arch-step step-rlhf"><div class="arch-step-num">3</div><div class="arch-step-text"><strong>PPO Loop</strong> — RL policy update against reward model + KL penalty</div></div>
+        <div class="arch-step step-rlhf"><div class="arch-step-num">4</div><div class="arch-step-text"><strong>Reference Model</strong> — frozen copy to anchor KL divergence</div></div>
+        <div class="arch-verdict verdict-bad">4 models in memory · PPO instability · reward hacking risk</div>
+      </div>
+      <div class="arch-card" style="border-color:rgba(255,107,157,0.2);">
+        <div class="arch-card-title" style="color:var(--coral);">✅ DPO Pipeline</div>
+        <div class="arch-step step-dpo"><div class="arch-step-num">1</div><div class="arch-step-text"><strong>SFT Model</strong> — supervised fine-tune on demonstrations</div></div>
+        <div class="arch-step step-dpo"><div class="arch-step-num">2</div><div class="arch-step-text"><strong>Preference Data</strong> — collect chosen / rejected pairs per prompt</div></div>
+        <div class="arch-step step-dpo"><div class="arch-step-num">3</div><div class="arch-step-text"><strong>DPO Loss</strong> — optimize directly on pairs (no reward model needed)</div></div>
+        <div class="arch-verdict verdict-good">2 models in memory · stable training · no reward hacking</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: PREFERENCE PAIRS -->
+  <div class="section">
+    <div class="section-label">Core Data</div>
+    <div class="section-title">Preference Pair Visualizer</div>
+    <p class="section-desc">DPO trains on triplets: (prompt, chosen response, rejected response). The model learns to assign higher probability to chosen and lower to rejected.</p>
+    <div class="card card-coral">
+      <div class="pair-prompt">
+        <div class="pair-prompt-label">Prompt</div>
+        <span id="pairPrompt">Explain what a neural network is to a 10-year-old.</span>
+      </div>
+      <div class="pair-responses">
+        <div class="pair-response pair-response-chosen">
+          <span class="pair-badge badge-chosen">✓ Chosen</span>
+          <div class="pair-response-text" id="pairChosen">Think of a neural network like a brain made of tiny decision-makers. Each one sees a piece of the information and passes its vote to the next layer. By the end, they've all cooperated to give you an answer — like guessing whether a photo shows a cat or a dog!</div>
+        </div>
+        <div class="pair-response pair-response-rejected">
+          <span class="pair-badge badge-rejected">✗ Rejected</span>
+          <div class="pair-response-text" id="pairRejected">A neural network is a computational model inspired by biological neural networks. It consists of layers of interconnected nodes with learned weight parameters optimized via gradient descent to minimize a loss function over a training corpus.</div>
+        </div>
+      </div>
+      <div class="pair-nav">
+        <button class="btn btn-outline" id="prevPair">← Prev</button>
+        <button class="btn btn-coral" id="nextPair">Next Example →</button>
+        <span class="pair-counter" id="pairCounter">1 / 5</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: THE DPO LOSS -->
+  <div class="section">
+    <div class="section-label">Math</div>
+    <div class="section-title">The DPO Loss Function</div>
+    <p class="section-desc">DPO derives an implicit reward signal directly from the policy. The key insight: the optimal policy under a KL-constrained RL objective has a closed form — no RL loop required.</p>
+
+    <div class="formula-card">
+      <div class="formula-text">
+        L<sub>DPO</sub>(π<sub>θ</sub>) = −𝔼<sub>(x,y<sub>w</sub>,y<sub>l</sub>)</sub> [log σ ( <span class="formula-coral">β</span> log <span class="formula-green">π<sub>θ</sub>(y<sub>w</sub>|x)</span> / <span class="formula-teal">π<sub>ref</sub>(y<sub>w</sub>|x)</span> − <span class="formula-coral">β</span> log <span class="formula-red">π<sub>θ</sub>(y<sub>l</sub>|x)</span> / <span class="formula-teal">π<sub>ref</sub>(y<sub>l</sub>|x)</span> )]
+      </div>
+      <div class="formula-parts">
+        <div class="formula-part"><strong style="color:var(--coral);">β (beta)</strong>Controls how much the policy can deviate from the reference. Higher β → stays closer to SFT model.</div>
+        <div class="formula-part"><strong style="color:var(--green);">y_w (chosen)</strong>The preferred response. DPO increases its log-probability relative to the reference policy.</div>
+        <div class="formula-part"><strong style="color:var(--red);">y_l (rejected)</strong>The dispreferred response. DPO decreases its log-probability relative to reference.</div>
+        <div class="formula-part"><strong style="color:var(--teal);">π_ref</strong>The frozen SFT model. Acts as the KL anchor — preventing catastrophic forgetting.</div>
+      </div>
+    </div>
+
+    <div class="card card-coral">
+      <div style="margin-bottom:10px; font-size:13px; font-weight:600; color:var(--text-muted);">β controls the KL penalty — drag to see how it shapes the reward margin</div>
+      <canvas id="lossCanvas" height="200"></canvas>
+      <div class="beta-control">
+        <span class="beta-label">β =</span>
+        <input type="range" id="betaSlider" min="0.01" max="2" step="0.01" value="0.1">
+        <span class="beta-val" id="betaVal">0.10</span>
+        <span class="beta-label" style="margin-left:8px; font-size:12px; color:var(--text-dim);">Low β = aggressive · High β = conservative</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: TRAINING ANIMATION -->
+  <div class="section">
+    <div class="section-label">Training Loop</div>
+    <div class="section-title">Animated DPO Training Pass</div>
+    <p class="section-desc">Each training step forward-passes both the active policy and the frozen reference model, then uses the log-ratio difference as an implicit reward signal.</p>
+    <div class="card card-coral">
+      <canvas id="trainCanvas" height="300"></canvas>
+      <div class="train-controls">
+        <button class="btn btn-coral" id="trainBtn">▶ Next Step</button>
+        <button class="btn btn-outline" id="resetBtn">↺ Reset</button>
+        <span class="step-indicator" id="stepLabel">Step <span class="step-highlight">0</span> / 6</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: DATASET FORMAT -->
+  <div class="section">
+    <div class="section-label">Data Format</div>
+    <div class="section-title">DPO Dataset Schema</div>
+    <p class="section-desc">TRL's DPOTrainer expects a dataset with three fields per example. You can also use conversation-style chat format.</p>
+    <div class="dataset-example">
+<span class="ds-comment"># Standard format (text fields)</span>
+{
+  <span class="ds-key">"prompt"</span>:    <span class="ds-str">"What is the capital of France?"</span>,
+  <span class="ds-key">"chosen"</span>:    <span class="ds-str">"The capital of France is Paris, which has been\n              the country's capital since the 10th century."</span>,
+  <span class="ds-key">"rejected"</span>:  <span class="ds-str">"France is a country in Europe."</span>
+}
+
+<span class="ds-comment"># Chat format (messages list)</span>
+{
+  <span class="ds-key">"prompt"</span>: <span class="ds-bracket">[</span>{ <span class="ds-key">"role"</span>: <span class="ds-str">"user"</span>, <span class="ds-key">"content"</span>: <span class="ds-str">"Explain gravity"</span> }<span class="ds-bracket">]</span>,
+  <span class="ds-key">"chosen"</span>: <span class="ds-bracket">[</span>{ <span class="ds-key">"role"</span>: <span class="ds-str">"assistant"</span>, <span class="ds-key">"content"</span>: <span class="ds-str">"Gravity is the force that..."</span> }<span class="ds-bracket">]</span>,
+  <span class="ds-key">"rejected"</span>: <span class="ds-bracket">[</span>{ <span class="ds-key">"role"</span>: <span class="ds-str">"assistant"</span>, <span class="ds-key">"content"</span>: <span class="ds-str">"It's complicated physics."</span> }<span class="ds-bracket">]</span>
+}
+
+<span class="ds-comment"># Popular open DPO datasets:</span>
+<span class="ds-comment"># HuggingFaceH4/ultrafeedback_binarized  (64K pairs)</span>
+<span class="ds-comment"># Anthropic/hh-rlhf                      (170K pairs)</span>
+<span class="ds-comment"># tatsu-lab/alpaca_farm                  (20K pairs)</span>
+    </div>
+  </div>
+
+  <!-- SECTION 6: CODE -->
+  <div class="section">
+    <div class="section-label">Implementation</div>
+    <div class="section-title">DPOTrainer Code Walkthrough</div>
+    <p class="section-desc">TRL's DPOTrainer handles both forward passes (policy + reference) and the log-ratio loss automatically.</p>
+    <div>
+      <div class="code-tabs">
+        <div class="code-tab active" onclick="showTab('setup')">1. Setup</div>
+        <div class="code-tab" onclick="showTab('data')">2. Data</div>
+        <div class="code-tab" onclick="showTab('train')">3. Train</div>
+        <div class="code-tab" onclick="showTab('eval')">4. Evaluate</div>
+      </div>
+      <div id="tab-setup" class="code-panel active">
+<pre><span class="kw">from</span> <span class="var">transformers</span> <span class="kw">import</span> <span class="cls">AutoModelForCausalLM</span>, <span class="cls">AutoTokenizer</span>
+<span class="kw">from</span> <span class="var">peft</span> <span class="kw">import</span> <span class="cls">LoraConfig</span>, <span class="fn">get_peft_model</span>
+<span class="kw">from</span> <span class="var">trl</span> <span class="kw">import</span> <span class="cls">DPOConfig</span>, <span class="cls">DPOTrainer</span>
+
+<span class="cm"># Load SFT-fine-tuned model as starting point</span>
+<span class="var">model</span> = <span class="cls">AutoModelForCausalLM</span>.<span class="fn">from_pretrained</span>(<span class="str">"./sft-checkpoint"</span>)
+<span class="var">tokenizer</span> = <span class="cls">AutoTokenizer</span>.<span class="fn">from_pretrained</span>(<span class="str">"./sft-checkpoint"</span>)
+
+<span class="cm"># DPOTrainer creates the reference model automatically</span>
+<span class="cm"># (frozen copy of model at initialization)</span>
+
+<span class="cm"># Optional: use LoRA to keep memory low</span>
+<span class="var">peft_config</span> = <span class="cls">LoraConfig</span>(
+    <span class="var">r</span>=<span class="num">16</span>, <span class="var">lora_alpha</span>=<span class="num">32</span>,
+    <span class="var">target_modules</span>=[<span class="str">"q_proj"</span>, <span class="str">"v_proj"</span>],
+    <span class="var">bias</span>=<span class="str">"none"</span>, <span class="var">task_type</span>=<span class="str">"CAUSAL_LM"</span>
+)</pre>
+      </div>
+      <div id="tab-data" class="code-panel">
+<pre><span class="kw">from</span> <span class="var">datasets</span> <span class="kw">import</span> <span class="fn">load_dataset</span>
+
+<span class="cm"># Load a standard DPO preference dataset</span>
+<span class="var">dataset</span> = <span class="fn">load_dataset</span>(
+    <span class="str">"HuggingFaceH4/ultrafeedback_binarized"</span>,
+    <span class="var">split</span>=<span class="str">"train_prefs"</span>
+)
+
+<span class="cm"># The dataset already has 'prompt', 'chosen', 'rejected' cols</span>
+<span class="cm"># If building your own, structure it the same way:</span>
+<span class="var">custom</span> = <span class="var">Dataset</span>.<span class="fn">from_list</span>([
+    {
+        <span class="str">"prompt"</span>:   <span class="str">"What is 2+2?"</span>,
+        <span class="str">"chosen"</span>:   <span class="str">"2+2 equals 4."</span>,
+        <span class="str">"rejected"</span>: <span class="str">"Math is hard."</span>
+    },
+    <span class="cm"># ... more examples</span>
+])
+
+<span class="cm"># Tokenizer padding side must be LEFT for causal LMs</span>
+<span class="var">tokenizer</span>.<span class="var">padding_side</span> = <span class="str">"left"</span></pre>
+      </div>
+      <div id="tab-train" class="code-panel">
+<pre><span class="var">dpo_config</span> = <span class="cls">DPOConfig</span>(
+    <span class="var">beta</span>=<span class="num">0.1</span>,                   <span class="cm"># KL penalty coefficient</span>
+    <span class="var">output_dir</span>=<span class="str">"./dpo-output"</span>,
+    <span class="var">num_train_epochs</span>=<span class="num">1</span>,
+    <span class="var">per_device_train_batch_size</span>=<span class="num">4</span>,
+    <span class="var">gradient_accumulation_steps</span>=<span class="num">4</span>,
+    <span class="var">learning_rate</span>=<span class="num">5e-7</span>,         <span class="cm"># much lower than SFT</span>
+    <span class="var">warmup_ratio</span>=<span class="num">0.1</span>,
+    <span class="var">fp16</span>=<span class="kw">True</span>,
+    <span class="var">logging_steps</span>=<span class="num">10</span>,
+    <span class="var">loss_type</span>=<span class="str">"sigmoid"</span>,        <span class="cm"># original DPO loss</span>
+    <span class="var">max_length</span>=<span class="num">1024</span>,
+    <span class="var">max_prompt_length</span>=<span class="num">512</span>,
+)
+
+<span class="var">trainer</span> = <span class="cls">DPOTrainer</span>(
+    <span class="var">model</span>=<span class="var">model</span>,
+    <span class="var">ref_model</span>=<span class="kw">None</span>,             <span class="cm"># auto-created if None</span>
+    <span class="var">args</span>=<span class="var">dpo_config</span>,
+    <span class="var">train_dataset</span>=<span class="var">dataset</span>,
+    <span class="var">tokenizer</span>=<span class="var">tokenizer</span>,
+    <span class="var">peft_config</span>=<span class="var">peft_config</span>,   <span class="cm"># optional: LoRA adapters</span>
+)
+<span class="var">trainer</span>.<span class="fn">train</span>()</pre>
+      </div>
+      <div id="tab-eval" class="code-panel">
+<pre><span class="cm"># Key DPO training metrics to monitor:</span>
+
+<span class="cm"># rewards/chosen  — should INCREASE over training</span>
+<span class="cm"># rewards/rejected — should DECREASE over training</span>
+<span class="cm"># rewards/margins — chosen - rejected (key signal)</span>
+<span class="cm"># logps/chosen   — log probability of chosen response</span>
+<span class="cm"># logps/rejected  — log probability of rejected response</span>
+
+<span class="cm"># Healthy training looks like:</span>
+<span class="cm"># ✓ margins steadily increasing</span>
+<span class="cm"># ✓ chosen logps increasing</span>
+<span class="cm"># ✓ rejected logps decreasing</span>
+<span class="cm"># ✗ If logps/chosen drops too: beta too high, lower it</span>
+<span class="cm"># ✗ If margins plateau quickly: dataset quality low</span>
+
+<span class="cm"># Win rate evaluation via LLM-as-judge:</span>
+<span class="kw">from</span> <span class="var">trl</span> <span class="kw">import</span> <span class="fn">ModelConfig</span>
+<span class="cm"># Generate outputs from DPO model and SFT model</span>
+<span class="cm"># Ask GPT-4 or Claude to pick which is better</span>
+<span class="cm"># Win rate > 50% against SFT baseline = success</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 7: STAT CARDS -->
+  <div class="section">
+    <div class="section-label">By the Numbers</div>
+    <div class="section-title">DPO At a Glance</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-val" style="color:var(--coral);">1</div><div class="stat-label">Training stage (vs 3 for RLHF)</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--green);">0</div><div class="stat-label">Reward models needed</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--gold);">0.1</div><div class="stat-label">Typical β value to start</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--teal);">5e-7</div><div class="stat-label">Typical learning rate (lower than SFT)</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--purple);">500+</div><div class="stat-label">Min preference pairs (1K+ recommended)</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--coral);">1–3</div><div class="stat-label">Training epochs before overfitting</div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 8: CHEAT SHEET -->
+  <div class="section">
+    <div class="section-label">Quick Reference</div>
+    <div class="section-title">DPO Cheat Sheet</div>
+    <div class="cheat-grid">
+      <div class="cheat-card">
+        <div class="cheat-card-title">β Tuning Guide</div>
+        <div class="cheat-line"><span>β = 0.01–0.05</span> — aggressive, may collapse</div>
+        <div class="cheat-line"><span>β = 0.1</span> — default, good starting point</div>
+        <div class="cheat-line"><span>β = 0.5</span> — conservative, stays near SFT</div>
+        <div class="cheat-line"><span>β = 1.0+</span> — very conservative, small updates</div>
+        <div class="cheat-line">Monitor <span>rewards/margins</span> to tune β</div>
+      </div>
+      <div class="cheat-card">
+        <div class="cheat-card-title">DPO Variants</div>
+        <div class="cheat-line"><span>sigmoid</span> — original DPO loss (Rafailov 2023)</div>
+        <div class="cheat-line"><span>hinge</span> — margin-based, ignores easy pairs</div>
+        <div class="cheat-line"><span>ipo</span> — IPO, avoids overfitting to pairs</div>
+        <div class="cheat-line"><span>kto</span> — KTO, uses binary signal (good/bad)</div>
+        <div class="cheat-line"><span>cpo</span> — CPO, no reference model needed</div>
+      </div>
+      <div class="cheat-card">
+        <div class="cheat-card-title">Data Quality Signals</div>
+        <div class="cheat-line"><span>Margin</span>: chosen must be clearly better</div>
+        <div class="cheat-line"><span>Diversity</span>: varied prompts, not repetitive</div>
+        <div class="cheat-line"><span>Avoid</span>: pairs where diff is trivial (length)</div>
+        <div class="cheat-line"><span>Label noise</span>: major failure mode, audit data</div>
+        <div class="cheat-line"><span>Quantity</span>: 1K–100K depending on domain</div>
+      </div>
+      <div class="cheat-card">
+        <div class="cheat-card-title">Key Metrics</div>
+        <div class="cheat-line"><span>rewards/margins</span> — primary training signal</div>
+        <div class="cheat-line"><span>logps/chosen</span> — should increase</div>
+        <div class="cheat-line"><span>logps/rejected</span> — should decrease</div>
+        <div class="cheat-line"><span>win_rate</span> — % beats SFT baseline</div>
+        <div class="cheat-line"><span>MT-Bench</span> — multi-turn dialogue quality</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEXT -->
+  <div class="next-card">
+    <div class="next-eyebrow">Coming Up Next</div>
+    <div class="next-title">Chapter 8 — Retrieval-Augmented Generation (RAG)</div>
+    <div class="next-sub">Give your model long-term memory by grounding responses in a live vector database — no retraining required.</div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-brand">JAWNVION</div>
+  <div class="footer-sub">AI Training Workbook · Chapter 07 of 14 · peter@jawnvion.com</div>
+</div>
+
+<script>
+// ─── PREFERENCE PAIRS DATA ───
+const pairs = [
+  {
+    prompt: "Explain what a neural network is to a 10-year-old.",
+    chosen: "Think of a neural network like a brain made of tiny decision-makers. Each one sees a piece of the information and passes its vote to the next layer. By the end, they've all cooperated to give you an answer — like guessing whether a photo shows a cat or a dog!",
+    rejected: "A neural network is a computational model inspired by biological neural networks consisting of interconnected nodes with learned weight parameters optimized via gradient descent to minimize a cross-entropy loss function."
+  },
+  {
+    prompt: "What are the risks of using AI in medical diagnosis?",
+    chosen: "AI diagnostic tools can miss rare conditions that aren't well-represented in training data, and they can inherit biases from historical medical records. They should be used as a second opinion for doctors, not as a replacement — especially for high-stakes decisions where accountability matters.",
+    rejected: "AI might sometimes make wrong predictions."
+  },
+  {
+    prompt: "Write a Python function to reverse a string.",
+    chosen: "```python\ndef reverse_string(s: str) -> str:\n    \"\"\"Return the reverse of a string.\"\"\"\n    return s[::-1]\n```\nThis uses Python's slice notation — `[::-1]` starts at the end and steps backwards by 1.",
+    rejected: "Here is the code: s = s[::-1]; return s"
+  },
+  {
+    prompt: "How should I handle an angry customer?",
+    chosen: "First, listen without interrupting — let them fully express the frustration. Acknowledge how they feel ('I can see this has been really frustrating'). Then calmly restate the issue to confirm you understood, and offer a concrete next step. Avoid defensiveness: the goal is resolution, not winning an argument.",
+    rejected: "Tell them to calm down and explain company policy."
+  },
+  {
+    prompt: "What is the difference between supervised and unsupervised learning?",
+    chosen: "Supervised learning trains on labeled examples — you give it photos tagged 'cat' or 'dog' and it learns the pattern. Unsupervised learning finds structure in unlabeled data — it might discover on its own that the photos cluster into two groups, even without being told which is which.",
+    rejected: "Supervised learning uses labels. Unsupervised learning does not use labels."
+  }
+];
+
+let pairIdx = 0;
+function renderPair() {
+  const p = pairs[pairIdx];
+  document.getElementById('pairPrompt').textContent = p.prompt;
+  document.getElementById('pairChosen').textContent = p.chosen;
+  document.getElementById('pairRejected').textContent = p.rejected;
+  document.getElementById('pairCounter').textContent = `${pairIdx + 1} / ${pairs.length}`;
+}
+document.getElementById('nextPair').addEventListener('click', () => { pairIdx = (pairIdx + 1) % pairs.length; renderPair(); });
+document.getElementById('prevPair').addEventListener('click', () => { pairIdx = (pairIdx - 1 + pairs.length) % pairs.length; renderPair(); });
+renderPair();
+
+// ─── LOSS FUNCTION CANVAS ───
+const lossCanvas = document.getElementById('lossCanvas');
+const lossCtx = lossCanvas.getContext('2d');
+
+function drawLossFunction() {
+  const beta = parseFloat(document.getElementById('betaSlider').value);
+  document.getElementById('betaVal').textContent = beta.toFixed(2);
+  const W = lossCanvas.width, H = lossCanvas.height;
+  const ctx = lossCtx;
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { left: 60, right: 20, top: 20, bottom: 40 };
+  const pw = W - pad.left - pad.right, ph = H - pad.top - pad.bottom;
+
+  // Grid lines
+  [-2,-1,0,1,2].forEach(v => {
+    const y = pad.top + ph/2 - v * ph/4;
+    if (y < pad.top || y > pad.top + ph) return;
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + pw, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.font = '10px JetBrains Mono';
+    ctx.textAlign = 'right';
+    ctx.fillText(v.toFixed(0), pad.left - 6, y + 4);
+  });
+
+  // X axis labels
+  [-3,-2,-1,0,1,2,3].forEach(v => {
+    const x = pad.left + pw/2 + v * pw/6;
+    if (x < pad.left || x > pad.left + pw) return;
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + ph); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.font = '10px JetBrains Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(v.toFixed(0), x, pad.top + ph + 18);
+  });
+
+  // Axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.left, pad.top); ctx.lineTo(pad.left, pad.top+ph); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.left, pad.top+ph/2); ctx.lineTo(pad.left+pw, pad.top+ph/2); ctx.stroke();
+
+  // DPO loss: -log(sigma(beta * (log_ratio_w - log_ratio_l)))
+  // Simplified: plot as -log(sigma(beta * margin)) for margin in [-3, 3]
+  const sigmoid = x => 1 / (1 + Math.exp(-x));
+  const dpoLoss = m => -Math.log(sigmoid(beta * m));
+
+  // Loss curve
+  ctx.beginPath();
+  let first = true;
+  for (let px = 0; px <= pw; px++) {
+    const margin = (px / pw - 0.5) * 6;
+    const loss = dpoLoss(margin);
+    const clampedLoss = Math.max(-2, Math.min(3, loss));
+    const x = pad.left + px;
+    const y = pad.top + ph/2 - clampedLoss * ph/4;
+    if (first) { ctx.moveTo(x, y); first = false; } else { ctx.lineTo(x, y); }
+  }
+  ctx.strokeStyle = '#FF6B9D';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Reward margin line (gradient arrow region)
+  const midX = pad.left + pw/2;
+  ctx.strokeStyle = 'rgba(255,107,157,0.2)';
+  ctx.setLineDash([4,4]);
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(midX, pad.top); ctx.lineTo(midX, pad.top+ph); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(255,107,157,0.5)';
+  ctx.font = '10px Plus Jakarta Sans';
+  ctx.textAlign = 'center';
+  ctx.fillText('margin = 0', midX, pad.top + 14);
+
+  // Labels
+  ctx.save();
+  ctx.translate(14, pad.top + ph/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '11px Plus Jakarta Sans';
+  ctx.textAlign = 'center';
+  ctx.fillText('DPO Loss', 0, 0);
+  ctx.restore();
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '11px Plus Jakarta Sans';
+  ctx.textAlign = 'center';
+  ctx.fillText('Reward Margin (chosen − rejected)', pad.left + pw/2, pad.top + ph + 34);
+
+  // Annotations
+  ctx.fillStyle = 'rgba(74,222,128,0.7)';
+  ctx.font = '11px Plus Jakarta Sans';
+  ctx.textAlign = 'left';
+  ctx.fillText('← chosen wins (loss ↓)', pad.left + pw/2 + 8, pad.top + ph/2 - 20);
+  ctx.fillStyle = 'rgba(255,107,107,0.7)';
+  ctx.textAlign = 'right';
+  ctx.fillText('rejected wins (loss ↑) →', pad.left + pw/2 - 8, pad.top + ph/2 - 20);
+}
+
+document.getElementById('betaSlider').addEventListener('input', drawLossFunction);
+
+// ─── TRAINING ANIMATION ───
+const trainCanvas = document.getElementById('trainCanvas');
+const trainCtx = trainCanvas.getContext('2d');
+let trainStep = 0;
+let pulseRaf = null;
+
+const TRAIN_STEPS = [
+  { label: 'Load preference batch (prompt, chosen, rejected)', color: '#7A8BA8' },
+  { label: 'Forward pass: Policy model on chosen response', color: '#FF6B9D' },
+  { label: 'Forward pass: Policy model on rejected response', color: '#FF6B9D' },
+  { label: 'Forward pass: Reference model (frozen) on both', color: '#7A8BA8' },
+  { label: 'Compute log-ratio margins + DPO loss', color: '#FFB44F' },
+  { label: 'Backprop → update policy weights only', color: '#4ADE80' },
+];
+
+function drawTrain(step) {
+  const W = trainCanvas.width, H = trainCanvas.height;
+  const ctx = trainCtx;
+  ctx.clearRect(0, 0, W, H);
+
+  // Two columns: Policy model (left) + Reference model (right)
+  const colW = (W - 80) / 2, colH = 70;
+  const leftX = 20, rightX = 20 + colW + 40;
+  const midY = H / 2 - colH / 2 - 20;
+
+  // Batch at top
+  const batchActive = step >= 1;
+  ctx.globalAlpha = batchActive ? 1 : 0.3;
+  ctx.fillStyle = batchActive ? 'rgba(255,107,157,0.15)' : 'rgba(122,139,168,0.08)';
+  roundRect(ctx, W/2 - 140, 16, 280, 36, 8); ctx.fill();
+  ctx.strokeStyle = batchActive ? 'rgba(255,107,157,0.5)' : 'rgba(122,139,168,0.2)';
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, W/2 - 140, 16, 280, 36, 8); ctx.stroke();
+  ctx.fillStyle = batchActive ? '#FF6B9D' : '#4A5A72';
+  ctx.font = '12px Plus Jakarta Sans';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Preference Batch: (prompt, y_w, y_l)', W/2, 34);
+  ctx.globalAlpha = 1;
+
+  // Arrow down from batch
+  if (step >= 1) {
+    drawArrow(ctx, W/2, 54, leftX + colW*0.75, midY - 2, 'rgba(255,107,157,0.4)');
+    drawArrow(ctx, W/2, 54, rightX + colW*0.25, midY - 2, 'rgba(122,139,168,0.3)');
+  }
+
+  // Policy model box
+  const policyActive = step >= 2;
+  ctx.fillStyle = policyActive ? 'rgba(255,107,157,0.15)' : 'rgba(122,139,168,0.05)';
+  roundRect(ctx, leftX, midY, colW, colH, 10); ctx.fill();
+  ctx.strokeStyle = policyActive ? 'rgba(255,107,157,0.6)' : 'rgba(122,139,168,0.2)';
+  ctx.lineWidth = step >= 1 && step <= 3 && step % 2 === 0 ? 2.5 : 1.5;
+  roundRect(ctx, leftX, midY, colW, colH, 10); ctx.stroke();
+  ctx.fillStyle = policyActive ? '#FF6B9D' : '#4A5A72';
+  ctx.font = 'bold 13px Plus Jakarta Sans';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('π_θ  Policy Model', leftX + colW/2, midY + colH/2 - 10);
+  ctx.font = '11px Plus Jakarta Sans';
+  ctx.fillStyle = policyActive ? 'rgba(255,107,157,0.7)' : '#4A5A72';
+  ctx.fillText('(trainable weights)', leftX + colW/2, midY + colH/2 + 10);
+
+  // Reference model box
+  const refActive = step >= 4;
+  ctx.fillStyle = refActive ? 'rgba(122,139,168,0.15)' : 'rgba(122,139,168,0.05)';
+  roundRect(ctx, rightX, midY, colW, colH, 10); ctx.fill();
+  ctx.strokeStyle = refActive ? 'rgba(122,139,168,0.6)' : 'rgba(122,139,168,0.2)';
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, rightX, midY, colW, colH, 10); ctx.stroke();
+  ctx.fillStyle = refActive ? '#7A8BA8' : '#4A5A72';
+  ctx.font = 'bold 13px Plus Jakarta Sans';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('π_ref  Reference Model', rightX + colW/2, midY + colH/2 - 10);
+  ctx.font = '11px Plus Jakarta Sans';
+  ctx.fillText('🔒 frozen copy of SFT', rightX + colW/2, midY + colH/2 + 10);
+
+  // Log-ratio computation box
+  const lossY = midY + colH + 40;
+  const lossActive = step >= 5;
+  if (step >= 4) {
+    drawArrow(ctx, leftX + colW/2, midY + colH + 2, W/2, lossY - 2, 'rgba(255,180,79,0.5)');
+    drawArrow(ctx, rightX + colW/2, midY + colH + 2, W/2, lossY - 2, 'rgba(255,180,79,0.4)');
+  }
+  ctx.fillStyle = lossActive ? 'rgba(255,180,79,0.15)' : 'rgba(122,139,168,0.05)';
+  roundRect(ctx, W/2 - 160, lossY, 320, 44, 10); ctx.fill();
+  ctx.strokeStyle = lossActive ? 'rgba(255,180,79,0.5)' : 'rgba(122,139,168,0.15)';
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, W/2 - 160, lossY, 320, 44, 10); ctx.stroke();
+  ctx.fillStyle = lossActive ? '#FFB44F' : '#4A5A72';
+  ctx.font = 'bold 12px JetBrains Mono';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('L_DPO = −log σ(β · (log r_w − log r_l))', W/2, lossY + 22);
+
+  // Backprop arrow
+  const bpActive = step >= 6;
+  if (bpActive) {
+    drawArrow(ctx, W/2, lossY - 4, leftX + colW/2, midY + colH + 4, '#4ADE80', true);
+    ctx.fillStyle = '#4ADE80';
+    ctx.font = 'bold 12px Plus Jakarta Sans';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('∇ Backprop to Policy Only', W/2 - 60, lossY - 14);
+  }
+
+  // Step label
+  if (step > 0 && step <= TRAIN_STEPS.length) {
+    const s = TRAIN_STEPS[step - 1];
+    ctx.fillStyle = s.color;
+    ctx.font = 'bold 12px Plus Jakarta Sans';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`Step ${step}: ${s.label}`, W/2, H - 22);
+  }
+
+  document.getElementById('stepLabel').innerHTML = `Step <span class="step-highlight">${step}</span> / 6`;
+}
+
+function drawArrow(ctx, x1, y1, x2, y2, color, dashed = false) {
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 1.5;
+  if (dashed) ctx.setLineDash([5,4]);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.setLineDash([]);
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - 8 * Math.cos(angle - 0.4), y2 - 8 * Math.sin(angle - 0.4));
+  ctx.lineTo(x2 - 8 * Math.cos(angle + 0.4), y2 - 8 * Math.sin(angle + 0.4));
+  ctx.closePath(); ctx.fill();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+let trainPulse = null;
+function startPulse() {
+  if (trainPulse) return;
+  trainPulse = setInterval(() => drawTrain(trainStep), 80);
+}
+function stopPulse() { if (trainPulse) { clearInterval(trainPulse); trainPulse = null; } }
+
+document.getElementById('trainBtn').addEventListener('click', () => {
+  if (trainStep < 6) { trainStep++; drawTrain(trainStep); }
+  if (trainStep < 6) startPulse(); else stopPulse();
+});
+document.getElementById('resetBtn').addEventListener('click', () => {
+  stopPulse(); trainStep = 0; drawTrain(0);
+});
+
+// ─── CODE TABS ───
+function showTab(id) {
+  const ids = ['setup','data','train','eval'];
+  document.querySelectorAll('.code-tab').forEach((t, i) => t.classList.toggle('active', ids[i] === id));
+  document.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+}
+
+// ─── RESIZE & INIT ───
+function resizeAll() {
+  [lossCanvas, trainCanvas].forEach(c => {
+    c.width = c.offsetWidth;
+    c.height = parseInt(c.getAttribute('height'));
+  });
+  drawLossFunction();
+  drawTrain(trainStep);
+}
+
+window.addEventListener('resize', resizeAll);
+window.addEventListener('load', () => { resizeAll(); startPulse(); });
+</script>
+</body>
+</html>

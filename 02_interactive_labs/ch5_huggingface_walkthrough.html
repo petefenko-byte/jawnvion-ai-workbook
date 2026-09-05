@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Chapter 5: HuggingFace + TinyLlama</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg: #080E1B;
+  --bg-card: #0D1527;
+  --bg-card2: #111d35;
+  --bg-deep: #050B16;
+  --teal: #00C9A7;
+  --teal-dim: rgba(0,201,167,0.12);
+  --teal-border: rgba(0,201,167,0.3);
+  --gold: #FFB44F;
+  --gold-dim: rgba(255,180,79,0.12);
+  --gold-border: rgba(255,180,79,0.3);
+  --purple: #C084FC;
+  --purple-dim: rgba(192,132,252,0.12);
+  --purple-border: rgba(192,132,252,0.3);
+  --red: #FF6B6B;
+  --red-dim: rgba(255,107,107,0.12);
+  --blue: #60BBFF;
+  --blue-dim: rgba(96,187,255,0.12);
+  --text: #E8EDF5;
+  --text-muted: #7A8BA8;
+  --border: rgba(255,255,255,0.07);
+  --sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body { background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.6; overflow-x:hidden; }
+
+/* NAV */
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 2rem; height:56px;
+  background:rgba(8,14,27,0.9); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+}
+.nav-brand { font-weight:800; font-size:0.95rem; letter-spacing:0.08em; color:var(--teal); }
+.nav-links { display:flex; gap:1.5rem; list-style:none; }
+.nav-links a { font-size:0.8rem; font-weight:500; color:var(--text-muted); text-decoration:none; letter-spacing:0.04em; transition:color 0.2s; }
+.nav-links a:hover { color:var(--teal); }
+.nav-chapter { font-size:0.75rem; font-family:var(--mono); color:var(--text-muted); }
+
+/* HERO */
+.hero {
+  min-height:100vh; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  text-align:center; padding:5rem 2rem 3rem;
+  position:relative; overflow:hidden;
+}
+.hero-grid {
+  position:absolute; inset:0;
+  background-image:
+    linear-gradient(rgba(192,132,252,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(192,132,252,0.04) 1px, transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 50%, black, transparent);
+}
+.hero-orb {
+  position:absolute; border-radius:50%; pointer-events:none;
+}
+.orb1 { width:500px; height:500px; background:radial-gradient(circle, rgba(192,132,252,0.07) 0%, transparent 70%); top:20%; left:20%; transform:translate(-50%,-50%); }
+.orb2 { width:400px; height:400px; background:radial-gradient(circle, rgba(0,201,167,0.06) 0%, transparent 70%); bottom:20%; right:20%; }
+.ch-label { font-family:var(--mono); font-size:0.72rem; color:var(--purple); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:1.2rem; position:relative; }
+.ch-label::before, .ch-label::after { content:'──'; margin:0 0.75rem; opacity:0.4; }
+h1 { font-size:clamp(2.6rem,6.5vw,5rem); font-weight:800; line-height:1.05; letter-spacing:-0.02em; position:relative; text-wrap:balance; }
+.accent-p { color:var(--purple); }
+.accent-t { color:var(--teal); }
+.accent-g { color:var(--gold); }
+.hero-sub { font-size:1.1rem; color:var(--text-muted); max-width:580px; margin:1.5rem auto 0; position:relative; }
+.hero-tags { display:flex; flex-wrap:wrap; gap:0.55rem; justify-content:center; margin-top:2.5rem; position:relative; }
+.tag { font-family:var(--mono); font-size:0.7rem; padding:0.28rem 0.7rem; border-radius:4px; font-weight:500; }
+.tag-t { background:var(--teal-dim); color:var(--teal); border:1px solid var(--teal-border); }
+.tag-g { background:var(--gold-dim); color:var(--gold); border:1px solid var(--gold-border); }
+.tag-p { background:var(--purple-dim); color:var(--purple); border:1px solid var(--purple-border); }
+.scroll-hint { position:absolute; bottom:2rem; left:50%; transform:translateX(-50%); color:var(--text-muted); font-size:0.68rem; letter-spacing:0.1em; text-transform:uppercase; animation:bob 2s ease-in-out infinite; display:flex; flex-direction:column; align-items:center; gap:0.4rem; }
+@keyframes bob { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+
+/* SECTION */
+.section { padding:5rem 2rem; max-width:1100px; margin:0 auto; }
+.divider { width:100%; height:1px; background:var(--border); max-width:1100px; margin:0 auto; }
+.eyebrow { font-family:var(--mono); font-size:0.7rem; color:var(--purple); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:0.6rem; }
+h2 { font-size:clamp(1.7rem,3.5vw,2.5rem); font-weight:800; letter-spacing:-0.02em; line-height:1.1; text-wrap:balance; }
+.sec-desc { color:var(--text-muted); margin-top:0.75rem; max-width:620px; font-size:0.98rem; }
+.sec-header { margin-bottom:2.5rem; }
+
+/* CARDS */
+.card { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:1.75rem; }
+.card-sm { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:1.25rem; }
+
+/* BUTTONS */
+.btn { font-family:var(--sans); font-size:0.85rem; font-weight:600; padding:0.6rem 1.4rem; border-radius:8px; border:none; cursor:pointer; transition:all 0.2s; }
+.btn-p { background:var(--purple); color:var(--bg); }
+.btn-p:hover { background:#d09eff; transform:translateY(-1px); }
+.btn-t { background:var(--teal); color:var(--bg); }
+.btn-t:hover { background:#00deb8; transform:translateY(-1px); }
+.btn-g { background:var(--gold); color:var(--bg); }
+.btn-g:hover { background:#ffc66a; transform:translateY(-1px); }
+.btn-outline { background:transparent; color:var(--text-muted); border:1px solid var(--border); }
+.btn-outline:hover { border-color:rgba(255,255,255,0.2); color:var(--text); }
+
+/* CODE */
+.code-block { background:var(--bg-deep); border:1px solid var(--border); border-radius:10px; padding:1.25rem 1.5rem; font-family:var(--mono); font-size:0.79rem; line-height:1.85; overflow-x:auto; }
+.kw{color:#C084FC} .fn{color:#60BBFF} .str{color:#7ED6A0} .num{color:#FFB44F} .cmt{color:#374866;font-style:italic} .var{color:#E8EDF5} .op{color:#00C9A7} .cls{color:#FFB44F}
+
+/* ══ ECOSYSTEM ══ */
+.eco-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.25rem; }
+.eco-card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:1.5rem; transition:all 0.2s; }
+.eco-card:hover { transform:translateY(-2px); }
+.eco-card.active-lib { border-color:var(--purple-border); background:rgba(192,132,252,0.04); }
+.eco-icon { font-size:1.6rem; margin-bottom:0.75rem; }
+.eco-name { font-weight:700; font-size:0.95rem; margin-bottom:0.4rem; }
+.eco-pkg { font-family:var(--mono); font-size:0.7rem; color:var(--purple); margin-bottom:0.6rem; }
+.eco-desc { font-size:0.82rem; color:var(--text-muted); line-height:1.55; }
+
+/* ══ TOKENIZER ══ */
+.tok-input-row { display:flex; gap:0.75rem; margin-bottom:1.5rem; align-items:flex-start; flex-wrap:wrap; }
+#tok-input {
+  flex:1; min-width:240px;
+  background:var(--bg-deep); border:1px solid var(--border); border-radius:8px;
+  padding:0.75rem 1rem; color:var(--text); font-family:var(--mono); font-size:0.85rem;
+  resize:none; outline:none; transition:border-color 0.2s;
+}
+#tok-input:focus { border-color:var(--purple-border); }
+.tok-output { background:var(--bg-deep); border:1px solid var(--border); border-radius:10px; padding:1.25rem; min-height:80px; display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start; }
+.tok-chip {
+  font-family:var(--mono); font-size:0.75rem; padding:0.25rem 0.55rem; border-radius:4px;
+  font-weight:500; cursor:default; transition:transform 0.1s;
+  border:1px solid transparent;
+}
+.tok-chip:hover { transform:translateY(-2px); }
+.tok-stats { display:flex; gap:1.5rem; margin-top:1rem; flex-wrap:wrap; }
+.tok-stat { font-family:var(--mono); font-size:0.78rem; }
+.tok-stat-label { color:var(--text-muted); }
+.tok-stat-value { color:var(--teal); font-weight:600; margin-left:0.4rem; }
+
+.tok-ids { background:var(--bg-deep); border:1px solid var(--border); border-radius:8px; padding:1rem 1.25rem; margin-top:1rem; font-family:var(--mono); font-size:0.75rem; color:var(--gold); line-height:1.8; word-break:break-all; min-height:40px; }
+.tok-ids-label { font-size:0.68rem; color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:0.3rem; }
+
+/* ══ ARCHITECTURE ══ */
+.arch-container { display:grid; grid-template-columns:1fr 320px; gap:2rem; align-items:start; }
+@media(max-width:800px) { .arch-container { grid-template-columns:1fr; } }
+#arch-canvas { width:100%; height:460px; border-radius:12px; background:var(--bg-deep); border:1px solid var(--border); cursor:pointer; }
+.arch-sidebar { display:flex; flex-direction:column; gap:1rem; }
+.arch-stat { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:1.2rem; }
+.arch-stat-label { font-size:0.7rem; color:var(--text-muted); font-family:var(--mono); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:0.4rem; }
+.arch-stat-value { font-size:1.4rem; font-weight:700; font-family:var(--mono); color:var(--purple); }
+.arch-stat-sub { font-size:0.75rem; color:var(--text-muted); margin-top:0.2rem; }
+.param-breakdown { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:1.2rem; }
+.param-row { display:flex; align-items:center; gap:0.75rem; margin-bottom:0.85rem; }
+.param-row:last-child { margin-bottom:0; }
+.param-bar-bg { flex:1; height:6px; background:var(--bg-card2); border-radius:3px; overflow:hidden; }
+.param-bar-fill { height:100%; border-radius:3px; }
+.param-name { font-size:0.75rem; color:var(--text-muted); font-family:var(--mono); width:90px; flex-shrink:0; }
+.param-pct { font-size:0.72rem; font-family:var(--mono); color:var(--text-muted); width:35px; text-align:right; }
+
+/* ══ GENERATION ══ */
+.gen-container { display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start; }
+@media(max-width:700px) { .gen-container { grid-template-columns:1fr; } }
+.gen-controls { display:flex; flex-direction:column; gap:1.25rem; }
+.slider-row { display:flex; flex-direction:column; gap:0.5rem; }
+.slider-label { display:flex; justify-content:space-between; align-items:center; }
+.slider-name { font-size:0.82rem; font-weight:600; }
+.slider-val { font-family:var(--mono); font-size:0.8rem; color:var(--purple); }
+input[type=range] {
+  -webkit-appearance:none; width:100%; height:6px;
+  background:var(--bg-card2); border-radius:3px; outline:none; cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:18px; height:18px;
+  border-radius:50%; background:var(--purple); cursor:pointer;
+  box-shadow:0 0 8px rgba(192,132,252,0.4);
+}
+.strategy-tabs { display:flex; gap:0.4rem; flex-wrap:wrap; }
+.strat-tab {
+  font-family:var(--mono); font-size:0.72rem; padding:0.35rem 0.85rem;
+  border-radius:6px; border:1px solid var(--border);
+  background:var(--bg-card); color:var(--text-muted); cursor:pointer; transition:all 0.2s;
+}
+.strat-tab.active { background:var(--purple-dim); border-color:var(--purple-border); color:var(--purple); }
+.gen-output-box {
+  background:var(--bg-deep); border:1px solid var(--border); border-radius:10px;
+  padding:1.5rem; min-height:220px; position:relative;
+}
+.gen-prompt { font-size:0.88rem; color:var(--text-muted); margin-bottom:0.6rem; }
+.gen-prompt strong { color:var(--text); }
+.gen-result { font-size:0.88rem; line-height:1.8; color:var(--text); }
+.gen-token { display:inline; }
+.gen-token.new { color:var(--teal); }
+.gen-cursor { display:inline-block; width:2px; height:1em; background:var(--teal); margin-left:1px; animation:blink 0.8s step-end infinite; vertical-align:middle; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.gen-meta { font-family:var(--mono); font-size:0.7rem; color:var(--text-muted); margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--border); }
+
+/* ══ PIPELINE ══ */
+.pipeline { display:flex; align-items:center; gap:0; flex-wrap:wrap; }
+.pipe-step {
+  background:var(--bg-card); border:1px solid var(--border); border-radius:10px;
+  padding:1rem 1.25rem; flex:1; min-width:130px; transition:all 0.4s;
+  text-align:center; position:relative;
+}
+.pipe-step.lit { border-color:var(--teal-border); background:rgba(0,201,167,0.05); box-shadow:0 0 20px rgba(0,201,167,0.08); }
+.pipe-arrow { color:var(--text-muted); padding:0 0.3rem; font-size:1.2rem; flex-shrink:0; }
+.pipe-icon { font-size:1.4rem; margin-bottom:0.4rem; }
+.pipe-name { font-weight:700; font-size:0.82rem; margin-bottom:0.2rem; }
+.pipe-detail { font-family:var(--mono); font-size:0.68rem; color:var(--text-muted); }
+.pipe-step.lit .pipe-name { color:var(--teal); }
+.pipe-step.lit .pipe-detail { color:rgba(0,201,167,0.7); }
+
+/* ══ CHEATSHEET ══ */
+.cs-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.25rem; }
+.cs-card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:1.5rem; transition:all 0.2s; }
+.cs-card:hover { border-color:var(--purple-border); transform:translateY(-2px); }
+.cs-icon { font-size:1.3rem; margin-bottom:0.6rem; }
+.cs-title { font-weight:700; font-size:0.92rem; margin-bottom:0.5rem; }
+.cs-desc { font-size:0.8rem; color:var(--text-muted); margin-bottom:0.6rem; }
+pre.cs-code { font-family:var(--mono); font-size:0.72rem; color:var(--teal); background:var(--bg-deep); padding:0.75rem 1rem; border-radius:6px; line-height:1.75; overflow-x:auto; white-space:pre; }
+
+/* ══ NEXT CHAPTER ══ */
+.next-ch { background:linear-gradient(135deg,rgba(0,201,167,0.07),rgba(255,180,79,0.07)); border:1px solid rgba(0,201,167,0.18); border-radius:16px; padding:3rem 2.5rem; text-align:center; margin:5rem auto; max-width:700px; }
+.next-label { font-family:var(--mono); font-size:0.7rem; color:var(--teal); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:1rem; }
+.next-title { font-size:1.75rem; font-weight:800; margin-bottom:0.75rem; }
+.next-desc { color:var(--text-muted); font-size:0.93rem; margin-bottom:2rem; }
+.prog-outer { height:4px; background:var(--bg-card); border-radius:2px; margin:1.5rem auto; max-width:400px; }
+.prog-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--purple),var(--teal)); width:35.7%; }
+.prog-label { font-family:var(--mono); font-size:0.7rem; color:var(--text-muted); }
+</style>
+</head>
+<body><div style="background:linear-gradient(135deg,#060d1e 0%,#0d2240 100%);color:#fff;padding:32px 40px 24px;font-family:'Segoe UI',Arial,sans-serif;border-bottom:4px solid #4fc3f7;margin-bottom:0;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div style="font-size:12px;color:#4fc3f7;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">JAWNVION LLC &nbsp;·&nbsp; LLM Engineering Series</div>
+      <div style="font-size:28px;font-weight:900;line-height:1.1;margin-bottom:6px;">17 Interactive Colab Labs</div>
+      <div style="font-size:14px;color:#8ab8d4;">Run in-browser &nbsp;·&nbsp; No setup required &nbsp;·&nbsp; Production LLM skills</div>
+    </div>
+    <div style="text-align:right;font-size:12px;color:#6090b0;line-height:1.8;">
+      <div>www.jawnvion.com</div>
+      <div>peter@jawnvion.com</div>
+      <div>© 2026 JAWNVION LLC</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- NAV -->
+<nav>
+  <span class="nav-brand">JAWNVION</span>
+  <ul class="nav-links">
+    <li><a href="#ecosystem">Ecosystem</a></li>
+    <li><a href="#tokenizer">Tokenizer</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#generation">Generation</a></li>
+    <li><a href="#pipeline">Pipeline</a></li>
+  </ul>
+  <span class="nav-chapter">CH 05 / 14</span>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-orb orb1"></div>
+  <div class="hero-orb orb2"></div>
+  <p class="ch-label">Chapter 05</p>
+  <h1><span class="accent-p">HuggingFace</span><br>+ <span class="accent-t">TinyLlama</span>-1.1B</h1>
+  <p class="hero-sub">Load a real billion-parameter language model, tokenize text, and run inference — in a free Colab notebook in under 10 minutes.</p>
+  <div class="hero-tags">
+    <span class="tag tag-p">transformers</span>
+    <span class="tag tag-t">AutoTokenizer</span>
+    <span class="tag tag-g">AutoModelForCausalLM</span>
+    <span class="tag tag-p">BPE Tokenization</span>
+    <span class="tag tag-t">from_pretrained()</span>
+    <span class="tag tag-g">model.generate()</span>
+    <span class="tag tag-p">temperature</span>
+    <span class="tag tag-t">top_p sampling</span>
+  </div>
+  <div class="scroll-hint">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    Scroll to explore
+  </div>
+</div>
+
+<!-- ECOSYSTEM -->
+<div class="divider"></div>
+<section class="section" id="ecosystem">
+  <div class="sec-header">
+    <p class="eyebrow">Section 01</p>
+    <h2>The <span class="accent-p">HuggingFace</span> Ecosystem</h2>
+    <p class="sec-desc">HuggingFace is the GitHub of AI models — 500,000+ models, a unified API, and the libraries that make everything work together.</p>
+  </div>
+
+  <div class="eco-grid">
+    <div class="eco-card active-lib">
+      <div class="eco-icon">🤗</div>
+      <div class="eco-name">transformers</div>
+      <div class="eco-pkg">pip install transformers</div>
+      <div class="eco-desc">The core library. AutoTokenizer, AutoModel, pipeline() — everything you need to load and run any model on the Hub.</div>
+    </div>
+    <div class="eco-card">
+      <div class="eco-icon">📦</div>
+      <div class="eco-name">datasets</div>
+      <div class="eco-pkg">pip install datasets</div>
+      <div class="eco-desc">Load 10,000+ datasets in one line. Streaming, shuffling, tokenization, train/test splits — all handled.</div>
+    </div>
+    <div class="eco-card">
+      <div class="eco-icon">⚡</div>
+      <div class="eco-name">accelerate</div>
+      <div class="eco-pkg">pip install accelerate</div>
+      <div class="eco-desc">Handles multi-GPU, mixed precision, and device placement transparently. Required by most fine-tuning recipes.</div>
+    </div>
+    <div class="eco-card">
+      <div class="eco-icon">🔧</div>
+      <div class="eco-name">peft</div>
+      <div class="eco-pkg">pip install peft</div>
+      <div class="eco-desc">Parameter-Efficient Fine-Tuning. LoRA, QLoRA, prefix tuning. Lets you fine-tune billion-param models on a single GPU.</div>
+    </div>
+    <div class="eco-card">
+      <div class="eco-icon">🎛️</div>
+      <div class="eco-name">trl</div>
+      <div class="eco-pkg">pip install trl</div>
+      <div class="eco-desc">Training with Reinforcement Learning — SFTTrainer, DPOTrainer, PPOTrainer. The toolkit for alignment. Chapters 6 &amp; 7.</div>
+    </div>
+    <div class="eco-card">
+      <div class="eco-icon">🔩</div>
+      <div class="eco-name">bitsandbytes</div>
+      <div class="eco-pkg">pip install bitsandbytes</div>
+      <div class="eco-desc">4-bit and 8-bit quantization. Lets 1.1B-parameter models run on a free T4 GPU without running out of memory.</div>
+    </div>
+  </div>
+
+  <div class="code-block" style="margin-top:2rem">
+<span class="cmt"># Everything you need for Chapter 5 in one install</span>
+<span class="op">!</span><span class="fn">pip install</span> <span class="var">transformers datasets accelerate bitsandbytes</span>
+
+<span class="kw">from</span> <span class="var">transformers</span> <span class="kw">import</span> <span class="cls">AutoTokenizer</span>, <span class="cls">AutoModelForCausalLM</span>
+<span class="kw">import</span> <span class="var">torch</span>
+
+<span class="var">model_id</span> <span class="op">=</span> <span class="str">"TinyLlama/TinyLlama-1.1B-Chat-v1.0"</span>
+
+<span class="var">tokenizer</span> <span class="op">=</span> <span class="cls">AutoTokenizer</span>.<span class="fn">from_pretrained</span>(<span class="var">model_id</span>)
+<span class="var">model</span>     <span class="op">=</span> <span class="cls">AutoModelForCausalLM</span>.<span class="fn">from_pretrained</span>(
+    <span class="var">model_id</span>,
+    <span class="var">torch_dtype</span><span class="op">=</span><span class="var">torch</span>.<span class="var">float16</span>,
+    <span class="var">device_map</span><span class="op">=</span><span class="str">"auto"</span>           <span class="cmt"># automatically uses GPU if available</span>
+)</div>
+</section>
+
+<!-- TOKENIZER -->
+<div class="divider"></div>
+<section class="section" id="tokenizer">
+  <div class="sec-header">
+    <p class="eyebrow">Section 02</p>
+    <h2>Tokenization: Text → <span class="accent-g">Numbers</span></h2>
+    <p class="sec-desc">Models don't see words. They see integers. A tokenizer splits your text into sub-word pieces (BPE), maps each piece to an ID, and hands the ID sequence to the model.</p>
+  </div>
+
+  <div class="card" style="margin-bottom:2rem">
+    <div class="tok-input-row">
+      <textarea id="tok-input" rows="2" placeholder="Type anything here…">The quick brown fox jumps over the lazy dog.</textarea>
+      <button class="btn btn-p" onclick="tokenize()">Tokenize</button>
+    </div>
+
+    <div style="font-size:0.75rem;color:var(--text-muted);font-family:var(--mono);margin-bottom:0.5rem;letter-spacing:0.06em;text-transform:uppercase;">Token Visualization</div>
+    <div class="tok-output" id="tok-chips"></div>
+
+    <div class="tok-stats">
+      <div class="tok-stat"><span class="tok-stat-label">Tokens:</span><span class="tok-stat-value" id="stat-tokens">—</span></div>
+      <div class="tok-stat"><span class="tok-stat-label">Characters:</span><span class="tok-stat-value" id="stat-chars">—</span></div>
+      <div class="tok-stat"><span class="tok-stat-label">Chars/Token:</span><span class="tok-stat-value" id="stat-ratio">—</span></div>
+      <div class="tok-stat"><span class="tok-stat-label">Vocab size:</span><span class="tok-stat-value">32,000</span></div>
+    </div>
+
+    <div class="tok-ids-label" style="margin-top:1.25rem">Input IDs (what the model actually receives)</div>
+    <div class="tok-ids" id="tok-ids">—</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <div class="card-sm">
+      <div style="font-weight:700;margin-bottom:0.6rem;">Why BPE?</div>
+      <div style="font-size:0.84rem;color:var(--text-muted);line-height:1.65">Byte-Pair Encoding starts with individual characters and merges the most frequent pairs repeatedly. "unbelievable" might tokenize as ["un","believ","able"] — three tokens, not twelve. This lets a 32K-token vocabulary cover any text efficiently, including code and non-English languages.</div>
+    </div>
+    <div class="card-sm">
+      <div style="font-weight:700;margin-bottom:0.6rem;">Special Tokens</div>
+      <div class="code-block" style="font-size:0.75rem;padding:0.85rem 1rem;">
+<span class="cmt"># TinyLlama uses Llama's chat template</span>
+<span class="var">BOS</span> <span class="op">=</span> <span class="str">"&lt;s&gt;"</span>          <span class="cmt"># start of sequence</span>
+<span class="var">EOS</span> <span class="op">=</span> <span class="str">"&lt;/s&gt;"</span>         <span class="cmt"># end of sequence</span>
+<span class="var">SYS</span> <span class="op">=</span> <span class="str">"&lt;&lt;SYS&gt;&gt;"</span>     <span class="cmt"># system prompt</span>
+<span class="var">INST</span><span class="op">=</span> <span class="str">"[INST]"</span>       <span class="cmt"># user turn</span>
+<span class="var">PAD</span> <span class="op">=</span> <span class="str">"&lt;unk&gt;"</span>        <span class="cmt"># padding token</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<div class="divider"></div>
+<section class="section" id="architecture">
+  <div class="sec-header">
+    <p class="eyebrow">Section 03</p>
+    <h2>TinyLlama-1.1B <span class="accent-p">Architecture</span></h2>
+    <p class="sec-desc">TinyLlama is a GPT-style decoder-only transformer trained on 3 trillion tokens. Same architecture as Llama 2, just smaller — perfect for learning on a free GPU.</p>
+  </div>
+
+  <div class="arch-container">
+    <div>
+      <canvas id="arch-canvas"></canvas>
+      <div style="font-size:0.75rem;color:var(--text-muted);text-align:center;margin-top:0.75rem;font-family:var(--mono)">Click a layer to inspect it</div>
+    </div>
+    <div class="arch-sidebar">
+      <div class="arch-stat">
+        <div class="arch-stat-label">Total Parameters</div>
+        <div class="arch-stat-value">1.1B</div>
+        <div class="arch-stat-sub">1,100,048,640 exact</div>
+      </div>
+      <div class="arch-stat">
+        <div class="arch-stat-label">Transformer Layers</div>
+        <div class="arch-stat-value">22</div>
+        <div class="arch-stat-sub">Each has self-attention + MLP</div>
+      </div>
+      <div class="arch-stat">
+        <div class="arch-stat-label">Attention Heads</div>
+        <div class="arch-stat-value">32</div>
+        <div class="arch-stat-sub">Hidden size: 2048</div>
+      </div>
+      <div class="arch-stat">
+        <div class="arch-stat-label">Context Window</div>
+        <div class="arch-stat-value">2048</div>
+        <div class="arch-stat-sub">tokens (max sequence length)</div>
+      </div>
+      <div class="param-breakdown">
+        <div style="font-size:0.72rem;color:var(--text-muted);font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:1rem;">Where the params live</div>
+        <div class="param-row">
+          <div class="param-name">Embeddings</div>
+          <div class="param-bar-bg"><div class="param-bar-fill" style="width:6%;background:var(--teal)"></div></div>
+          <div class="param-pct">6%</div>
+        </div>
+        <div class="param-row">
+          <div class="param-name">Attention</div>
+          <div class="param-bar-bg"><div class="param-bar-fill" style="width:38%;background:var(--purple)"></div></div>
+          <div class="param-pct">38%</div>
+        </div>
+        <div class="param-row">
+          <div class="param-name">MLP / FFN</div>
+          <div class="param-bar-bg"><div class="param-bar-fill" style="width:53%;background:var(--gold)"></div></div>
+          <div class="param-pct">53%</div>
+        </div>
+        <div class="param-row">
+          <div class="param-name">LayerNorm</div>
+          <div class="param-bar-bg"><div class="param-bar-fill" style="width:3%;background:var(--red)"></div></div>
+          <div class="param-pct">3%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GENERATION STRATEGIES -->
+<div class="divider"></div>
+<section class="section" id="generation">
+  <div class="sec-header">
+    <p class="eyebrow">Section 04</p>
+    <h2>Generation <span class="accent-t">Strategies</span></h2>
+    <p class="sec-desc">The model outputs logits — a score for every token in the vocabulary. How you sample from those scores controls whether you get focused, creative, or random text.</p>
+  </div>
+
+  <div class="gen-container">
+    <div class="gen-controls">
+      <div class="card-sm">
+        <div style="font-weight:700;font-size:0.9rem;margin-bottom:1rem;">Sampling Strategy</div>
+        <div class="strategy-tabs" id="strat-tabs">
+          <button class="strat-tab active" onclick="setStrategy('greedy')">Greedy</button>
+          <button class="strat-tab" onclick="setStrategy('temperature')">Temperature</button>
+          <button class="strat-tab" onclick="setStrategy('topp')">Top-p</button>
+          <button class="strat-tab" onclick="setStrategy('topk')">Top-k</button>
+        </div>
+        <div style="margin-top:1rem;font-size:0.82rem;color:var(--text-muted)" id="strat-desc">Always picks the single highest-probability token. Deterministic but repetitive.</div>
+      </div>
+
+      <div class="card-sm" id="temp-control">
+        <div class="slider-row">
+          <div class="slider-label">
+            <span class="slider-name">Temperature</span>
+            <span class="slider-val" id="temp-val">0.7</span>
+          </div>
+          <input type="range" min="0.01" max="2" step="0.01" value="0.7" id="temp-slider" oninput="updateTemp(this.value)">
+          <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--text-muted);font-family:var(--mono);margin-top:0.2rem"><span>0 (deterministic)</span><span>2 (chaotic)</span></div>
+        </div>
+        <div style="margin-top:0.75rem">
+          <div class="slider-row">
+            <div class="slider-label">
+              <span class="slider-name">Max New Tokens</span>
+              <span class="slider-val" id="maxlen-val">50</span>
+            </div>
+            <input type="range" min="10" max="200" step="10" value="50" id="maxlen-slider" oninput="document.getElementById('maxlen-val').textContent=this.value">
+          </div>
+        </div>
+      </div>
+
+      <div class="card-sm">
+        <div style="font-weight:700;font-size:0.85rem;margin-bottom:0.75rem;">Prompt</div>
+        <textarea id="gen-prompt-input" rows="3" style="width:100%;background:var(--bg-deep);border:1px solid var(--border);border-radius:6px;padding:0.6rem 0.85rem;color:var(--text);font-family:var(--mono);font-size:0.78rem;resize:none;outline:none;">The key to training large language models is</textarea>
+      </div>
+
+      <button class="btn btn-t" onclick="runGeneration()" style="width:100%">▶ Generate</button>
+    </div>
+
+    <div>
+      <div class="gen-output-box" id="gen-box">
+        <div class="gen-prompt">Prompt: <strong id="gen-prompt-display">The key to training large language models is</strong></div>
+        <div class="gen-result" id="gen-result">Hit <span style="color:var(--teal)">Generate</span> to see output…</div>
+      </div>
+      <div class="code-block" style="margin-top:1rem">
+<span class="var">inputs</span> <span class="op">=</span> <span class="var">tokenizer</span>(<span class="var">prompt</span>, <span class="var">return_tensors</span><span class="op">=</span><span class="str">"pt"</span>).<span class="fn">to</span>(<span class="var">device</span>)
+
+<span class="var">outputs</span> <span class="op">=</span> <span class="var">model</span>.<span class="fn">generate</span>(
+    <span class="op">**</span><span class="var">inputs</span>,
+    <span class="var">max_new_tokens</span><span class="op">=</span><span class="num">50</span>,
+    <span class="var">temperature</span><span class="op">=</span><span class="num">0.7</span>,
+    <span class="var">top_p</span><span class="op">=</span><span class="num">0.9</span>,
+    <span class="var">do_sample</span><span class="op">=</span><span class="kw">True</span>,
+)
+<span class="var">text</span> <span class="op">=</span> <span class="var">tokenizer</span>.<span class="fn">decode</span>(<span class="var">outputs</span>[<span class="num">0</span>], <span class="var">skip_special_tokens</span><span class="op">=</span><span class="kw">True</span>)</div>
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE -->
+<div class="divider"></div>
+<section class="section" id="pipeline">
+  <div class="sec-header">
+    <p class="eyebrow">Section 05</p>
+    <h2>The Full <span class="accent-t">Inference Pipeline</span></h2>
+    <p class="sec-desc">From raw text to generated response — every step that happens when you call <code style="font-family:var(--mono);color:var(--teal);font-size:0.9em">model.generate()</code>.</p>
+  </div>
+
+  <div class="pipeline" id="pipeline-steps">
+    <div class="pipe-step" id="ps-0">
+      <div class="pipe-icon">📝</div>
+      <div class="pipe-name">Raw Text</div>
+      <div class="pipe-detail">"Hello world"</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" id="ps-1">
+      <div class="pipe-icon">✂️</div>
+      <div class="pipe-name">Tokenizer</div>
+      <div class="pipe-detail">text → token IDs</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" id="ps-2">
+      <div class="pipe-icon">🔢</div>
+      <div class="pipe-name">Embeddings</div>
+      <div class="pipe-detail">IDs → vectors [2048]</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" id="ps-3">
+      <div class="pipe-icon">🧠</div>
+      <div class="pipe-name">22 Layers</div>
+      <div class="pipe-detail">attention + MLP × 22</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" id="ps-4">
+      <div class="pipe-icon">📊</div>
+      <div class="pipe-name">Logits</div>
+      <div class="pipe-detail">scores over 32k vocab</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" id="ps-5">
+      <div class="pipe-icon">🎲</div>
+      <div class="pipe-name">Sampling</div>
+      <div class="pipe-detail">temp / top-p / greedy</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step" id="ps-6">
+      <div class="pipe-icon">💬</div>
+      <div class="pipe-name">Decode</div>
+      <div class="pipe-detail">token IDs → text</div>
+    </div>
+  </div>
+
+  <div style="margin-top:1.5rem;display:flex;gap:1rem;flex-wrap:wrap">
+    <button class="btn btn-t" onclick="animatePipeline()">▶ Run Pipeline</button>
+    <button class="btn btn-outline" onclick="resetPipeline()">Reset</button>
+  </div>
+</section>
+
+<!-- CHEAT SHEET -->
+<div class="divider"></div>
+<section class="section">
+  <div class="sec-header">
+    <p class="eyebrow">Reference</p>
+    <h2>HuggingFace <span class="accent-p">Cheat Sheet</span></h2>
+  </div>
+  <div class="cs-grid">
+    <div class="cs-card">
+      <div class="cs-icon">🔌</div>
+      <div class="cs-title">Load Any Model</div>
+      <div class="cs-desc">Auto-classes infer the right model class from the Hub config.</div>
+      <pre class="cs-code">from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tok = AutoTokenizer.from_pretrained("model-id")
+model = AutoModelForCausalLM.from_pretrained(
+    "model-id",
+    torch_dtype=torch.float16,
+    device_map="auto"
+)</pre>
+    </div>
+    <div class="cs-card">
+      <div class="cs-icon">🚰</div>
+      <div class="cs-title">Quick Inference with pipeline()</div>
+      <div class="cs-desc">One-liner for simple inference tasks.</div>
+      <pre class="cs-code">from transformers import pipeline
+
+pipe = pipeline(
+    "text-generation",
+    model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    torch_dtype=torch.float16,
+    device_map="auto"
+)
+out = pipe("Tell me about LLMs", max_new_tokens=100)</pre>
+    </div>
+    <div class="cs-card">
+      <div class="cs-icon">💬</div>
+      <div class="cs-title">Chat Template</div>
+      <div class="cs-desc">TinyLlama-Chat expects a specific prompt format.</div>
+      <pre class="cs-code">messages = [
+    {"role": "system", "content": "You are a helpful AI."},
+    {"role": "user", "content": "What is fine-tuning?"}
+]
+prompt = tok.apply_chat_template(
+    messages, tokenize=False, add_generation_prompt=True
+)</pre>
+    </div>
+    <div class="cs-card">
+      <div class="cs-icon">💾</div>
+      <div class="cs-title">Save &amp; Load Locally</div>
+      <div class="cs-desc">Cache models to avoid re-downloading.</div>
+      <pre class="cs-code">model.save_pretrained("./tinyllama-local")
+tok.save_pretrained("./tinyllama-local")
+
+# Load from local path
+model = AutoModelForCausalLM.from_pretrained("./tinyllama-local")</pre>
+    </div>
+    <div class="cs-card">
+      <div class="cs-icon">🔍</div>
+      <div class="cs-title">Inspect the Model</div>
+      <div class="cs-desc">Count parameters, check architecture.</div>
+      <pre class="cs-code">print(model.config)
+print(model.config.num_hidden_layers)  # 22
+print(model.config.hidden_size)        # 2048
+
+total = sum(p.numel() for p in model.parameters())
+print(f"{total:,}")  # 1,100,048,640</pre>
+    </div>
+    <div class="cs-card">
+      <div class="cs-icon">⚙️</div>
+      <div class="cs-title">Generation Config</div>
+      <div class="cs-desc">All the key generation knobs.</div>
+      <pre class="cs-code">model.generate(
+    **inputs,
+    max_new_tokens=100,
+    temperature=0.7,   # creativity
+    top_p=0.9,         # nucleus sampling
+    top_k=50,          # vocab cutoff
+    do_sample=True,    # stochastic
+    repetition_penalty=1.1
+)</pre>
+    </div>
+  </div>
+</section>
+
+<!-- NEXT CHAPTER -->
+<div style="padding:0 2rem">
+  <div class="next-ch">
+    <div class="next-label">Up Next</div>
+    <div class="next-title">Chapter 6: QLoRA Fine-Tuning</div>
+    <div class="next-desc">Freeze the base model, inject LoRA adapters, and fine-tune TinyLlama on your own dataset with BitsAndBytes 4-bit quantization — all on a free GPU.</div>
+    <div class="prog-outer"><div class="prog-fill"></div></div>
+    <div class="prog-label">5 of 14 chapters — 35.7% complete</div>
+  </div>
+</div>
+
+<script>
+// ══════ TOKENIZER SIMULATOR ══════
+const TOK_COLORS = [
+  {bg:'rgba(0,201,167,0.2)',border:'rgba(0,201,167,0.5)',text:'#00C9A7'},
+  {bg:'rgba(255,180,79,0.2)',border:'rgba(255,180,79,0.5)',text:'#FFB44F'},
+  {bg:'rgba(192,132,252,0.2)',border:'rgba(192,132,252,0.5)',text:'#C084FC'},
+  {bg:'rgba(96,187,255,0.2)',border:'rgba(96,187,255,0.5)',text:'#60BBFF'},
+  {bg:'rgba(255,107,107,0.2)',border:'rgba(255,107,107,0.5)',text:'#FF6B6B'},
+];
+
+// Simulated BPE tokenizer — splits on common subword boundaries
+function simulateBPE(text) {
+  if (!text.trim()) return [];
+  const tokens = [];
+  let i = 0;
+  const words = text.split(/(\s+|[.,!?;:'"()\[\]{}<>\/\\@#$%^&*+=|~`])/);
+  let id = 1000;
+  const subwordPatterns = [
+    /^(un|re|pre|dis|mis|over|under|out)/,
+    /(ing|ed|er|est|ly|tion|ness|ment|ful|less|able|ible|ive|ous|al|ic|ary|ory|ery)$/,
+  ];
+  words.forEach(w => {
+    if (!w) return;
+    if (/^\s+$/.test(w)) return;
+    if (w.length <= 3 || /^[.,!?;:'"()\[\]{}]$/.test(w)) {
+      tokens.push({ text: w, id: id++ });
+    } else {
+      // Try to split on common prefixes/suffixes
+      let remaining = w;
+      let split = false;
+      for (const pat of subwordPatterns) {
+        const m = remaining.match(pat);
+        if (m && m[0].length < remaining.length && remaining.length > 4) {
+          const prefix = remaining.slice(0, m.index);
+          const suffix = m[0];
+          const rest = remaining.slice(m.index + suffix.length);
+          if (prefix) tokens.push({ text: '▁' + prefix, id: id++ });
+          tokens.push({ text: suffix, id: id++ });
+          if (rest) tokens.push({ text: rest, id: id++ });
+          split = true;
+          break;
+        }
+      }
+      if (!split) {
+        // Just split into halves if long enough
+        if (remaining.length > 7) {
+          const mid = Math.floor(remaining.length / 2);
+          tokens.push({ text: '▁' + remaining.slice(0, mid), id: id++ });
+          tokens.push({ text: remaining.slice(mid), id: id++ });
+        } else {
+          tokens.push({ text: '▁' + remaining, id: id++ });
+        }
+      }
+    }
+  });
+  return tokens;
+}
+
+function tokenize() {
+  const text = document.getElementById('tok-input').value;
+  const tokens = simulateBPE(text);
+  const chipsEl = document.getElementById('tok-chips');
+  chipsEl.innerHTML = '';
+  tokens.forEach((tok, i) => {
+    const c = TOK_COLORS[i % TOK_COLORS.length];
+    const chip = document.createElement('span');
+    chip.className = 'tok-chip';
+    chip.style.cssText = `background:${c.bg};border-color:${c.border};color:${c.text}`;
+    chip.textContent = tok.text.replace('▁', '·');
+    chip.title = `Token ID: ${tok.id}`;
+    chipsEl.appendChild(chip);
+  });
+  document.getElementById('stat-tokens').textContent = tokens.length;
+  document.getElementById('stat-chars').textContent = text.length;
+  document.getElementById('stat-ratio').textContent = (text.length / Math.max(1, tokens.length)).toFixed(1);
+  document.getElementById('tok-ids').textContent = '[' + tokens.map(t=>t.id).join(', ') + ']';
+}
+tokenize();
+
+// ══════ ARCHITECTURE CANVAS ══════
+const archCanvas = document.getElementById('arch-canvas');
+const archCtx = archCanvas.getContext('2d');
+let selectedLayer = -1;
+
+const archLayers = [
+  { name: 'Input Tokens', type: 'io', color: '#00C9A7', detail: '32,000 vocab → token IDs' },
+  { name: 'Embedding', type: 'embed', color: '#60BBFF', detail: '32k × 2048 = 65.5M params' },
+  { name: 'Transformer ×22', type: 'transformer', color: '#C084FC', detail: 'Self-Attention + RoPE + SwiGLU MLP' },
+  { name: 'Layer Norm', type: 'norm', color: '#FFB44F', detail: 'RMSNorm, no bias' },
+  { name: 'LM Head', type: 'head', color: '#FF6B6B', detail: '2048 → 32,000 logits' },
+  { name: 'Output Text', type: 'io', color: '#00C9A7', detail: 'Sampled next token → decoded' },
+];
+
+function resizeArch() {
+  archCanvas.width = archCanvas.offsetWidth * window.devicePixelRatio;
+  archCanvas.height = archCanvas.offsetHeight * window.devicePixelRatio;
+  archCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  drawArch();
+}
+
+function drawArch() {
+  const W = archCanvas.offsetWidth, H = archCanvas.offsetHeight;
+  archCtx.clearRect(0,0,W,H);
+  archCtx.fillStyle = '#050B16';
+  archCtx.fillRect(0,0,W,H);
+
+  const layerH = 44, gap = 14;
+  const totalH = archLayers.length * (layerH + gap);
+  const startY = (H - totalH) / 2;
+  const padX = 40;
+
+  archLayers.forEach((layer, i) => {
+    const y = startY + i * (layerH + gap);
+    const isSelected = i === selectedLayer;
+    const isTransformer = layer.type === 'transformer';
+
+    // glow
+    if (isSelected) {
+      const g = archCtx.createLinearGradient(0,y,0,y+layerH);
+      g.addColorStop(0, `rgba(${hexToRgb(layer.color)},0.15)`);
+      g.addColorStop(1, 'transparent');
+      archCtx.fillStyle = g;
+      archCtx.fillRect(padX-8, y-4, W-padX*2+16, layerH+8);
+    }
+
+    // box
+    archCtx.fillStyle = isSelected ? `rgba(${hexToRgb(layer.color)},0.12)` : 'rgba(17,29,53,0.8)';
+    archCtx.strokeStyle = isSelected ? layer.color : `rgba(${hexToRgb(layer.color)},0.3)`;
+    archCtx.lineWidth = isSelected ? 2 : 1;
+    roundRect(archCtx, padX, y, W-padX*2, layerH, 6);
+
+    // name
+    archCtx.fillStyle = isSelected ? layer.color : '#E8EDF5';
+    archCtx.font = `600 13px Plus Jakarta Sans`;
+    archCtx.textAlign = 'left';
+    archCtx.textBaseline = 'middle';
+    archCtx.fillText(layer.name, padX+14, y+layerH*0.38);
+
+    // detail
+    archCtx.fillStyle = isSelected ? `rgba(${hexToRgb(layer.color)},0.8)` : '#4A5568';
+    archCtx.font = `500 10.5px JetBrains Mono`;
+    archCtx.fillText(layer.detail, padX+14, y+layerH*0.7);
+
+    // arrow
+    if (i < archLayers.length-1) {
+      archCtx.beginPath();
+      const ax = W/2, ay = y+layerH+2;
+      archCtx.moveTo(ax, ay);
+      archCtx.lineTo(ax, ay+gap-4);
+      archCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+      archCtx.lineWidth = 1;
+      archCtx.stroke();
+    }
+
+    // special: transformer block indicator
+    if (isTransformer) {
+      archCtx.fillStyle = `rgba(${hexToRgb(layer.color)},0.7)`;
+      archCtx.font = `600 9px JetBrains Mono`;
+      archCtx.textAlign = 'right';
+      archCtx.fillText('× 22', W-padX-10, y+layerH/2);
+    }
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+function hexToRgb(hex) {
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
+archCanvas.addEventListener('click', e => {
+  const rect = archCanvas.getBoundingClientRect();
+  const mouseY = e.clientY - rect.top;
+  const H = archCanvas.offsetHeight;
+  const layerH=44,gap=14,totalH=archLayers.length*(layerH+gap);
+  const startY=(H-totalH)/2;
+  archLayers.forEach((_,i) => {
+    const y=startY+i*(layerH+gap);
+    if (mouseY>=y && mouseY<=y+layerH) selectedLayer=i===selectedLayer?-1:i;
+  });
+  drawArch();
+});
+
+window.addEventListener('resize', () => { resizeArch(); });
+setTimeout(resizeArch, 100);
+
+// ══════ GENERATION SIMULATOR ══════
+const strategies = {
+  greedy: 'Always picks the single highest-probability token. Fast and deterministic, but produces repetitive, overly safe text.',
+  temperature: 'Divides logits by temperature T before softmax. T<1 = more focused. T>1 = more random. T=1 = unchanged.',
+  topp: 'Nucleus sampling: pick from the smallest set of tokens whose cumulative probability ≥ p. Balances quality and diversity.',
+  topk: 'Only sample from the top-k most probable tokens at each step. k=1 is greedy, k=50 is common.'
+};
+
+let currentStrategy = 'greedy';
+function setStrategy(s) {
+  currentStrategy = s;
+  document.querySelectorAll('.strat-tab').forEach((t,i)=>t.classList.toggle('active',['greedy','temperature','topp','topk'][i]===s));
+  document.getElementById('strat-desc').textContent = strategies[s];
+}
+
+function updateTemp(v) {
+  document.getElementById('temp-val').textContent = parseFloat(v).toFixed(2);
+}
+
+const generatedOutputs = {
+  greedy: [
+    "understanding the data, the model, and the training process. The model is trained on a large dataset of text, and the training process involves minimizing the loss function using gradient descent.",
+    "having large amounts of high-quality training data, sufficient compute, and careful hyperparameter tuning. The loss function guides the optimization process through stochastic gradient descent.",
+  ],
+  temperature: {
+    low: [
+      "having access to large amounts of labeled data and significant computational resources. The training objective typically involves minimizing cross-entropy loss over a diverse corpus of text.",
+      "understanding the relationship between model capacity, data quality, and optimization. Larger models require more careful learning rate scheduling and gradient clipping strategies.",
+    ],
+    high: [
+      "perhaps the most fascinating intersection of mathematics, neuroscience, and linguistics — where attention mechanisms dance across embedding spaces, weaving semantic tapestries from raw token sequences.",
+      "really just vibes honestly. Like you throw tensors at a GPU and somehow GPT emerges from the loss function going down? Incredible. The embeddings learn everything on their own.",
+    ]
+  },
+  topp: [
+    "combining high-quality pretraining data with careful fine-tuning on curated instruction datasets. The attention mechanism allows the model to capture long-range dependencies across sequences.",
+    "balancing exploration and exploitation during training. Nucleus sampling during inference helps avoid degenerate repetition while maintaining coherent output distributions.",
+  ],
+  topk: [
+    "assembling vast corpora of diverse text and training transformer architectures to predict the next token. The emergent capabilities arise from the interplay of scale, data diversity, and architecture design.",
+    "understanding how gradient flow through deep networks can be stabilized using techniques like layer normalization, residual connections, and careful weight initialization schemes.",
+  ],
+};
+
+let genAnimInterval = null;
+function runGeneration() {
+  if (genAnimInterval) clearInterval(genAnimInterval);
+  const prompt = document.getElementById('gen-prompt-input').value;
+  document.getElementById('gen-prompt-display').textContent = prompt;
+  const resultEl = document.getElementById('gen-result');
+  resultEl.innerHTML = '<span class="gen-cursor"></span>';
+
+  let pool;
+  if (currentStrategy === 'temperature') {
+    const temp = parseFloat(document.getElementById('temp-slider').value);
+    pool = temp < 0.8 ? generatedOutputs.temperature.low : generatedOutputs.temperature.high;
+  } else {
+    pool = generatedOutputs[currentStrategy];
+  }
+  const text = pool[Math.floor(Math.random()*pool.length)];
+  const words = text.split(' ');
+  let wi = 0;
+  const maxTokens = parseInt(document.getElementById('maxlen-slider').value);
+  const wordLimit = Math.min(words.length, Math.floor(maxTokens * 0.75));
+
+  genAnimInterval = setInterval(() => {
+    if (wi >= wordLimit) {
+      clearInterval(genAnimInterval);
+      const cursor = resultEl.querySelector('.gen-cursor');
+      if (cursor) cursor.remove();
+      const meta = document.createElement('div');
+      meta.className = 'gen-meta';
+      meta.textContent = `${wi} tokens · strategy: ${currentStrategy} · temp: ${document.getElementById('temp-slider').value}`;
+      resultEl.parentNode.appendChild(meta);
+      return;
+    }
+    const cursor = resultEl.querySelector('.gen-cursor');
+    const span = document.createElement('span');
+    span.className = 'gen-token new';
+    span.textContent = (wi===0?'':' ') + words[wi];
+    if (cursor) resultEl.insertBefore(span, cursor);
+    else resultEl.appendChild(span);
+    wi++;
+    setTimeout(()=>span.classList.remove('new'),600);
+  }, 80);
+}
+
+// ══════ PIPELINE ANIMATION ══════
+let pipeInterval = null;
+function animatePipeline() {
+  resetPipeline();
+  let step = 0;
+  pipeInterval = setInterval(() => {
+    if (step > 6) { clearInterval(pipeInterval); return; }
+    for (let i=0;i<=step;i++) document.getElementById(`ps-${i}`).classList.add('lit');
+    step++;
+  }, 450);
+}
+function resetPipeline() {
+  clearInterval(pipeInterval);
+  for (let i=0;i<7;i++) document.getElementById(`ps-${i}`).classList.remove('lit');
+}
+</script>
+</body>
+</html>

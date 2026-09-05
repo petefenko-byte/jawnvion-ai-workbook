@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JAWNVION LLC | Chapter 3 — Data Preprocessing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080E1B;
+    --surface: #0F1A2E;
+    --surface2: #162035;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #E8EDF5;
+    --muted: #8899B4;
+    --accent: #38BDF8;
+    --accent-dim: rgba(56,189,248,0.12);
+    --accent-glow: rgba(56,189,248,0.25);
+    --teal: #00C9A7;
+    --rose: #F43F5E;
+    --gold: #FFB44F;
+    --purple: #C084FC;
+    --navy-text: #B8C8E0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    line-height: 1.65;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .page-header {
+    background: linear-gradient(180deg, rgba(56,189,248,0.08) 0%, transparent 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 40px 40px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .ch-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .page-header h1 {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  .page-header h1 span { color: var(--accent); }
+
+  .page-header p {
+    color: var(--navy-text);
+    font-size: 16px;
+    max-width: 600px;
+    margin-bottom: 24px;
+  }
+
+  .meta-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── PROGRESS DOTS ── */
+  .progress-bar {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+
+  .dot-wrap { display: flex; align-items: center; }
+
+  .dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: default;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+
+  .dot.done { background: var(--teal); color: #000; }
+  .dot.active { background: var(--accent); color: #000; box-shadow: 0 0 12px var(--accent-glow); transform: scale(1.15); }
+  .dot.future { background: var(--surface2); color: var(--muted); border: 1px solid var(--border2); }
+
+  .dot-line { width: 18px; height: 1px; background: var(--border2); flex-shrink: 0; }
+
+  /* ── MAIN ── */
+  .main { max-width: 900px; margin: 0 auto; padding: 48px 40px 80px; }
+
+  .section { margin-bottom: 56px; }
+
+  .section-label {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .section-label .num {
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+  }
+
+  .section-label h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+
+  .section p.intro { color: var(--navy-text); margin-bottom: 20px; font-size: 15px; }
+
+  hr.section-div { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+  /* ── TOKENIZER VISUALIZER ── */
+  .tok-input-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .tok-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .tok-textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.6;
+  }
+
+  .tok-textarea:focus { outline: none; border-color: var(--accent); }
+
+  .tok-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+  .tok-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--muted);
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s;
+  }
+
+  .tok-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .tok-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+  .tok-output {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+
+  .tok-tokens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 12px;
+    min-height: 40px;
+  }
+
+  .tok-chip {
+    background: var(--accent-dim);
+    border: 1px solid rgba(56,189,248,0.3);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    cursor: default;
+    transition: all 0.15s;
+  }
+
+  .tok-chip:hover { background: rgba(56,189,248,0.25); }
+
+  .tok-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .tok-stat {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .tok-stat strong { color: var(--accent); }
+
+  /* ── BLOCK CHUNKING SIMULATOR ── */
+  .chunk-controls {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .chunk-ctrl {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .chunk-ctrl label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .chunk-ctrl input[type="range"] {
+    -webkit-appearance: none;
+    width: 160px;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+
+  .chunk-ctrl input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .chunk-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+  }
+
+  .chunk-canvas-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    overflow-x: auto;
+  }
+
+  canvas#chunkCanvas {
+    display: block;
+    max-width: 100%;
+  }
+
+  .chunk-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .chunk-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .legend-swatch {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* ── SPLIT CALCULATOR ── */
+  .split-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 560px) { .split-grid { grid-template-columns: 1fr; } }
+
+  .split-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+
+  .split-card label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .split-card input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+
+  .split-card input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  #trainSlider::-webkit-slider-thumb { background: var(--teal); }
+  #valSlider::-webkit-slider-thumb   { background: var(--gold); }
+  #testSlider::-webkit-slider-thumb  { background: var(--rose); }
+  #trainSlider { background: rgba(0,201,167,0.3); }
+  #valSlider   { background: rgba(255,180,79,0.3); }
+  #testSlider  { background: rgba(244,63,94,0.3); }
+
+  .split-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    margin-top: 6px;
+  }
+
+  .split-val.train { color: var(--teal); }
+  .split-val.val   { color: var(--gold); }
+  .split-val.test  { color: var(--rose); }
+
+  .split-count { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .split-result {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+
+  .split-bar {
+    height: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    margin-bottom: 10px;
+  }
+
+  .split-bar-train { background: var(--teal); transition: width 0.3s; }
+  .split-bar-val   { background: var(--gold); transition: width 0.3s; }
+  .split-bar-test  { background: var(--rose); transition: width 0.3s; }
+
+  .split-note {
+    font-size: 13px;
+    color: var(--navy-text);
+    font-family: 'JetBrains Mono', monospace;
+    padding: 10px 14px;
+    background: var(--accent-dim);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+
+  .split-total-wrap {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .split-total-label { font-size: 13px; color: var(--muted); }
+
+  .split-total-input {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 6px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    width: 120px;
+  }
+
+  .split-total-input:focus { outline: none; border-color: var(--accent); }
+
+  /* ── NORMALIZATION BEFORE/AFTER ── */
+  .norm-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 600px) { .norm-grid { grid-template-columns: 1fr; } }
+
+  .norm-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+
+  .norm-card .norm-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .norm-label .dot-bad  { color: var(--rose); }
+  .norm-label .dot-good { color: var(--teal); }
+
+  .norm-example {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--navy-text);
+    line-height: 1.7;
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 12px;
+  }
+
+  .norm-example .highlight { color: var(--rose); }
+  .norm-example .fixed     { color: var(--teal); }
+
+  .norm-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  .norm-tab {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--muted);
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s;
+  }
+
+  .norm-tab.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  .norm-tab:hover  { border-color: var(--accent); color: var(--accent); }
+
+  /* ── CODE TABS ── */
+  .code-tabs { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+
+  .code-tab-bar { display: flex; border-bottom: 1px solid var(--border); background: var(--surface2); overflow-x: auto; }
+
+  .code-tab {
+    padding: 10px 18px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .code-tab:hover { color: var(--text); }
+  .code-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .code-pane { display: none; padding: 20px 24px; }
+  .code-pane.active { display: block; }
+
+  pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre;
+    overflow-x: auto;
+    color: var(--navy-text);
+  }
+
+  .kw { color: #C084FC; }
+  .str { color: #00C9A7; }
+  .cm { color: #4A5A72; font-style: italic; }
+  .fn { color: #FFB44F; }
+  .num { color: #38BDF8; }
+  .cls { color: #60A5FA; }
+
+  /* ── CHECKLIST ── */
+  .checklist-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+  }
+
+  .checklist-progress-bar {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .checklist-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--teal));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+    border-radius: 4px;
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .check-item:last-child { border-bottom: none; }
+  .check-item:hover { background: var(--surface2); }
+
+  .check-box {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border2);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+  }
+
+  .check-item.checked .check-box { background: var(--accent); border-color: var(--accent); }
+  .check-item.checked .check-box::after { content: '✓'; font-size: 12px; color: #000; font-weight: 700; }
+
+  .check-text { font-size: 14px; color: var(--navy-text); }
+  .check-item.checked .check-text { text-decoration: line-through; color: var(--muted); }
+  .check-sub { font-size: 12px; color: var(--muted); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+  .check-progress-label { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); text-align: right; margin-bottom: 8px; }
+
+  /* ── NAV ── */
+  .chapter-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 64px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .nav-btn {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-btn.primary { background: var(--accent); border-color: var(--accent); color: #000; }
+  .nav-btn.primary:hover { background: #29aee0; border-color: #29aee0; color: #000; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="ch-badge">JAWNVION LLC · AI Training Workbook · CH.03</div>
+  <h1>Data <span>Preprocessing</span></h1>
+  <p>Raw text can't train a model. Learn tokenization, chunking, train/val/test splitting, and normalization — the four pillars of a clean training pipeline.</p>
+  <div class="meta-pills">
+    <span class="pill">~35 min</span>
+    <span class="pill">Interactive</span>
+    <span class="pill">5 Tools</span>
+    <span class="pill">Intermediate</span>
+  </div>
+</div>
+
+<div class="progress-bar">
+  <div class="dot-wrap"><div class="dot done">1</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot done">2</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot active">3</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">4</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">5</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">6</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">7</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">8</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">9</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">10</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">11</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">12</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">13</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">14</div></div>
+</div>
+
+<div class="main">
+
+  <!-- ── SECTION 1: TOKENIZATION VISUALIZER ── -->
+  <div class="section">
+    <div class="section-label">
+      <span class="num">01</span>
+      <h2>Tokenization Visualizer</h2>
+    </div>
+    <p class="intro">Tokenization converts raw text into the integer sequences a model actually trains on. Different tokenizers produce different token counts for the same text. Type any text below and switch strategies to see the difference.</p>
+
+    <div class="tok-input-wrap">
+      <div class="tok-label">Input Text</div>
+      <textarea class="tok-textarea" id="tokInput" oninput="tokenize()" placeholder="Type anything here…">The transformer architecture uses self-attention to process sequences in parallel, making it significantly faster than RNNs for long-range dependencies.</textarea>
+      <div class="tok-selector">
+        <button class="tok-btn active" id="btn-word"  onclick="setTokMode('word')">Word</button>
+        <button class="tok-btn" id="btn-char"         onclick="setTokMode('char')">Character</button>
+        <button class="tok-btn" id="btn-bpe"          onclick="setTokMode('bpe')">BPE (simulated)</button>
+        <button class="tok-btn" id="btn-wordpiece"    onclick="setTokMode('wordpiece')">WordPiece</button>
+      </div>
+    </div>
+
+    <div class="tok-output">
+      <div class="tok-label">Tokens</div>
+      <div class="tok-tokens" id="tokChips"></div>
+      <div class="tok-stats" id="tokStats"></div>
+    </div>
+  </div>
+
+  <hr class="section-div">
+
+  <!-- ── SECTION 2: BLOCK CHUNKING SIMULATOR ── -->
+  <div class="section">
+    <div class="section-label">
+      <span class="num">02</span>
+      <h2>Block Chunking Simulator</h2>
+    </div>
+    <p class="intro">Models have a fixed context window. Long documents must be split into chunks — with or without overlap. Adjust chunk size and stride to see how the sliding window divides a 512-token document.</p>
+
+    <div class="chunk-controls">
+      <div class="chunk-ctrl">
+        <label>Chunk Size <span class="chunk-val" id="csVal">128 tokens</span></label>
+        <input type="range" min="32" max="512" step="32" value="128" id="chunkSize" oninput="drawChunks()">
+      </div>
+      <div class="chunk-ctrl">
+        <label>Stride (overlap) <span class="chunk-val" id="strideVal">32 tokens</span></label>
+        <input type="range" min="0" max="256" step="16" value="32" id="stride" oninput="drawChunks()">
+      </div>
+    </div>
+
+    <div class="chunk-canvas-wrap">
+      <canvas id="chunkCanvas" width="820" height="140"></canvas>
+      <div class="chunk-legend">
+        <div class="chunk-legend-item"><div class="legend-swatch" style="background:rgba(56,189,248,0.8)"></div> Chunk</div>
+        <div class="chunk-legend-item"><div class="legend-swatch" style="background:rgba(244,63,94,0.7)"></div> Overlap region</div>
+        <div class="chunk-legend-item"><div class="legend-swatch" style="background:rgba(255,255,255,0.05)"></div> Skipped gap</div>
+        <div class="chunk-legend-item" id="chunkCountLegend" style="color:var(--accent);font-weight:700;"></div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-div">
+
+  <!-- ── SECTION 3: TRAIN/VAL/TEST SPLIT ── -->
+  <div class="section">
+    <div class="section-label">
+      <span class="num">03</span>
+      <h2>Train / Val / Test Split Calculator</h2>
+    </div>
+    <p class="intro">Proper splitting prevents data leakage and gives honest evaluation numbers. Drag the sliders — val and test are always linked so the three always sum to 100%.</p>
+
+    <div class="split-total-wrap">
+      <span class="split-total-label">Total dataset size:</span>
+      <input type="text" class="split-total-input" id="totalSamples" value="50000" oninput="updateSplit()">
+    </div>
+
+    <div class="split-grid">
+      <div class="split-card">
+        <label>Train</label>
+        <input type="range" min="50" max="95" value="80" id="trainSlider" oninput="syncSplit('train')">
+        <div class="split-val train" id="trainPct">80%</div>
+        <div class="split-count" id="trainCount">40,000 samples</div>
+      </div>
+      <div class="split-card">
+        <label>Validation</label>
+        <input type="range" min="2" max="30" value="10" id="valSlider" oninput="syncSplit('val')">
+        <div class="split-val val" id="valPct">10%</div>
+        <div class="split-count" id="valCount">5,000 samples</div>
+      </div>
+      <div class="split-card">
+        <label>Test</label>
+        <input type="range" min="2" max="30" value="10" id="testSlider" oninput="syncSplit('test')">
+        <div class="split-val test" id="testPct">10%</div>
+        <div class="split-count" id="testCount">5,000 samples</div>
+      </div>
+    </div>
+
+    <div class="split-result">
+      <div class="split-bar">
+        <div class="split-bar-train" id="trainBar" style="width:80%"></div>
+        <div class="split-bar-val"   id="valBar"   style="width:10%"></div>
+        <div class="split-bar-test"  id="testBar"  style="width:10%"></div>
+      </div>
+      <div class="split-note" id="splitNote">80/10/10 — standard split. Good for most tasks with 10K+ samples.</div>
+    </div>
+  </div>
+
+  <hr class="section-div">
+
+  <!-- ── SECTION 4: NORMALIZATION EXAMPLES ── -->
+  <div class="section">
+    <div class="section-label">
+      <span class="num">04</span>
+      <h2>Text Normalization</h2>
+    </div>
+    <p class="intro">Normalization removes inconsistencies that inflate vocabulary and degrade model quality. Select a normalization type to see real before/after examples.</p>
+
+    <div class="norm-tabs">
+      <button class="norm-tab active" onclick="showNorm('unicode')">Unicode</button>
+      <button class="norm-tab" onclick="showNorm('whitespace')">Whitespace</button>
+      <button class="norm-tab" onclick="showNorm('case')">Case</button>
+      <button class="norm-tab" onclick="showNorm('html')">HTML/Markup</button>
+      <button class="norm-tab" onclick="showNorm('punct')">Punctuation</button>
+      <button class="norm-tab" onclick="showNorm('numbers')">Numbers</button>
+    </div>
+
+    <div id="normContent"></div>
+  </div>
+
+  <hr class="section-div">
+
+  <!-- ── SECTION 5: CODE TABS ── -->
+  <div class="section">
+    <div class="section-label">
+      <span class="num">05</span>
+      <h2>Code Reference</h2>
+    </div>
+    <p class="intro">Production-ready scripts for tokenization, chunking, and dataset splitting.</p>
+
+    <div class="code-tabs">
+      <div class="code-tab-bar">
+        <div class="code-tab active" onclick="showCode('tok')">Tokenization</div>
+        <div class="code-tab" onclick="showCode('chunk')">Block Chunking</div>
+        <div class="code-tab" onclick="showCode('split')">Train/Val/Test Split</div>
+        <div class="code-tab" onclick="showCode('norm')">Normalization</div>
+      </div>
+
+      <div class="code-pane active" id="pane-tok">
+<pre><span class="cm"># HuggingFace tokenizer — BPE / WordPiece / Unigram</span>
+<span class="kw">from</span> transformers <span class="kw">import</span> AutoTokenizer
+
+<span class="cm"># Load any tokenizer from HuggingFace Hub</span>
+tokenizer = <span class="cls">AutoTokenizer</span>.<span class="fn">from_pretrained</span>(<span class="str">"meta-llama/Meta-Llama-3-8B"</span>)
+
+text = <span class="str">"The transformer architecture uses self-attention."</span>
+
+<span class="cm"># Tokenize a string</span>
+tokens = tokenizer.<span class="fn">tokenize</span>(text)
+ids    = tokenizer.<span class="fn">encode</span>(text)
+<span class="fn">print</span>(<span class="str">f"Tokens: {tokens}"</span>)
+<span class="fn">print</span>(<span class="str">f"IDs:    {ids}"</span>)
+<span class="fn">print</span>(<span class="str">f"Count:  {<span class="fn">len</span>(ids)}"</span>)
+
+<span class="cm"># Batch tokenize a dataset</span>
+<span class="kw">def</span> <span class="fn">tokenize_batch</span>(examples):
+    <span class="kw">return</span> <span class="fn">tokenizer</span>(
+        examples[<span class="str">"text"</span>],
+        padding=<span class="str">"max_length"</span>,
+        truncation=<span class="kw">True</span>,
+        max_length=<span class="num">2048</span>,
+        return_tensors=<span class="str">"pt"</span>,
+    )
+
+<span class="cm"># Apply across HuggingFace dataset (multi-process)</span>
+tokenized = dataset.<span class="fn">map</span>(
+    tokenize_batch,
+    batched=<span class="kw">True</span>,
+    num_proc=<span class="num">4</span>,
+    remove_columns=[<span class="str">"text"</span>],
+)</pre>
+      </div>
+
+      <div class="code-pane" id="pane-chunk">
+<pre><span class="cm"># Sliding window chunking for long documents</span>
+<span class="kw">from</span> typing <span class="kw">import</span> List, Dict
+<span class="kw">from</span> transformers <span class="kw">import</span> AutoTokenizer
+
+tokenizer = <span class="cls">AutoTokenizer</span>.<span class="fn">from_pretrained</span>(<span class="str">"meta-llama/Meta-Llama-3-8B"</span>)
+
+<span class="kw">def</span> <span class="fn">chunk_document</span>(
+    text: <span class="cls">str</span>,
+    chunk_size: <span class="cls">int</span> = <span class="num">512</span>,
+    stride: <span class="cls">int</span> = <span class="num">64</span>,
+) -> <span class="cls">List</span>[<span class="cls">Dict</span>]:
+    <span class="str">"""
+    Tokenize then split into overlapping windows.
+    Returns list of {input_ids, attention_mask, chunk_idx}.
+    """</span>
+    tokens = <span class="fn">tokenizer</span>(text, return_tensors=<span class="str">"pt"</span>)
+    ids = tokens[<span class="str">"input_ids"</span>][<span class="num">0</span>]
+    total = <span class="fn">len</span>(ids)
+    chunks = []
+    idx = <span class="num">0</span>
+    start = <span class="num">0</span>
+
+    <span class="kw">while</span> start < total:
+        end = <span class="fn">min</span>(start + chunk_size, total)
+        chunk_ids = ids[start:end]
+        chunks.<span class="fn">append</span>({
+            <span class="str">"input_ids"</span>: chunk_ids,
+            <span class="str">"chunk_idx"</span>: idx,
+            <span class="str">"start_token"</span>: start,
+            <span class="str">"end_token"</span>: end,
+        })
+        idx += <span class="num">1</span>
+        start += chunk_size - stride   <span class="cm"># slide by (chunk_size - overlap)</span>
+        <span class="kw">if</span> end == total:
+            <span class="kw">break</span>
+
+    <span class="fn">print</span>(<span class="str">f"Document: {total} tokens → {<span class="fn">len</span>(chunks)} chunks"</span>)
+    <span class="kw">return</span> chunks</pre>
+      </div>
+
+      <div class="code-pane" id="pane-split">
+<pre><span class="cm"># Stratified train / val / test split</span>
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="kw">def</span> <span class="fn">split_dataset</span>(
+    dataset,
+    train_pct: <span class="cls">float</span> = <span class="num">0.8</span>,
+    val_pct:   <span class="cls">float</span> = <span class="num">0.1</span>,
+    seed:      <span class="cls">int</span>   = <span class="num">42</span>,
+    stratify_col: <span class="cls">str</span> = <span class="str">"label"</span>,
+):
+    <span class="str">"""Stratified split preserving class distribution."""</span>
+    labels = dataset[stratify_col]
+
+    <span class="cm"># First split: train vs (val + test)</span>
+    train, temp = <span class="fn">train_test_split</span>(
+        dataset,
+        test_size=<span class="num">1</span> - train_pct,
+        random_state=seed,
+        stratify=labels,
+    )
+
+    <span class="cm"># Second split: val vs test (from temp)</span>
+    val_ratio = val_pct / (<span class="num">1</span> - train_pct)
+    val, test = <span class="fn">train_test_split</span>(
+        temp,
+        test_size=<span class="num">1</span> - val_ratio,
+        random_state=seed,
+        stratify=temp[stratify_col],
+    )
+
+    <span class="fn">print</span>(<span class="str">f"Train: {<span class="fn">len</span>(train)} | Val: {<span class="fn">len</span>(val)} | Test: {<span class="fn">len</span>(test)}"</span>)
+    <span class="kw">return</span> train, val, test
+
+<span class="cm"># HuggingFace datasets version</span>
+ds = ds.<span class="fn">train_test_split</span>(test_size=<span class="num">0.2</span>, seed=<span class="num">42</span>, stratify_by_column=<span class="str">"label"</span>)
+val_test = ds[<span class="str">"test"</span>].<span class="fn">train_test_split</span>(test_size=<span class="num">0.5</span>, seed=<span class="num">42</span>)
+train = ds[<span class="str">"train"</span>]; val = val_test[<span class="str">"train"</span>]; test = val_test[<span class="str">"test"</span>]</pre>
+      </div>
+
+      <div class="code-pane" id="pane-norm">
+<pre><span class="cm"># Text normalization pipeline</span>
+<span class="kw">import</span> re, unicodedata, html
+
+<span class="kw">def</span> <span class="fn">normalize_text</span>(text: <span class="cls">str</span>) -> <span class="cls">str</span>:
+    <span class="str">"""
+    Full normalization pipeline: unicode → html → whitespace → punct.
+    Apply before tokenization.
+    """</span>
+    <span class="cm"># 1. Unicode normalization (NFC: canonical decomposition + composition)</span>
+    text = unicodedata.<span class="fn">normalize</span>(<span class="str">'NFC'</span>, text)
+
+    <span class="cm"># 2. Strip HTML entities and tags</span>
+    text = html.<span class="fn">unescape</span>(text)
+    text = re.<span class="fn">sub</span>(<span class="str">r'<[^>]+>'</span>, <span class="str">' '</span>, text)
+
+    <span class="cm"># 3. Remove control characters (except tab and newline)</span>
+    text = <span class="str">''</span>.<span class="fn">join</span>(c <span class="kw">for</span> c <span class="kw">in</span> text
+                  <span class="kw">if</span> unicodedata.<span class="fn">category</span>(c)[<span class="num">0</span>] != <span class="str">'C'</span>
+                  <span class="kw">or</span> c <span class="kw">in</span> (<span class="str">'\t'</span>, <span class="str">'\n'</span>))
+
+    <span class="cm"># 4. Collapse whitespace (preserve single newlines)</span>
+    text = re.<span class="fn">sub</span>(<span class="str">r'[^\S\n]+'</span>, <span class="str">' '</span>, text)   <span class="cm"># spaces → single space</span>
+    text = re.<span class="fn">sub</span>(<span class="str">r'\n{3,}'</span>, <span class="str">'\n\n'</span>, text)  <span class="cm"># 3+ newlines → 2</span>
+
+    <span class="cm"># 5. Strip leading/trailing whitespace per line</span>
+    lines = [l.<span class="fn">strip</span>() <span class="kw">for</span> l <span class="kw">in</span> text.<span class="fn">splitlines</span>()]
+    text = <span class="str">'\n'</span>.<span class="fn">join</span>(l <span class="kw">for</span> l <span class="kw">in</span> lines <span class="kw">if</span> l)
+
+    <span class="kw">return</span> text.<span class="fn">strip</span>()</pre>
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-div">
+
+  <!-- ── CHECKLIST ── -->
+  <div class="section">
+    <div class="section-label">
+      <span class="num">06</span>
+      <h2>Chapter Checklist</h2>
+    </div>
+
+    <div class="checklist-wrap">
+      <div class="check-progress-label" id="clLabel">0 / 6 complete</div>
+      <div class="checklist-progress-bar">
+        <div class="checklist-progress-fill" id="clFill" style="width:0%"></div>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">Selected and loaded a tokenizer matching my base model</div>
+          <div class="check-sub">llama-3/gpt2/bert — must match architecture</div>
+        </div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">Verified token count fits model context window</div>
+          <div class="check-sub">max_length ≤ model max (2048 / 4096 / 8192 / 128K)</div>
+        </div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">Implemented sliding window for long documents</div>
+          <div class="check-sub">chunk_size – stride = step; 10–20% overlap typical</div>
+        </div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">Applied normalization pipeline before tokenization</div>
+          <div class="check-sub">unicode NFC → html → whitespace → strip</div>
+        </div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">Created stratified train/val/test splits</div>
+          <div class="check-sub">80/10/10 default; no leakage between splits</div>
+        </div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">Saved processed dataset to disk in Arrow / Parquet format</div>
+          <div class="check-sub">dataset.save_to_disk() or dataset.to_parquet()</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="#" class="nav-btn">← Ch.02 Dataset Collection</a>
+    <a href="#" class="nav-btn primary">Ch.04 Architecture Selection →</a>
+  </div>
+</div>
+
+<script>
+// ── TOKENIZER VISUALIZER ──
+let tokMode = 'word';
+
+const COMMON_SUBWORDS = {
+  'transformer': ['transform', '##er'],
+  'architecture': ['architect', '##ure'],
+  'attention': ['attent', '##ion'],
+  'significantly': ['significant', '##ly'],
+  'parallel': ['parallel'],
+  'dependencies': ['depend', '##encies'],
+  'sequences': ['sequence', '##s'],
+  'self-attention': ['self', '-', 'attention'],
+  'making': ['making'],
+  'faster': ['fast', '##er'],
+  'process': ['process'],
+  'uses': ['uses'],
+};
+
+function tokenizeWord(text) {
+  return text.match(/\b[\w']+\b|[^\w\s]/g) || [];
+}
+
+function tokenizeChar(text) {
+  return text.split('').filter(c => c !== ' ');
+}
+
+function tokenizeBPE(text) {
+  const words = text.toLowerCase().match(/\b[\w'-]+\b/g) || [];
+  const tokens = [];
+  words.forEach(w => {
+    const sw = COMMON_SUBWORDS[w];
+    if (sw) { sw.forEach(s => tokens.push('Ġ' + s)); }
+    else if (w.length > 7) {
+      tokens.push('Ġ' + w.slice(0, 4));
+      tokens.push(w.slice(4));
+    } else {
+      tokens.push('Ġ' + w);
+    }
+  });
+  return tokens;
+}
+
+function tokenizeWordPiece(text) {
+  const words = text.match(/\b[\w']+\b|[^\w\s]/g) || [];
+  const tokens = [];
+  words.forEach(w => {
+    const lw = w.toLowerCase();
+    const sw = COMMON_SUBWORDS[lw];
+    if (sw) { sw.forEach((s, i) => tokens.push(i === 0 ? s : '##' + s.replace('##', ''))); }
+    else if (w.length > 6) {
+      tokens.push(w.slice(0, 4).toLowerCase());
+      tokens.push('##' + w.slice(4).toLowerCase());
+    } else {
+      tokens.push(lw);
+    }
+  });
+  return tokens;
+}
+
+function setTokMode(mode) {
+  tokMode = mode;
+  document.querySelectorAll('.tok-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + mode).classList.add('active');
+  tokenize();
+}
+
+function tokenize() {
+  const text = document.getElementById('tokInput').value;
+  let toks = [];
+  if (tokMode === 'word')      toks = tokenizeWord(text);
+  else if (tokMode === 'char') toks = tokenizeChar(text);
+  else if (tokMode === 'bpe')  toks = tokenizeBPE(text);
+  else                         toks = tokenizeWordPiece(text);
+
+  const chips = document.getElementById('tokChips');
+  chips.innerHTML = '';
+  toks.forEach(t => {
+    const c = document.createElement('span');
+    c.className = 'tok-chip';
+    c.textContent = t;
+    chips.appendChild(c);
+  });
+
+  const stats = document.getElementById('tokStats');
+  const vocabEst = tokMode === 'char' ? 256 : tokMode === 'word' ? '50K–100K' : '32K–50K';
+  stats.innerHTML = `
+    <span class="tok-stat"><strong>${toks.length}</strong> tokens</span>
+    <span class="tok-stat"><strong>${text.length}</strong> chars</span>
+    <span class="tok-stat"><strong>${(text.length / Math.max(toks.length, 1)).toFixed(1)}</strong> chars/token</span>
+    <span class="tok-stat">vocab est. <strong>${vocabEst}</strong></span>
+  `;
+}
+
+tokenize();
+
+// ── BLOCK CHUNKING CANVAS ──
+function drawChunks() {
+  const cs = parseInt(document.getElementById('chunkSize').value);
+  const stride = parseInt(document.getElementById('stride').value);
+  document.getElementById('csVal').textContent = cs + ' tokens';
+  document.getElementById('strideVal').textContent = stride + ' tokens';
+
+  const canvas = document.getElementById('chunkCanvas');
+  const W = canvas.offsetWidth || 820;
+  canvas.width = W;
+  const ctx = canvas.getContext('2d');
+  const DOC = 512;
+  const scale = (W - 40) / DOC;
+  const ROW_H = 28;
+  const ROW_GAP = 8;
+  const COLORS = ['rgba(56,189,248,0.75)','rgba(0,201,167,0.75)','rgba(192,132,252,0.75)','rgba(255,180,79,0.75)','rgba(244,63,94,0.75)','rgba(96,165,250,0.75)'];
+
+  ctx.clearRect(0, 0, W, canvas.height);
+
+  // Background bar (full doc)
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.fillRect(20, 10, DOC * scale, ROW_H);
+
+  // Label doc
+  ctx.fillStyle = 'rgba(184,200,224,0.5)';
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.fillText('512 tokens (document)', 20, 8);
+
+  const step = cs - stride;
+  let chunks = [];
+  let start = 0;
+  while (start < DOC) {
+    const end = Math.min(start + cs, DOC);
+    chunks.push({ start, end });
+    if (end >= DOC) break;
+    start += step > 0 ? step : cs;
+  }
+
+  const rows = Math.min(chunks.length, 4);
+  canvas.height = 50 + rows * (ROW_H + ROW_GAP) + 10;
+  ctx.clearRect(0, 0, W, canvas.height);
+
+  // doc bar
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.roundRect(20, 10, DOC * scale, ROW_H, 3);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(184,200,224,0.5)';
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.fillText('Document: 512 tokens', 20, 8);
+
+  // tick marks
+  for (let t = 0; t <= DOC; t += 64) {
+    ctx.fillStyle = 'rgba(184,200,224,0.3)';
+    ctx.fillRect(20 + t * scale, 10, 1, ROW_H);
+    ctx.fillStyle = 'rgba(184,200,224,0.3)';
+    ctx.font = '9px JetBrains Mono, monospace';
+    ctx.fillText(t, 20 + t * scale - 5, 10 + ROW_H + 12);
+  }
+
+  // Draw chunks (up to 4 rows visible)
+  chunks.slice(0, rows).forEach((ch, i) => {
+    const y = 50 + i * (ROW_H + ROW_GAP);
+    const x1 = 20 + ch.start * scale;
+    const x2 = 20 + ch.end * scale;
+    const color = COLORS[i % COLORS.length];
+
+    // Chunk fill
+    ctx.fillStyle = color;
+    ctx.fillRect(x1, y, x2 - x1, ROW_H);
+
+    // Overlap region (previous chunk overlap)
+    if (i > 0 && stride > 0) {
+      const prevEnd = chunks[i - 1].end;
+      const overlapStart = 20 + ch.start * scale;
+      const overlapEnd = 20 + Math.min(prevEnd, ch.end) * scale;
+      if (overlapEnd > overlapStart) {
+        ctx.fillStyle = 'rgba(244,63,94,0.55)';
+        ctx.fillRect(overlapStart, y, overlapEnd - overlapStart, ROW_H);
+      }
+    }
+
+    // Label
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 11px JetBrains Mono, monospace';
+    const label = `Ch.${i + 1}`;
+    const tw = ctx.measureText(label).width;
+    if (x2 - x1 > tw + 8) ctx.fillText(label, x1 + (x2 - x1 - tw) / 2, y + ROW_H / 2 + 4);
+  });
+
+  if (chunks.length > rows) {
+    ctx.fillStyle = 'rgba(184,200,224,0.4)';
+    ctx.font = '11px JetBrains Mono, monospace';
+    ctx.fillText(`+ ${chunks.length - rows} more chunks`, 20, 50 + rows * (ROW_H + ROW_GAP));
+  }
+
+  document.getElementById('chunkCountLegend').textContent = `${chunks.length} total chunks`;
+}
+
+drawChunks();
+window.addEventListener('resize', drawChunks);
+
+// ── SPLIT CALCULATOR ──
+function syncSplit(changed) {
+  let t = parseInt(document.getElementById('trainSlider').value);
+  let v = parseInt(document.getElementById('valSlider').value);
+  let te = parseInt(document.getElementById('testSlider').value);
+
+  if (changed === 'train') {
+    const remaining = 100 - t;
+    v = Math.round(remaining * 0.5);
+    te = remaining - v;
+    document.getElementById('valSlider').value = v;
+    document.getElementById('testSlider').value = te;
+  } else if (changed === 'val') {
+    te = Math.max(2, 100 - t - v);
+    t = Math.max(50, 100 - v - te);
+    document.getElementById('trainSlider').value = t;
+    document.getElementById('testSlider').value = te;
+  } else {
+    v = Math.max(2, 100 - t - te);
+    t = Math.max(50, 100 - v - te);
+    document.getElementById('trainSlider').value = t;
+    document.getElementById('valSlider').value = v;
+  }
+
+  updateSplit();
+}
+
+function updateSplit() {
+  const total = parseInt(document.getElementById('totalSamples').value.replace(/,/g,'')) || 50000;
+  const t = parseInt(document.getElementById('trainSlider').value);
+  const v = parseInt(document.getElementById('valSlider').value);
+  const te = parseInt(document.getElementById('testSlider').value);
+
+  document.getElementById('trainPct').textContent = t + '%';
+  document.getElementById('valPct').textContent = v + '%';
+  document.getElementById('testPct').textContent = te + '%';
+
+  const fmt = n => n.toLocaleString();
+  document.getElementById('trainCount').textContent = fmt(Math.round(total * t / 100)) + ' samples';
+  document.getElementById('valCount').textContent   = fmt(Math.round(total * v / 100)) + ' samples';
+  document.getElementById('testCount').textContent  = fmt(Math.round(total * te / 100)) + ' samples';
+
+  document.getElementById('trainBar').style.width = t + '%';
+  document.getElementById('valBar').style.width   = v + '%';
+  document.getElementById('testBar').style.width  = te + '%';
+
+  let note = '';
+  if (t >= 90) note = 'Very large train set. Ensure val/test are still statistically meaningful.';
+  else if (te <= 5) note = 'Small test set — consider bootstrapped confidence intervals.';
+  else if (t === 80 && v === 10) note = '80/10/10 — standard split. Good for most tasks with 10K+ samples.';
+  else if (t === 70) note = '70/15/15 — common for smaller datasets under 5K samples.';
+  else note = `${t}/${v}/${te} split — verify val and test each have ≥500 samples.`;
+
+  document.getElementById('splitNote').textContent = note;
+}
+
+updateSplit();
+
+// ── NORMALIZATION EXAMPLES ──
+const NORM_DATA = {
+  unicode: {
+    label: 'Unicode Normalization',
+    pairs: [
+      { before: 'café  ’smart’ – quotes', after: 'café \'smart\' - quotes', note: 'NFC: canonical composition. Fancy quotes → ASCII.' },
+      { before: 'Näive ﬁeld …effcacy', after: 'Naïve field …efficacy', note: 'fi ligature, ellipsis → component characters.' },
+    ]
+  },
+  whitespace: {
+    label: 'Whitespace Normalization',
+    pairs: [
+      { before: 'Hello   \t  world  \n\n\n\n  foo', after: 'Hello world\n\nfoo', note: 'Multiple spaces → one. 3+ newlines → 2.' },
+      { before: '  leading   and   trailing  ', after: 'leading and trailing', note: 'Strip leading/trailing; collapse internal.' },
+    ]
+  },
+  case: {
+    label: 'Case Normalization',
+    pairs: [
+      { before: 'The MODEL Was TRAINED On GPU', after: 'the model was trained on gpu', note: 'Lowercase — reduces vocab size by ~2×. Loses proper-noun info.' },
+      { before: 'BERT BPE GPT Llama', after: 'bert bpe gpt llama', note: 'Acronyms normalized — common for uncased models.' },
+    ]
+  },
+  html: {
+    label: 'HTML / Markup Removal',
+    pairs: [
+      { before: '<p>Hello &amp; welcome</p><br/>', after: 'Hello & welcome', note: 'Strip tags, unescape HTML entities.' },
+      { before: '<a href="https://example.com">Click here</a> &lt;test&gt;', after: 'Click here <test>', note: 'Anchors → link text only; angle brackets unescaped.' },
+    ]
+  },
+  punct: {
+    label: 'Punctuation Handling',
+    pairs: [
+      { before: 'U.S.A. vs U.K. — it\'s complicated!!!', after: 'USA vs UK - it\'s complicated!', note: 'Period-separated acronyms, em-dash → hyphen.' },
+      { before: '"Hello," she said... "Goodbye."', after: '"Hello," she said... "Goodbye."', note: 'Quotation marks and ellipsis often kept for generation tasks.' },
+    ]
+  },
+  numbers: {
+    label: 'Number Normalization',
+    pairs: [
+      { before: '$1,234,567.89 or 1.23M', after: '<NUMBER> or <NUMBER>', note: 'Replace rare numerics with a <NUMBER> token — reduces vocab.' },
+      { before: '3.14159 42 100,000 99.9%', after: '3.14 42 100000 99.9%', note: 'Alternative: normalize formatting, keep values.' },
+    ]
+  },
+};
+
+function showNorm(key) {
+  document.querySelectorAll('.norm-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[onclick="showNorm('${key}')"]`).classList.add('active');
+
+  const d = NORM_DATA[key];
+  let html = '';
+  d.pairs.forEach(p => {
+    html += `
+      <div class="norm-grid" style="margin-bottom:12px">
+        <div class="norm-card">
+          <div class="norm-label"><span class="dot-bad">●</span> Before</div>
+          <div class="norm-example"><span class="highlight">${escHtml(p.before)}</span></div>
+        </div>
+        <div class="norm-card">
+          <div class="norm-label"><span class="dot-good">●</span> After</div>
+          <div class="norm-example"><span class="fixed">${escHtml(p.after)}</span></div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:20px;font-family:'JetBrains Mono',monospace;padding-left:4px">${escHtml(p.note)}</div>
+    `;
+  });
+
+  document.getElementById('normContent').innerHTML = html;
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+showNorm('unicode');
+
+// ── CODE TABS ──
+function showCode(tab) {
+  document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.code-pane').forEach(p => p.classList.remove('active'));
+  document.querySelector(`[onclick="showCode('${tab}')"]`).classList.add('active');
+  document.getElementById('pane-' + tab).classList.add('active');
+}
+
+// ── CHECKLIST ──
+function toggleCheck(item) {
+  item.classList.toggle('checked');
+  const items = document.querySelectorAll('.check-item');
+  const done = document.querySelectorAll('.check-item.checked').length;
+  document.getElementById('clLabel').textContent = done + ' / ' + items.length + ' complete';
+  document.getElementById('clFill').style.width = (done / items.length * 100) + '%';
+}
+
+</script>
+
+<!-- JAWNVION FOOTER -->
+<footer style="border-top:1px solid #1A2E4A;padding:32px 28px;margin-top:80px;text-align:center;background:#080E1B;">
+  <div style="max-width:960px;margin:0 auto;">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.15em;color:#00C9A7;text-transform:uppercase;margin-bottom:8px;">JAWNVION™ LLC</div>
+    <div style="font-size:13px;color:#5E7A9A;line-height:1.6;">
+      AI Engineer's Workbook — Interactive Lab Companion<br>
+      © 2026 JAWNVION LLC. All Rights Reserved. Unauthorized reproduction or redistribution is prohibited.<br>
+      <a href="mailto:peter@jawnvion.com" style="color:#00C9A7;text-decoration:none;">peter@jawnvion.com</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

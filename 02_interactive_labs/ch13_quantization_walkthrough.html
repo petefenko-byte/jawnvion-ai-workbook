@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 13 — Quantization</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* ── TOKENS ── */
+:root {
+  --bg:        #0F0900;
+  --surface:   #1C1100;
+  --surface2:  #271800;
+  --border:    #3C2500;
+  --text:      #FFE9CC;
+  --muted:     #9B7040;
+  --accent:    #F97316;
+  --accent-lo: rgba(249,115,22,.12);
+  --accent-mid:rgba(249,115,22,.25);
+  --green:     #4ADE80;
+  --gold:      #FBBF24;
+  --coral:     #F87171;
+  --blue:      #60A5FA;
+  --body-font: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --mono-font: 'JetBrains Mono', monospace;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:        #FFF8F0;
+    --surface:   #FFFFFF;
+    --surface2:  #FFF0E0;
+    --border:    #F0D8BC;
+    --text:      #2A1400;
+    --muted:     #7A5028;
+    --accent-lo: rgba(249,115,22,.08);
+    --accent-mid:rgba(249,115,22,.18);
+  }
+}
+:root[data-theme="light"] {
+  --bg:#FFF8F0;--surface:#FFFFFF;--surface2:#FFF0E0;
+  --border:#F0D8BC;--text:#2A1400;--muted:#7A5028;
+  --accent-lo:rgba(249,115,22,.08);--accent-mid:rgba(249,115,22,.18);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--body-font);background:var(--bg);color:var(--text);line-height:1.65;min-height:100vh;}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(15,9,0,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+nav .logo{font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-right:12px;}
+nav a{font-size:.72rem;font-weight:600;text-decoration:none;color:var(--muted);padding:5px 12px;border-radius:20px;transition:all .2s;}
+nav a:hover,nav a.active{color:var(--accent);background:var(--accent-lo);}
+
+/* ── LAYOUT ── */
+main{max-width:1060px;margin:0 auto;padding:96px 24px 80px;}
+
+/* ── HERO ── */
+.hero{text-align:center;padding:60px 0 48px;border-bottom:1px solid var(--border);margin-bottom:64px;}
+.hero .chapter-tag{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent-mid);background:var(--accent-lo);padding:5px 14px;border-radius:20px;margin-bottom:20px;}
+.hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;line-height:1.15;letter-spacing:-.02em;margin-bottom:16px;}
+.hero h1 span{color:var(--accent);}
+.hero p{font-size:1.05rem;color:var(--muted);max-width:560px;margin:0 auto 28px;}
+.hero-pills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.hero-pills span{font-size:.7rem;font-weight:600;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);}
+
+/* ── SECTION ── */
+section{margin-bottom:72px;scroll-margin-top:80px;}
+.section-header{margin-bottom:28px;}
+.section-header .eyebrow{font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.section-header h2{font-size:1.55rem;font-weight:800;}
+.section-header p{color:var(--muted);font-size:.92rem;margin-top:6px;}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;}
+.card-grid{display:grid;gap:16px;}
+.card-grid.cols-2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}
+.card-grid.cols-3{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));}
+.card-grid.cols-4{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));}
+
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;}
+.stat-card .num{font-size:2rem;font-weight:800;color:var(--accent);}
+.stat-card .label{font-size:.8rem;color:var(--muted);margin-top:4px;}
+
+/* ── TABS ── */
+.tab-bar{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px;flex-wrap:wrap;}
+.tab-btn{font-family:var(--body-font);font-size:.78rem;font-weight:600;background:none;border:none;border-bottom:2px solid transparent;padding:8px 14px;color:var(--muted);cursor:pointer;transition:all .2s;margin-bottom:-1px;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ── CODE ── */
+pre{background:#080400;border:1px solid var(--border);border-radius:10px;padding:18px 20px;overflow-x:auto;font-family:var(--mono-font);font-size:.78rem;line-height:1.7;}
+.code-block{position:relative;}
+.code-copy{position:absolute;top:10px;right:10px;font-size:.65rem;font-weight:600;padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all .2s;}
+.code-copy:hover{color:var(--accent);border-color:var(--accent);}
+.kw{color:#FB923C;}.str{color:#86EFAC;}.cm{color:#4B4035;font-style:italic;}
+.fn{color:#60A5FA;}.nm{color:#FDE68A;}.py{color:#93C5FD;}.op{color:#F472B6;}
+
+/* ── PRECISION EXPLORER ── */
+.precision-btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+.prec-btn{font-family:var(--mono-font);font-size:.8rem;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all .2s;}
+.prec-btn:hover{border-color:var(--accent);color:var(--accent);}
+.prec-btn.active{background:var(--accent-lo);border-color:var(--accent);color:var(--accent);}
+
+.prec-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:680px){.prec-layout{grid-template-columns:1fr;}}
+
+.bit-canvas-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;}
+.bit-canvas-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px;}
+#bitCanvas{display:block;width:100%;border-radius:6px;}
+
+.prec-stats{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;}
+.prec-stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:.85rem;}
+.prec-stat-row:last-child{border-bottom:none;}
+.prec-stat-label{color:var(--muted);}
+.prec-stat-val{font-family:var(--mono-font);font-weight:600;color:var(--text);}
+.prec-stat-val.accent{color:var(--accent);}
+
+.bit-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--muted);}
+.leg-swatch{width:12px;height:12px;border-radius:2px;}
+
+/* ── MEMORY CALCULATOR ── */
+.calc-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;}
+.calc-slider-row{display:flex;align-items:center;gap:16px;margin-bottom:24px;}
+.calc-slider-row label{font-size:.85rem;font-weight:600;white-space:nowrap;}
+.range-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--border);outline:none;}
+.range-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);}
+.param-display{font-family:var(--mono-font);font-size:1rem;font-weight:700;color:var(--accent);min-width:60px;text-align:right;}
+.mem-table{width:100%;border-collapse:collapse;}
+.mem-table th{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);}
+.mem-table td{font-size:.85rem;padding:10px 12px;border-bottom:1px solid var(--border);}
+.mem-table td:first-child{font-family:var(--mono-font);font-weight:600;}
+.mem-table tr:last-child td{border-bottom:none;}
+.mem-bar-cell{width:200px;}
+.mem-bar-wrap{background:var(--surface2);border-radius:4px;height:10px;overflow:hidden;}
+.mem-bar{height:100%;border-radius:4px;transition:width .4s ease;}
+.vram-badge{font-size:.67rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:8px;}
+.vram-ok{background:rgba(74,222,128,.12);color:#4ADE80;border:1px solid rgba(74,222,128,.25);}
+.vram-warn{background:rgba(251,191,36,.12);color:#FBBF24;border:1px solid rgba(251,191,36,.25);}
+.vram-fail{background:rgba(248,113,113,.12);color:#F87171;border:1px solid rgba(248,113,113,.25);}
+
+/* ── QUALITY CURVE ── */
+.curve-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;}
+.curve-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px;}
+#qualityCanvas{display:block;width:100%;border-radius:6px;}
+
+/* ── METHODS COMPARISON ── */
+.method-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;transition:border-color .2s;}
+.method-card:hover{border-color:var(--accent-mid);}
+.method-tag{display:inline-block;font-family:var(--mono-font);font-size:.7rem;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--accent-lo);color:var(--accent);border:1px solid var(--accent-mid);margin-bottom:10px;}
+.method-card h3{font-size:.95rem;font-weight:700;margin-bottom:6px;}
+.method-card .sub{font-size:.78rem;color:var(--muted);margin-bottom:14px;}
+.method-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.75rem;}
+.method-bar-label{color:var(--muted);width:80px;flex-shrink:0;}
+.method-bar-track{flex:1;background:var(--surface2);border-radius:3px;height:6px;overflow:hidden;}
+.method-bar-fill{height:100%;border-radius:3px;background:var(--accent);}
+
+/* ── CHEAT SHEET ── */
+.cheat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;}
+.cheat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;}
+.cheat-card h3{font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--accent);}
+.cheat-card ul{list-style:none;}
+.cheat-card ul li{font-size:.8rem;color:var(--muted);padding:4px 0;border-bottom:1px solid var(--border);}
+.cheat-card ul li:last-child{border-bottom:none;}
+.cheat-card ul li strong{color:var(--text);}
+
+/* ── FOOTER ── */
+footer{text-align:center;padding:32px;border-top:1px solid var(--border);font-size:.75rem;color:var(--muted);}
+footer span{color:var(--accent);}
+</style>
+</head>
+<body><div style="background:linear-gradient(135deg,#060d1e 0%,#0d2240 100%);color:#fff;padding:32px 40px 24px;font-family:'Segoe UI',Arial,sans-serif;border-bottom:4px solid #4fc3f7;margin-bottom:0;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div style="font-size:12px;color:#4fc3f7;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">JAWNVION LLC &nbsp;·&nbsp; LLM Engineering Series</div>
+      <div style="font-size:28px;font-weight:900;line-height:1.1;margin-bottom:6px;">17 Interactive Colab Labs</div>
+      <div style="font-size:14px;color:#8ab8d4;">Run in-browser &nbsp;·&nbsp; No setup required &nbsp;·&nbsp; Production LLM skills</div>
+    </div>
+    <div style="text-align:right;font-size:12px;color:#6090b0;line-height:1.8;">
+      <div>www.jawnvion.com</div>
+      <div>peter@jawnvion.com</div>
+      <div>© 2026 JAWNVION LLC</div>
+    </div>
+  </div>
+</div>
+
+
+<nav id="topnav">
+  <span class="logo">JAWNVION</span>
+  <a href="#why" class="active">Why Quantize</a>
+  <a href="#precision">Precision</a>
+  <a href="#memory">Memory Calc</a>
+  <a href="#quality">Quality</a>
+  <a href="#methods">Methods</a>
+  <a href="#code">Code</a>
+  <a href="#cheat">Cheat Sheet</a>
+</nav>
+
+<main>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="chapter-tag">Chapter 13 · AI Training Workbook</div>
+  <h1>Model <span>Quantization</span></h1>
+  <p>Shrink models 4–8× with minimal quality loss. Master precision formats, PTQ vs QAT, GPTQ, AWQ, GGUF, and bitsandbytes for efficient inference.</p>
+  <div class="hero-pills">
+    <span>FP32 → INT4</span>
+    <span>PTQ / QAT</span>
+    <span>GPTQ</span>
+    <span>AWQ</span>
+    <span>GGUF</span>
+    <span>bitsandbytes</span>
+  </div>
+</div>
+
+<!-- ── WHY QUANTIZE ── -->
+<section id="why">
+  <div class="section-header">
+    <div class="eyebrow">13.1 · Motivation</div>
+    <h2>The Size Problem</h2>
+    <p>Modern LLMs are too large to run efficiently on commodity hardware — quantization is the primary tool for closing that gap.</p>
+  </div>
+
+  <div class="card-grid cols-4" style="margin-bottom:20px;">
+    <div class="stat-card">
+      <div class="num">28 GB</div>
+      <div class="label">FP32 memory for a 7B model — won't fit on most GPUs</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" style="color:var(--green)">3.5 GB</div>
+      <div class="label">INT4 memory for the same 7B model — fits on an 8GB GPU</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" style="color:var(--gold)">8×</div>
+      <div class="label">Max compression ratio (FP32 → INT4) with minimal perplexity loss</div>
+    </div>
+    <div class="stat-card">
+      <div class="num" style="color:var(--blue)">2–4×</div>
+      <div class="label">Typical inference throughput improvement at INT8 vs FP32</div>
+    </div>
+  </div>
+
+  <div class="card-grid cols-3">
+    <div class="card" style="border-left:3px solid var(--accent);">
+      <h3 style="font-size:.9rem;font-weight:700;margin-bottom:8px;">PTQ — Post-Training Quantization</h3>
+      <p style="font-size:.82rem;color:var(--muted);">Quantize a trained model without retraining. Fast and cheap. Best quality when calibrated on a small representative dataset. Used by GPTQ, AWQ, and bitsandbytes.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--gold);">
+      <h3 style="font-size:.9rem;font-weight:700;margin-bottom:8px;">QAT — Quantization-Aware Training</h3>
+      <p style="font-size:.82rem;color:var(--muted);">Simulate quantization during training so the model learns to be robust to it. Higher quality at low bit widths, but requires training compute. Common in mobile/edge deployment.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--green);">
+      <h3 style="font-size:.9rem;font-weight:700;margin-bottom:8px;">Dynamic vs Static Quantization</h3>
+      <p style="font-size:.82rem;color:var(--muted);">Static: calibrate scale factors offline from representative data. Dynamic: compute scale at runtime per-tensor. Static is faster; dynamic needs no calibration dataset.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRECISION EXPLORER ── -->
+<section id="precision">
+  <div class="section-header">
+    <div class="eyebrow">13.2 · Precision Formats</div>
+    <h2>Bit Layout Explorer</h2>
+    <p>Click a format to see its binary structure, numerical range, and memory footprint. Sign = red · Exponent = blue · Mantissa/Fraction = green.</p>
+  </div>
+
+  <div class="precision-btn-row">
+    <button class="prec-btn active" onclick="selectPrec(this,'fp32')">FP32</button>
+    <button class="prec-btn" onclick="selectPrec(this,'fp16')">FP16</button>
+    <button class="prec-btn" onclick="selectPrec(this,'bf16')">BF16</button>
+    <button class="prec-btn" onclick="selectPrec(this,'int8')">INT8</button>
+    <button class="prec-btn" onclick="selectPrec(this,'int4')">INT4</button>
+  </div>
+
+  <div class="prec-layout">
+    <div class="bit-canvas-wrap">
+      <div class="bit-canvas-title" id="bitTitle">FP32 — 32-bit floating point</div>
+      <canvas id="bitCanvas" height="80"></canvas>
+      <div class="bit-legend">
+        <div class="leg-item"><div class="leg-swatch" style="background:#F87171;"></div>Sign</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#60A5FA;"></div>Exponent</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:#4ADE80;"></div>Mantissa / Fraction</div>
+        <div class="leg-item" id="legMag" style="display:none;"><div class="leg-swatch" style="background:#C084FC;"></div>Magnitude</div>
+      </div>
+    </div>
+
+    <div class="prec-stats">
+      <div class="prec-stat-row"><span class="prec-stat-label">Total bits</span><span class="prec-stat-val" id="psTotal">32</span></div>
+      <div class="prec-stat-row"><span class="prec-stat-label">Number range</span><span class="prec-stat-val" id="psRange">±3.4 × 10³⁸</span></div>
+      <div class="prec-stat-row"><span class="prec-stat-label">Decimal precision</span><span class="prec-stat-val" id="psPrecision">~7 significant digits</span></div>
+      <div class="prec-stat-row"><span class="prec-stat-label">Bytes per param</span><span class="prec-stat-val" id="psBytes">4 bytes</span></div>
+      <div class="prec-stat-row"><span class="prec-stat-label">7B model VRAM</span><span class="prec-stat-val accent" id="psVram">~28 GB</span></div>
+      <div class="prec-stat-row"><span class="prec-stat-label">70B model VRAM</span><span class="prec-stat-val" id="psVram70">~280 GB</span></div>
+      <div class="prec-stat-row"><span class="prec-stat-label">Use case</span><span class="prec-stat-val" id="psUse" style="font-family:var(--body-font);font-size:.78rem;text-align:right;max-width:200px;">Training baseline</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── MEMORY CALCULATOR ── -->
+<section id="memory">
+  <div class="section-header">
+    <div class="eyebrow">13.3 · GPU Memory Planning</div>
+    <h2>Model Memory Calculator</h2>
+    <p>Drag to set model size. See VRAM requirements across all precision formats with GPU tier indicators.</p>
+  </div>
+
+  <div class="calc-box">
+    <div class="calc-slider-row">
+      <label>Model Parameters</label>
+      <input type="range" class="range-slider" id="paramSlider" min="0" max="8" step="1" value="2" oninput="updateCalc()">
+      <span class="param-display" id="paramDisplay">7B</span>
+    </div>
+
+    <table class="mem-table" id="memTable">
+      <thead>
+        <tr>
+          <th>Format</th>
+          <th>Bytes/Param</th>
+          <th>Model Weights</th>
+          <th style="width:200px;">Relative Size</th>
+          <th>GPU Tier</th>
+        </tr>
+      </thead>
+      <tbody id="memBody"></tbody>
+    </table>
+
+    <div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--muted);">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#4ADE80;"></span> Fits consumer GPU (≤24 GB)
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--muted);">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#FBBF24;"></span> Needs datacenter GPU (≤80 GB)
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--muted);">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#F87171;"></span> Requires multi-GPU / A100×2+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── QUALITY CURVE ── -->
+<section id="quality">
+  <div class="section-header">
+    <div class="eyebrow">13.4 · Quality vs Compression</div>
+    <h2>Perplexity Degradation Curve</h2>
+    <p>Lower perplexity = better quality. INT8 is near-lossless. INT4 with calibration (GPTQ/AWQ) stays close. Naive INT4 and below degrade quickly.</p>
+  </div>
+
+  <div class="curve-wrap">
+    <div class="curve-title">Perplexity vs Bits per Weight — Llama-class 7B model (illustrative)</div>
+    <canvas id="qualityCanvas" height="280"></canvas>
+  </div>
+
+  <div class="card-grid cols-3" style="margin-top:20px;">
+    <div class="card">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--green);margin-bottom:6px;">Near-Lossless Zone</div>
+      <p style="font-size:.82rem;color:var(--muted);">FP16, BF16, INT8 — perplexity within 2% of FP32 baseline. Safe for all production use cases.</p>
+    </div>
+    <div class="card">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);margin-bottom:6px;">Acceptable Zone</div>
+      <p style="font-size:.82rem;color:var(--muted);">INT4 with GPTQ/AWQ calibration — 3–10% perplexity increase. Good for chat, summarization, general inference.</p>
+    </div>
+    <div class="card">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--coral);margin-bottom:6px;">Degraded Zone</div>
+      <p style="font-size:.82rem;color:var(--muted);">INT3 and below — significant degradation. Experimental only. May incohere on long-form generation.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── METHODS ── -->
+<section id="methods">
+  <div class="section-header">
+    <div class="eyebrow">13.5 · Quantization Methods</div>
+    <h2>GPTQ · AWQ · GGUF · bitsandbytes</h2>
+    <p>Each method has different trade-offs for quality, speed, hardware support, and ease of use.</p>
+  </div>
+
+  <div class="card-grid cols-2">
+    <div class="method-card">
+      <span class="method-tag">GPTQ</span>
+      <h3>Layer-wise Optimal Brain Quantization</h3>
+      <p class="sub">Uses calibration data + Hessian-based weight compensation to minimize quantization error layer-by-layer. State-of-the-art INT4 quality.</p>
+      <div class="method-bar-row"><span class="method-bar-label">Quality</span><div class="method-bar-track"><div class="method-bar-fill" style="width:88%;"></div></div><span style="font-size:.72rem;color:var(--muted);">88%</span></div>
+      <div class="method-bar-row"><span class="method-bar-label">Speed</span><div class="method-bar-track"><div class="method-bar-fill" style="width:72%;"></div></div><span style="font-size:.72rem;color:var(--muted);">72%</span></div>
+      <div class="method-bar-row"><span class="method-bar-label">Ease</span><div class="method-bar-track"><div class="method-bar-fill" style="width:65%;"></div></div><span style="font-size:.72rem;color:var(--muted);">65%</span></div>
+      <div class="method-bar-row"><span class="method-bar-label">HW Flex</span><div class="method-bar-track"><div class="method-bar-fill" style="width:55%;"></div></div><span style="font-size:.72rem;color:var(--muted);">55%</span></div>
+      <p style="font-size:.78rem;color:var(--muted);margin-top:12px;">Needs GPU for quant. Excellent for A100/H100 inference. Supported in vLLM, AutoGPTQ, HuggingFace.</p>
+    </div>
+
+    <div class="method-card">
+      <span class="method-tag">AWQ</span>
+      <h3>Activation-Aware Weight Quantization</h3>
+      <p class="sub">Identifies salient weights via activation magnitude and preserves them at higher precision. Often outperforms GPTQ at INT4.</p>
+      <div class="method-bar-row"><span class="method-bar-label">Quality</span><div class="method-bar-track"><div class="method-bar-fill" style="width:92%;"></div></div><span style="font-size:.72rem;color:var(--muted);">92%</span></div>
+      <div class="method-bar-row"><span class="method-bar-label">Speed</span><div class="method-bar-track"><div class="method-bar-fill" style="width:80%;"></div></div><span style="font-size:.72rem;color:var(--muted);">80%</span></div>
+      <div class="method-bar-row"><span class="method-bar-label">Ease</span><div class="method-bar-track"><div class="method-bar-fill" style="width:70%;"></div></div><span style="font-size:.72rem;color:var(--muted);">70%</span></div>
+      <div class="method-bar-row"><span class="method-bar-label">HW Flex</span><div class="method-bar-track"><div class="method-bar-fill" style="width:62%;"></div></div><span style="font-size:.72rem;color:var(--muted);">62%</span></div>
+      <p style="font-size:.78rem;color:var(--muted);margin-top:12px;">Faster than GPTQ to quantize. State of the art for INT4. Supported in llm-awq, vLLM, TGI.</p>
+    </div>
+
+    <div class="method-card">
+      <span class="method-tag">GGUF</span>
+      <h3>llama.cpp Format (CPU + GPU hybrid)</h3>
+      <p class="sub">Quantized weights packed in a single portable file. Runs on CPU with optional GPU offload. The most portable format — works on MacBook, Raspberry Pi, servers.</p>
+      <div class="method-bar-row"><span class="method-bar-label">Quality</span><div class="method-bar-track"><div class="method-bar-fill" style="width:82%;"></div></div><span style="font-size:.72rem;color:var(--muted);">82%</span></div>
+      <div class="method-bar-row"><span class="method-bar-label">Speed</span><div class="method-bar-track"><div class="method-bar-fill" style="width:60%;"></div></div><span style="font-size:.72rem;color:var(--muted);">60%</span></div>
+      <div class="method-bar-row"><span class="method-bar-label">Ease</span><div class="method-bar-track"><div class="method-bar-fill" style="width:90%;"></div></div><span style="font-size:.72rem;color:var(--muted);">90%</span></div>
+      <div class="method-bar-row"><span class="method-bar-label">HW Flex</span><div class="method-bar-track"><div class="method-bar-fill" style="width:98%;"></div></div><span style="font-size:.72rem;color:var(--muted);">98%</span></div>
+      <p style="font-size:.78rem;color:var(--muted);margin-top:12px;">Standard for local inference (Ollama, LM Studio, llama.cpp). Q4_K_M is the community sweet spot.</p>
+    </div>
+
+    <div class="method-card">
+      <span class="method-tag">bitsandbytes</span>
+      <h3>Load-Time INT8 / NF4 via HuggingFace</h3>
+      <p class="sub">One-line <code style="font-family:var(--mono-font);font-size:.8em;">load_in_8bit=True</code> or <code style="font-family:var(--mono-font);font-size:.8em;">load_in_4bit=True</code>. LLM.int8() uses mixed-precision decomposition; NF4 (QLoRA) uses a normal-float quantile grid.</p>
+      <div class="method-bar-row"><span class="method-bar-label">Quality</span><div class="method-bar-track"><div class="method-bar-fill" style="width:85%;"></div></div><span style="font-size:.72rem;color:var(--muted);">85%</span></div>
+      <div class="method-bar-row"><span class="method-bar-label">Speed</span><div class="method-bar-track"><div class="method-bar-fill" style="width:65%;"></div></div><span style="font-size:.72rem;color:var(--muted);">65%</span></div>
+      <div class="method-bar-row"><span class="method-bar-label">Ease</span><div class="method-bar-track"><div class="method-bar-fill" style="width:95%;"></div></div><span style="font-size:.72rem;color:var(--muted);">95%</span></div>
+      <div class="method-bar-row"><span class="method-bar-label">HW Flex</span><div class="method-bar-track"><div class="method-bar-fill" style="width:70%;"></div></div><span style="font-size:.72rem;color:var(--muted);">70%</span></div>
+      <p style="font-size:.78rem;color:var(--muted);margin-top:12px;">Easiest entry point. Great for QLoRA fine-tuning with NF4. Requires CUDA GPU. Slower than compiled GPTQ kernels.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── CODE ── -->
+<section id="code">
+  <div class="section-header">
+    <div class="eyebrow">13.6 · Implementation</div>
+    <h2>Quantization Code Patterns</h2>
+    <p>Copy-paste ready implementations for each method.</p>
+  </div>
+
+  <div class="tab-bar" id="codeTabs">
+    <button class="tab-btn active" onclick="codeTab(this,'c-bnb')">bitsandbytes</button>
+    <button class="tab-btn" onclick="codeTab(this,'c-gptq')">GPTQ</button>
+    <button class="tab-btn" onclick="codeTab(this,'c-awq')">AWQ</button>
+    <button class="tab-btn" onclick="codeTab(this,'c-gguf')">GGUF / Ollama</button>
+    <button class="tab-btn" onclick="codeTab(this,'c-bench')">Benchmark</button>
+  </div>
+
+  <div id="tab-c-bnb" class="tab-panel active code-block">
+    <button class="code-copy" onclick="copyCode(this)">Copy</button>
+<pre><span class="cm"># bitsandbytes — easiest path to INT8 and NF4 (INT4) quantization</span>
+<span class="kw">from</span> transformers <span class="kw">import</span> AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+<span class="kw">import</span> torch
+
+<span class="cm"># ── INT8 (LLM.int8) ──────────────────────────────────────</span>
+bnb_int8_config = <span class="nm">BitsAndBytesConfig</span>(
+    load_in_8bit=<span class="kw">True</span>,
+    llm_int8_threshold=<span class="nm">6.0</span>,          <span class="cm"># outlier threshold for mixed-precision</span>
+    llm_int8_skip_modules=[<span class="str">"lm_head"</span>], <span class="cm"># keep final head in FP16</span>
+)
+
+<span class="cm"># ── NF4 / QLoRA (INT4) ───────────────────────────────────</span>
+bnb_nf4_config = <span class="nm">BitsAndBytesConfig</span>(
+    load_in_4bit=<span class="kw">True</span>,
+    bnb_4bit_quant_type=<span class="str">"nf4"</span>,       <span class="cm"># NormalFloat4 grid — better than INT4</span>
+    bnb_4bit_use_double_quant=<span class="kw">True</span>, <span class="cm"># quantize the scale factors too</span>
+    bnb_4bit_compute_dtype=torch.bfloat16,
+)
+
+model_id = <span class="str">"meta-llama/Meta-Llama-3-8B-Instruct"</span>
+
+model = <span class="nm">AutoModelForCausalLM</span>.<span class="fn">from_pretrained</span>(
+    model_id,
+    quantization_config=bnb_nf4_config,
+    device_map=<span class="str">"auto"</span>,    <span class="cm"># spread across available GPUs automatically</span>
+    torch_dtype=torch.bfloat16,
+)
+tokenizer = <span class="nm">AutoTokenizer</span>.<span class="fn">from_pretrained</span>(model_id)
+
+<span class="cm"># Memory footprint check</span>
+<span class="kw">print</span>(<span class="fn">f</span><span class="str">"Footprint: {model.get_memory_footprint() / 1e9:.2f} GB"</span>)
+
+<span class="cm"># QLoRA fine-tuning — NF4 base + LoRA adapters in BF16</span>
+<span class="kw">from</span> peft <span class="kw">import</span> get_peft_model, <span class="nm">LoraConfig</span>, prepare_model_for_kbit_training
+
+model = <span class="fn">prepare_model_for_kbit_training</span>(model)
+lora_config = <span class="nm">LoraConfig</span>(
+    r=16, lora_alpha=32, target_modules=[<span class="str">"q_proj"</span>, <span class="str">"v_proj"</span>],
+    lora_dropout=<span class="nm">0.05</span>, bias=<span class="str">"none"</span>, task_type=<span class="str">"CAUSAL_LM"</span>,
+)
+model = <span class="fn">get_peft_model</span>(model, lora_config)
+model.<span class="fn">print_trainable_parameters</span>()
+<span class="cm"># trainable params: ~6.5M / total: ~8B  →  0.08% trained</span></pre>
+  </div>
+
+  <div id="tab-c-gptq" class="tab-panel code-block">
+    <button class="code-copy" onclick="copyCode(this)">Copy</button>
+<pre><span class="cm"># GPTQ — layer-wise optimal quantization with calibration data</span>
+<span class="cm"># pip install auto-gptq optimum</span>
+<span class="kw">from</span> auto_gptq <span class="kw">import</span> <span class="nm">AutoGPTQForCausalLM, BaseQuantizeConfig</span>
+<span class="kw">from</span> transformers <span class="kw">import</span> AutoTokenizer
+<span class="kw">from</span> datasets <span class="kw">import</span> load_dataset
+
+model_id = <span class="str">"meta-llama/Meta-Llama-3-8B"</span>
+output_dir = <span class="str">"./llama-3-8b-gptq-int4"</span>
+
+<span class="cm"># ── Quantization config ──────────────────────────────────</span>
+quant_config = <span class="nm">BaseQuantizeConfig</span>(
+    bits=<span class="nm">4</span>,             <span class="cm"># INT4</span>
+    group_size=<span class="nm">128</span>,     <span class="cm"># quantization group size (128 is standard)</span>
+    desc_act=<span class="kw">False</span>,    <span class="cm"># activation ordering — False = faster inference</span>
+    damp_percent=<span class="nm">0.01</span>, <span class="cm"># Hessian dampening for numerical stability</span>
+)
+
+<span class="cm"># ── Calibration dataset (128 samples typical) ────────────</span>
+tokenizer = <span class="nm">AutoTokenizer</span>.<span class="fn">from_pretrained</span>(model_id)
+ds = <span class="fn">load_dataset</span>(<span class="str">"wikitext"</span>, <span class="str">"wikitext-2-raw-v1"</span>, split=<span class="str">"train"</span>)
+calib_data = [
+    tokenizer(row[<span class="str">"text"</span>], return_tensors=<span class="str">"pt"</span>, max_length=<span class="nm">2048</span>, truncation=<span class="kw">True</span>)
+    <span class="kw">for</span> row <span class="kw">in</span> ds.<span class="fn">select</span>(<span class="fn">range</span>(<span class="nm">128</span>))
+    <span class="kw">if</span> <span class="fn">len</span>(row[<span class="str">"text"</span>].split()) &gt; <span class="nm">50</span>
+]
+
+<span class="cm"># ── Load + quantize ──────────────────────────────────────</span>
+model = <span class="nm">AutoGPTQForCausalLM</span>.<span class="fn">from_pretrained</span>(model_id, quant_config)
+model.<span class="fn">quantize</span>(calib_data)      <span class="cm"># ~20 min on A100 for 8B model</span>
+model.<span class="fn">save_quantized</span>(output_dir, use_safetensors=<span class="kw">True</span>)
+tokenizer.<span class="fn">save_pretrained</span>(output_dir)
+
+<span class="cm"># ── Load quantized model for inference ───────────────────</span>
+model = <span class="nm">AutoGPTQForCausalLM</span>.<span class="fn">from_quantized</span>(
+    output_dir,
+    device_map=<span class="str">"auto"</span>,
+    use_triton=<span class="kw">False</span>,   <span class="cm"># True = faster but requires triton kernel</span>
+)</pre>
+  </div>
+
+  <div id="tab-c-awq" class="tab-panel code-block">
+    <button class="code-copy" onclick="copyCode(this)">Copy</button>
+<pre><span class="cm"># AWQ — Activation-Aware Weight Quantization</span>
+<span class="cm"># pip install autoawq</span>
+<span class="kw">from</span> awq <span class="kw">import</span> <span class="nm">AutoAWQForCausalLM</span>
+<span class="kw">from</span> transformers <span class="kw">import</span> AutoTokenizer
+
+model_id = <span class="str">"meta-llama/Meta-Llama-3-8B-Instruct"</span>
+output_dir = <span class="str">"./llama-3-8b-awq-int4"</span>
+
+<span class="cm"># ── AWQ quantization config ──────────────────────────────</span>
+quant_config = {
+    <span class="str">"zero_point"</span>: <span class="kw">True</span>,    <span class="cm"># asymmetric quantization</span>
+    <span class="str">"q_group_size"</span>: <span class="nm">128</span>,  <span class="cm"># group size — 128 is optimal for quality/speed</span>
+    <span class="str">"w_bit"</span>: <span class="nm">4</span>,            <span class="cm"># INT4 weights</span>
+    <span class="str">"version"</span>: <span class="str">"GEMM"</span>,    <span class="cm"># GEMM = faster; GEMV = better for batch=1</span>
+}
+
+model = <span class="nm">AutoAWQForCausalLM</span>.<span class="fn">from_pretrained</span>(model_id, safetensors=<span class="kw">True</span>)
+tokenizer = <span class="nm">AutoTokenizer</span>.<span class="fn">from_pretrained</span>(model_id, trust_remote_code=<span class="kw">True</span>)
+
+<span class="cm"># Quantize — uses activation statistics to find salient weights</span>
+model.<span class="fn">quantize</span>(tokenizer, quant_config=quant_config)
+
+model.<span class="fn">save_quantized</span>(output_dir)
+tokenizer.<span class="fn">save_pretrained</span>(output_dir)
+
+<span class="cm"># ── Load AWQ for vLLM inference ───────────────────────────</span>
+<span class="kw">from</span> vllm <span class="kw">import</span> <span class="nm">LLM, SamplingParams</span>
+
+llm = <span class="nm">LLM</span>(
+    model=output_dir,
+    quantization=<span class="str">"awq"</span>,          <span class="cm"># tell vLLM the quant format</span>
+    dtype=<span class="str">"auto"</span>,
+    max_model_len=<span class="nm">4096</span>,
+    gpu_memory_utilization=<span class="nm">0.9</span>,
+)
+
+outputs = llm.<span class="fn">generate</span>(
+    [<span class="str">"Explain quantization in one paragraph:"</span>],
+    <span class="nm">SamplingParams</span>(temperature=<span class="nm">0.7</span>, max_tokens=<span class="nm">200</span>),
+)
+<span class="kw">print</span>(outputs[<span class="nm">0</span>].outputs[<span class="nm">0</span>].text)</pre>
+  </div>
+
+  <div id="tab-c-gguf" class="tab-panel code-block">
+    <button class="code-copy" onclick="copyCode(this)">Copy</button>
+<pre><span class="cm"># GGUF — portable CPU+GPU inference via llama.cpp / Ollama</span>
+
+<span class="cm"># ── Option A: Convert HuggingFace model to GGUF ──────────</span>
+<span class="cm"># git clone https://github.com/ggerganov/llama.cpp && cd llama.cpp && make</span>
+<span class="cm"># pip install -r requirements/requirements-convert_hf_to_gguf.txt</span>
+
+<span class="cm"># bash</span>
+<span class="cm"># 1. Convert weights to F16 GGUF</span>
+<span class="cm"># python convert_hf_to_gguf.py ./llama-3-8b --outfile llama3-8b-f16.gguf --outtype f16</span>
+<span class="cm">#</span>
+<span class="cm"># 2. Quantize to Q4_K_M (community recommended sweet spot)</span>
+<span class="cm"># ./llama-quantize llama3-8b-f16.gguf llama3-8b-q4km.gguf Q4_K_M</span>
+<span class="cm">#</span>
+<span class="cm"># GGUF quantization levels:</span>
+<span class="cm">#   Q2_K  — aggressive, ~2.5 bits/weight, noticeable degradation</span>
+<span class="cm">#   Q4_0  — fast, ~4.5 GB for 7B, slight quality loss</span>
+<span class="cm">#   Q4_K_M — balanced: K-quant mixed, ~4.8 GB, near GPTQ quality ← recommended</span>
+<span class="cm">#   Q5_K_M — higher quality, ~5.8 GB for 7B</span>
+<span class="cm">#   Q8_0  — near-lossless, ~8.5 GB for 7B</span>
+
+<span class="cm"># ── Option B: Ollama (simplest path) ─────────────────────</span>
+<span class="cm"># Install: https://ollama.ai — then:</span>
+<span class="cm">#   ollama pull llama3         # pulls Q4_K_M GGUF automatically</span>
+<span class="cm">#   ollama run llama3</span>
+
+<span class="cm"># Python client for Ollama:</span>
+<span class="kw">import</span> ollama
+
+response = <span class="fn">ollama.chat</span>(
+    model=<span class="str">"llama3"</span>,
+    messages=[
+        {<span class="str">"role"</span>: <span class="str">"system"</span>, <span class="str">"content"</span>: <span class="str">"You are a helpful assistant."</span>},
+        {<span class="str">"role"</span>: <span class="str">"user"</span>,   <span class="str">"content"</span>: <span class="str">"Explain INT4 quantization briefly."</span>},
+    ],
+    options={<span class="str">"temperature"</span>: <span class="nm">0.7</span>, <span class="str">"num_predict"</span>: <span class="nm">200</span>},
+)
+<span class="kw">print</span>(response[<span class="str">"message"</span>][<span class="str">"content"</span>])
+
+<span class="cm"># ── OpenAI-compatible server ──────────────────────────────</span>
+<span class="cm"># ollama serve  →  exposes http://localhost:11434/v1</span>
+<span class="cm"># Compatible with openai Python client — just change base_url</span>
+<span class="kw">from</span> openai <span class="kw">import</span> <span class="nm">OpenAI</span>
+client = <span class="nm">OpenAI</span>(base_url=<span class="str">"http://localhost:11434/v1"</span>, api_key=<span class="str">"ollama"</span>)</pre>
+  </div>
+
+  <div id="tab-c-bench" class="tab-panel code-block">
+    <button class="code-copy" onclick="copyCode(this)">Copy</button>
+<pre><span class="cm"># benchmark_quant.py — compare perplexity and throughput across formats</span>
+<span class="kw">import</span> torch, time, math
+<span class="kw">from</span> transformers <span class="kw">import</span> AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+<span class="kw">from</span> datasets <span class="kw">import</span> load_dataset
+
+<span class="kw">def</span> <span class="fn">measure_perplexity</span>(model, tokenizer, num_samples=<span class="nm">20</span>) -&gt; float:
+    model.<span class="fn">eval</span>()
+    ds = <span class="fn">load_dataset</span>(<span class="str">"wikitext"</span>, <span class="str">"wikitext-2-raw-v1"</span>, split=<span class="str">"test"</span>)
+    total_loss, total_tokens = <span class="nm">0.0</span>, <span class="nm">0</span>
+
+    <span class="kw">with</span> torch.<span class="fn">no_grad</span>():
+        <span class="kw">for</span> row <span class="kw">in</span> ds.<span class="fn">select</span>(<span class="fn">range</span>(num_samples)):
+            enc = <span class="fn">tokenizer</span>(row[<span class="str">"text"</span>], return_tensors=<span class="str">"pt"</span>,
+                             max_length=<span class="nm">512</span>, truncation=<span class="kw">True</span>).<span class="fn">to</span>(model.device)
+            <span class="kw">if</span> enc.input_ids.<span class="fn">shape</span>[<span class="nm">1</span>] &lt; <span class="nm">10</span>: <span class="kw">continue</span>
+            out = <span class="fn">model</span>(**enc, labels=enc.input_ids)
+            total_loss   += out.loss.<span class="fn">item</span>() * enc.input_ids.<span class="fn">shape</span>[<span class="nm">1</span>]
+            total_tokens += enc.input_ids.<span class="fn">shape</span>[<span class="nm">1</span>]
+
+    <span class="kw">return</span> math.<span class="fn">exp</span>(total_loss / total_tokens)
+
+<span class="kw">def</span> <span class="fn">measure_throughput</span>(model, tokenizer, n=<span class="nm">10</span>) -&gt; float:
+    prompt = tokenizer(<span class="str">"The future of AI is"</span>, return_tensors=<span class="str">"pt"</span>).<span class="fn">to</span>(model.device)
+    t0 = <span class="fn">time.perf_counter</span>()
+    <span class="kw">with</span> torch.<span class="fn">no_grad</span>():
+        <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n):
+            <span class="fn">model.generate</span>(**prompt, max_new_tokens=<span class="nm">50</span>, do_sample=<span class="kw">False</span>)
+    elapsed = <span class="fn">time.perf_counter</span>() - t0
+    <span class="kw">return</span> (n * <span class="nm">50</span>) / elapsed  <span class="cm"># tokens / second</span>
+
+<span class="cm"># ── Run benchmark for NF4 ────────────────────────────────</span>
+model_id = <span class="str">"meta-llama/Meta-Llama-3-8B"</span>
+configs = {
+    <span class="str">"FP16"</span>: <span class="kw">None</span>,
+    <span class="str">"INT8"</span>: <span class="nm">BitsAndBytesConfig</span>(load_in_8bit=<span class="kw">True</span>),
+    <span class="str">"NF4"</span>:  <span class="nm">BitsAndBytesConfig</span>(load_in_4bit=<span class="kw">True</span>, bnb_4bit_quant_type=<span class="str">"nf4"</span>,
+                                  bnb_4bit_compute_dtype=torch.bfloat16),
+}
+tokenizer = <span class="nm">AutoTokenizer</span>.<span class="fn">from_pretrained</span>(model_id)
+<span class="kw">for</span> name, cfg <span class="kw">in</span> configs.<span class="fn">items</span>():
+    model = <span class="nm">AutoModelForCausalLM</span>.<span class="fn">from_pretrained</span>(
+        model_id, quantization_config=cfg,
+        device_map=<span class="str">"auto"</span>, torch_dtype=torch.float16,
+    )
+    ppl = <span class="fn">measure_perplexity</span>(model, tokenizer)
+    tps = <span class="fn">measure_throughput</span>(model, tokenizer)
+    mem = model.<span class="fn">get_memory_footprint</span>() / <span class="nm">1e9</span>
+    <span class="kw">print</span>(<span class="fn">f</span><span class="str">"{name:6s}  PPL={ppl:.2f}  {tps:.1f} tok/s  {mem:.1f} GB"</span>)</pre>
+  </div>
+</section>
+
+<!-- ── CHEAT SHEET ── -->
+<section id="cheat">
+  <div class="section-header">
+    <div class="eyebrow">13.7 · Quick Reference</div>
+    <h2>Quantization Cheat Sheet</h2>
+  </div>
+
+  <div class="cheat-grid">
+    <div class="cheat-card">
+      <h3>📐 Precision Memory</h3>
+      <ul>
+        <li><strong>FP32:</strong> 4 bytes/param → 7B = 28 GB</li>
+        <li><strong>FP16/BF16:</strong> 2 bytes → 7B = 14 GB</li>
+        <li><strong>INT8:</strong> 1 byte → 7B = 7 GB</li>
+        <li><strong>INT4:</strong> 0.5 bytes → 7B = 3.5 GB</li>
+        <li>Add ~20% overhead for KV cache + activations</li>
+      </ul>
+    </div>
+    <div class="cheat-card">
+      <h3>🎯 Format Decision</h3>
+      <ul>
+        <li><strong>Training:</strong> BF16 (better range than FP16)</li>
+        <li><strong>Inference (server):</strong> INT8 or AWQ INT4</li>
+        <li><strong>Fine-tuning cheap:</strong> NF4 + QLoRA (bitsandbytes)</li>
+        <li><strong>Local / portable:</strong> GGUF Q4_K_M (Ollama)</li>
+        <li><strong>Max quality INT4:</strong> AWQ &gt; GPTQ &gt; NF4</li>
+      </ul>
+    </div>
+    <div class="cheat-card">
+      <h3>⚖️ Quality vs Speed</h3>
+      <ul>
+        <li><strong>FP16 → INT8:</strong> ~0–2% perplexity, 1.5–2× throughput</li>
+        <li><strong>INT8 → INT4 (AWQ):</strong> ~5–8% perplexity, 2–3× throughput</li>
+        <li><strong>INT4 → INT3:</strong> ~20%+ perplexity — avoid</li>
+        <li><strong>Group size 128:</strong> best quality/speed balance</li>
+      </ul>
+    </div>
+    <div class="cheat-card">
+      <h3>🔧 GGUF Q-Levels</h3>
+      <ul>
+        <li><strong>Q2_K:</strong> Smallest, noticeable quality loss</li>
+        <li><strong>Q4_0:</strong> Fast, slight quality loss</li>
+        <li><strong>Q4_K_M:</strong> ← Community recommended sweet spot</li>
+        <li><strong>Q5_K_M:</strong> Better quality, ~20% larger</li>
+        <li><strong>Q8_0:</strong> Near-lossless, use for benchmarking</li>
+      </ul>
+    </div>
+    <div class="cheat-card">
+      <h3>⚡ PTQ vs QAT</h3>
+      <ul>
+        <li><strong>PTQ:</strong> No retraining, fast, slight quality loss</li>
+        <li><strong>QAT:</strong> Requires training, better quality at low bits</li>
+        <li><strong>When to QAT:</strong> INT4 or below, edge/mobile deployment</li>
+        <li><strong>PTQ tools:</strong> GPTQ, AWQ, bitsandbytes, llama.cpp</li>
+      </ul>
+    </div>
+    <div class="cheat-card">
+      <h3>🚀 Serving Stack</h3>
+      <ul>
+        <li><strong>Local dev:</strong> Ollama (zero config)</li>
+        <li><strong>Production GPU:</strong> vLLM + AWQ or GPTQ</li>
+        <li><strong>HuggingFace:</strong> TGI with bitsandbytes</li>
+        <li><strong>Fine-tune budget:</strong> bitsandbytes NF4 + PEFT</li>
+        <li><strong>Edge:</strong> llama.cpp Q4_K_M or ExecuTorch</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Chapter 13 — Quantization · AI Training Workbook · <span>Jawnvion LLC</span>
+</footer>
+
+<script>
+// ── PRECISION DATA ──
+const PREC_DATA = {
+  fp32: {
+    title: 'FP32 — 32-bit IEEE 754 floating point',
+    sign:1, exp:8, mant:23, int:0,
+    total:32, range:'±3.4 × 10³⁸', precision:'~7 significant digits',
+    bytes:'4 bytes', vram7:'~28 GB', vram70:'~280 GB',
+    use:'Training baseline, full precision',
+  },
+  fp16: {
+    title: 'FP16 — 16-bit half-precision floating point',
+    sign:1, exp:5, mant:10, int:0,
+    total:16, range:'±6.5 × 10⁴', precision:'~3 significant digits',
+    bytes:'2 bytes', vram7:'~14 GB', vram70:'~140 GB',
+    use:'Inference, mixed-precision training',
+  },
+  bf16: {
+    title: 'BF16 — Brain Float 16 (Google)',
+    sign:1, exp:8, mant:7, int:0,
+    total:16, range:'±3.4 × 10³⁸', precision:'~2 significant digits',
+    bytes:'2 bytes', vram7:'~14 GB', vram70:'~140 GB',
+    use:'Preferred for LLM training (same range as FP32)',
+  },
+  int8: {
+    title: 'INT8 — 8-bit integer',
+    sign:1, exp:0, mant:0, int:7,
+    total:8, range:'−128 to 127', precision:'Exact integer',
+    bytes:'1 byte', vram7:'~7 GB', vram70:'~70 GB',
+    use:'Near-lossless inference (bitsandbytes, TensorRT)',
+  },
+  int4: {
+    title: 'INT4 — 4-bit integer (GPTQ / AWQ / NF4)',
+    sign:1, exp:0, mant:0, int:3,
+    total:4, range:'−8 to 7', precision:'Exact integer (calibrated)',
+    bytes:'0.5 bytes', vram7:'~3.5 GB', vram70:'~35 GB',
+    use:'Aggressive compression, requires calibration data',
+  },
+};
+
+let currentPrec = 'fp32';
+
+function selectPrec(btn, key) {
+  document.querySelectorAll('.prec-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentPrec = key;
+  renderPrec(key);
+}
+
+function renderPrec(key) {
+  const d = PREC_DATA[key];
+  document.getElementById('bitTitle').textContent = d.title;
+  document.getElementById('psTotal').textContent = d.total;
+  document.getElementById('psRange').textContent = d.range;
+  document.getElementById('psPrecision').textContent = d.precision;
+  document.getElementById('psBytes').textContent = d.bytes;
+  document.getElementById('psVram').textContent = d.vram7;
+  document.getElementById('psVram70').textContent = d.vram70;
+  document.getElementById('psUse').textContent = d.use;
+  document.getElementById('legMag').style.display = d.int ? 'flex' : 'none';
+  drawBits(d);
+}
+
+function drawBits(d) {
+  const canvas = document.getElementById('bitCanvas');
+  const W = canvas.offsetWidth || 480;
+  canvas.width = W * window.devicePixelRatio;
+  canvas.height = 80 * window.devicePixelRatio;
+  canvas.style.height = '80px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  ctx.clearRect(0,0,W,80);
+
+  const bits = d.total;
+  const gap = 2;
+  const bw = Math.min(22, Math.floor((W - (bits-1)*gap) / bits));
+  const totalW = bits*bw + (bits-1)*gap;
+  const startX = (W - totalW)/2;
+  const y = 10, h = 36;
+  const r = 4;
+
+  function drawBit(i, color, label) {
+    const x = startX + i*(bw+gap);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(x,y,bw,h,r);
+    ctx.fill();
+    if (bw > 10) {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.font = `bold ${Math.min(10,bw-2)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, x+bw/2, y+h/2);
+    }
+  }
+
+  // Draw bits
+  let idx = 0;
+  // Sign bit
+  drawBit(idx, '#F87171', '0'); idx++;
+  // Exponent
+  for (let i=0;i<d.exp;i++) { drawBit(idx, '#60A5FA', '1'); idx++; }
+  // Mantissa
+  for (let i=0;i<d.mant;i++) { drawBit(idx, '#4ADE80', i<3?'0':'1'); idx++; }
+  // Integer (for INT)
+  for (let i=0;i<d.int;i++) { drawBit(idx, '#C084FC', i<3?'1':'0'); idx++; }
+
+  // Labels below
+  ctx.textAlign = 'center';
+  ctx.font = '10px monospace';
+  ctx.fillStyle = '#F87171';
+  ctx.fillText('S', startX + bw/2, y+h+14);
+  if (d.exp) {
+    const midExp = startX + bw + gap + (d.exp*bw + (d.exp-1)*gap)/2;
+    ctx.fillStyle = '#60A5FA';
+    ctx.fillText('exp', midExp, y+h+14);
+  }
+  if (d.mant) {
+    const startMant = startX + (1+d.exp)*(bw+gap);
+    const midMant = startMant + (d.mant*bw + (d.mant-1)*gap)/2;
+    ctx.fillStyle = '#4ADE80';
+    ctx.fillText('mantissa', midMant, y+h+14);
+  }
+  if (d.int) {
+    const startInt = startX + (1+d.exp+d.mant)*(bw+gap);
+    const midInt = startInt + (d.int*bw + (d.int-1)*gap)/2;
+    ctx.fillStyle = '#C084FC';
+    ctx.fillText('magnitude', midInt, y+h+14);
+  }
+}
+
+// ── MEMORY CALCULATOR ──
+const PARAM_STEPS = [1,3,7,13,30,34,70,180,405];
+const FORMATS = [
+  { name:'FP32',       bpp:4,   color:'#F87171' },
+  { name:'FP16/BF16',  bpp:2,   color:'#FBBF24' },
+  { name:'INT8',       bpp:1,   color:'#60A5FA' },
+  { name:'INT4 (GPTQ/AWQ)', bpp:0.5, color:'#4ADE80' },
+];
+
+function gbFor(params_b, bpp) { return params_b * bpp; }
+
+function vramBadge(gb) {
+  if (gb <= 24) return '<span class="vram-badge vram-ok">Consumer GPU</span>';
+  if (gb <= 80) return '<span class="vram-badge vram-warn">Datacenter GPU</span>';
+  return '<span class="vram-badge vram-fail">Multi-GPU</span>';
+}
+
+function updateCalc() {
+  const idx = parseInt(document.getElementById('paramSlider').value);
+  const params = PARAM_STEPS[idx];
+  document.getElementById('paramDisplay').textContent = params+'B';
+
+  const maxGb = gbFor(params, 4) * 1.2;
+  let html = '';
+  FORMATS.forEach(fmt => {
+    const gb = gbFor(params, fmt.bpp) * 1.2; // 1.2x overhead
+    const pct = Math.min(100, (gb/maxGb)*100);
+    html += `<tr>
+      <td>${fmt.name}</td>
+      <td style="font-family:var(--mono-font);color:var(--muted);">${fmt.bpp} B</td>
+      <td style="font-weight:600;">${gb.toFixed(1)} GB</td>
+      <td class="mem-bar-cell">
+        <div class="mem-bar-wrap"><div class="mem-bar" style="width:${pct}%;background:${fmt.color};"></div></div>
+      </td>
+      <td>${vramBadge(gb)}</td>
+    </tr>`;
+  });
+  document.getElementById('memBody').innerHTML = html;
+}
+
+// ── QUALITY CURVE ──
+function drawQualityCurve() {
+  const canvas = document.getElementById('qualityCanvas');
+  const W = canvas.offsetWidth || 700;
+  const H = 280;
+  canvas.width = W * devicePixelRatio;
+  canvas.height = H * devicePixelRatio;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+
+  const pad = {l:56, r:20, t:20, b:50};
+  const gw = W - pad.l - pad.r;
+  const gh = H - pad.t - pad.b;
+
+  // data: [bits_per_weight, perplexity]
+  const points = [
+    [2.0, 18.0], [2.5, 13.5], [3.0, 9.2], [3.5, 7.0],
+    [4.0, 6.5],  [4.5, 5.8],  [5.0, 5.5], [6.0, 5.2],
+    [8.0, 5.05], [16.0, 5.0],
+  ];
+  // Calibrated INT4 (GPTQ/AWQ)
+  const pointsCalib = [
+    [4.0, 5.5], [4.5, 5.3], [5.0, 5.15],
+  ];
+
+  const xMin=1.8, xMax=16, yMin=4.5, yMax=20;
+  function px(x) { return pad.l + (Math.log(x)-Math.log(xMin))/(Math.log(xMax)-Math.log(xMin))*gw; }
+  function py(y) { return pad.t + (yMax-y)/(yMax-yMin)*gh; }
+
+  const isDark = !document.documentElement.getAttribute('data-theme') || document.documentElement.getAttribute('data-theme')==='dark';
+  const gridColor = isDark ? 'rgba(60,37,0,.8)' : 'rgba(200,170,140,.4)';
+  const textColor = isDark ? '#9B7040' : '#7A5028';
+
+  // Grid
+  ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
+  [5,6,8,10,15,20].forEach(y => {
+    const yy = py(y);
+    ctx.beginPath(); ctx.moveTo(pad.l,yy); ctx.lineTo(pad.l+gw,yy); ctx.stroke();
+    ctx.fillStyle = textColor; ctx.font = '10px monospace'; ctx.textAlign='right';
+    ctx.fillText(y.toFixed(0), pad.l-6, yy+4);
+  });
+
+  // Baseline
+  ctx.strokeStyle = 'rgba(74,222,128,.25)'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  const baseY = py(5.0);
+  ctx.beginPath(); ctx.moveTo(pad.l, baseY); ctx.lineTo(pad.l+gw, baseY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#4ADE80'; ctx.font = '9px monospace'; ctx.textAlign = 'left';
+  ctx.fillText('FP32 baseline', pad.l+4, baseY-5);
+
+  // Naive curve
+  ctx.strokeStyle = '#F97316'; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  points.forEach(([x,y],i) => i===0 ? ctx.moveTo(px(x),py(y)) : ctx.lineTo(px(x),py(y)));
+  ctx.stroke();
+
+  // Calibrated INT4 dots
+  ctx.strokeStyle = '#4ADE80'; ctx.lineWidth = 2; ctx.setLineDash([]);
+  ctx.beginPath();
+  pointsCalib.forEach(([x,y],i) => {
+    const cx=px(x), cy=py(y);
+    if(i===0) ctx.moveTo(cx,cy); else ctx.lineTo(cx,cy);
+  });
+  ctx.stroke();
+
+  // Key labels
+  const labels = [
+    [2.0, 18.0, 'INT2', '#F87171'],
+    [3.0, 9.2, 'INT3', '#FBBF24'],
+    [4.0, 6.5, 'INT4 naive', '#F97316'],
+    [4.0, 5.5, 'INT4 GPTQ/AWQ', '#4ADE80'],
+    [8.0, 5.05, 'INT8', '#60A5FA'],
+    [16.0, 5.0, 'FP16/BF16', '#A855F7'],
+  ];
+  labels.forEach(([x,y,label,color]) => {
+    const cx=px(x), cy=py(y);
+    ctx.fillStyle=color;
+    ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2); ctx.fill();
+    ctx.font='bold 10px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(label, cx+8, cy+4);
+  });
+
+  // Axis labels
+  ctx.fillStyle = textColor; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Bits per Weight →', pad.l + gw/2, H-8);
+  ctx.save();
+  ctx.translate(14, pad.t + gh/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Perplexity ↑', 0, 0);
+  ctx.restore();
+
+  // X axis labels
+  [2,4,8,16].forEach(x => {
+    ctx.fillStyle = textColor; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(x, px(x), H-pad.b+18);
+  });
+}
+
+// ── CODE TABS ──
+function codeTab(btn, id) {
+  document.querySelectorAll('#codeTabs .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['c-bnb','c-gptq','c-awq','c-gguf','c-bench'].forEach(t => {
+    const el = document.getElementById('tab-'+t);
+    if (el) el.classList.toggle('active', t===id);
+  });
+}
+
+function copyCode(btn) {
+  const pre = btn.nextElementSibling;
+  navigator.clipboard.writeText(pre.innerText).then(() => {
+    btn.textContent='Copied!';
+    setTimeout(()=>btn.textContent='Copy',1800);
+  });
+}
+
+// ── NAV SCROLL SPY ──
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('nav a');
+function onScroll() {
+  let current='';
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop-120) current=s.id; });
+  navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href')==='#'+current));
+}
+window.addEventListener('scroll', onScroll, {passive:true});
+
+// ── INIT ──
+renderPrec('fp32');
+updateCalc();
+window.addEventListener('resize', () => {
+  renderPrec(currentPrec);
+  drawQualityCurve();
+}, {passive:true});
+setTimeout(drawQualityCurve, 100);
+</script>
+</body>
+</html>

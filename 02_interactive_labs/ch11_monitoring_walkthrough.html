@@ -1,0 +1,1316 @@
+<!doctype html>
+<title>JAWNVION LLC | Chapter 11 — Monitoring</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+:root {
+  --navy:  #080D19; --navy2: #0C1220; --navy3: #101828;
+  --blue:  #60A5FA; --blue2: #3B82F6; --blue3: #BAD5FE;
+  --teal:  #00C9A7; --gold:  #FFB44F; --purple:#C084FC;
+  --coral: #FF6B9D; --green: #4ADE80; --red:   #F87171;
+  --amber: #FBBF24;
+  --dim:   rgba(255,255,255,0.54); --dimmer:rgba(255,255,255,0.28);
+  --border:rgba(96,165,250,0.18);  --card:  rgba(96,165,250,0.04);
+  --card2: rgba(96,165,250,0.09);
+  --bg:var(--navy); --bg2:var(--navy2); --bg3:var(--navy3);
+  --text:#EEF2FF; --accent:var(--blue);
+}
+@media(prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    --navy:#EFF6FF; --navy2:#DBEAFE; --navy3:#BFDBFE;
+    --border:rgba(37,99,235,0.18); --card:rgba(37,99,235,0.04); --card2:rgba(37,99,235,0.09);
+    --bg:var(--navy); --bg2:var(--navy2); --bg3:var(--navy3);
+    --text:#0A1628; --dim:rgba(0,0,0,0.55); --dimmer:rgba(0,0,0,0.28);
+    --blue:#1D4ED8; --blue2:#1E40AF; --blue3:#1D4ED8;
+  }
+}
+:root[data-theme="dark"]{
+  --navy:#080D19; --navy2:#0C1220; --navy3:#101828;
+  --border:rgba(96,165,250,0.18); --card:rgba(96,165,250,0.04); --card2:rgba(96,165,250,0.09);
+  --bg:var(--navy); --bg2:var(--navy2); --bg3:var(--navy3);
+  --text:#EEF2FF; --dim:rgba(255,255,255,0.54); --dimmer:rgba(255,255,255,0.28);
+  --blue:#60A5FA; --blue2:#3B82F6; --blue3:#BAD5FE;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.wrap{max-width:1100px;margin:0 auto;padding:0 24px;}
+
+/* hero */
+.hero{
+  min-height:520px;display:flex;align-items:center;
+  background:radial-gradient(ellipse 70% 55% at 65% 35%,rgba(96,165,250,0.13) 0%,transparent 65%),
+             radial-gradient(ellipse 45% 45% at 20% 70%,rgba(192,132,252,0.08) 0%,transparent 55%),
+             var(--bg);
+  padding:80px 0 60px;position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(96,165,250,0.04) 60px);
+}
+.hero-eyebrow{display:flex;align-items:center;gap:12px;font-size:0.72rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--blue);font-family:'JetBrains Mono',monospace;margin-bottom:20px;}
+.hero-eyebrow span{color:var(--dimmer);}
+.hero-title{font-size:clamp(2.8rem,6vw,4.4rem);font-weight:800;line-height:1.08;letter-spacing:-0.02em;text-wrap:balance;margin-bottom:20px;}
+.hero-title em{font-style:normal;background:linear-gradient(135deg,var(--blue) 0%,var(--blue3) 45%,var(--teal) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero-sub{font-size:1.05rem;color:var(--dim);max-width:580px;line-height:1.65;margin-bottom:28px;}
+.hero-pills{display:flex;flex-wrap:wrap;gap:8px;}
+.pill{padding:5px 14px;border-radius:100px;border:1px solid var(--border);background:var(--card2);font-size:0.78rem;font-weight:600;color:var(--blue3);font-family:'JetBrains Mono',monospace;letter-spacing:0.04em;}
+
+/* section */
+section{padding:72px 0;}
+section+section{border-top:1px solid var(--border);}
+.section-label{font-size:0.68rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--blue);font-family:'JetBrains Mono',monospace;margin-bottom:10px;}
+.section-title{font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:800;letter-spacing:-0.02em;line-height:1.15;text-wrap:balance;margin-bottom:16px;}
+.section-sub{color:var(--dim);font-size:1.05rem;max-width:640px;line-height:1.65;margin-bottom:40px;}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;}
+.card h3{font-size:1rem;font-weight:700;margin-bottom:8px;}
+.card p{font-size:0.9rem;color:var(--dim);line-height:1.6;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+@media(max-width:720px){.grid3,.grid2{grid-template-columns:1fr;}}
+
+/* live dashboard */
+.dashboard{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.dashboard-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--bg3);}
+.dashboard-title{font-size:0.9rem;font-weight:700;}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(74,222,128,0.6);}50%{opacity:0.7;box-shadow:0 0 0 6px rgba(74,222,128,0);}}
+.dashboard-kpis{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--border);}
+.kpi{padding:16px 20px;border-right:1px solid var(--border);}
+.kpi:last-child{border-right:none;}
+.kpi-val{font-size:1.6rem;font-weight:800;font-family:'JetBrains Mono',monospace;}
+.kpi-label{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--dimmer);margin-top:2px;}
+.kpi-delta{font-size:0.75rem;font-weight:600;font-family:'JetBrains Mono',monospace;margin-top:4px;}
+.delta-up{color:var(--green);}
+.delta-down{color:var(--red);}
+.delta-warn{color:var(--amber);}
+.dashboard-charts{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+@media(max-width:720px){.dashboard-charts{grid-template-columns:1fr;}}
+.chart-pane{padding:16px 20px;border-right:1px solid var(--border);}
+.chart-pane:last-child,.chart-pane:nth-child(2){border-right:none;}
+.chart-pane:nth-child(n+3){border-top:1px solid var(--border);}
+.chart-label{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--dim);margin-bottom:8px;}
+canvas{width:100%;height:100px;display:block;}
+@media(max-width:720px){.kpi{padding:12px 14px;} .kpi-val{font-size:1.2rem;} .dashboard-kpis{grid-template-columns:repeat(2,1fr);}}
+
+/* drift visualizer */
+.drift-layout{display:grid;grid-template-columns:1.2fr 1fr;gap:24px;align-items:start;}
+@media(max-width:720px){.drift-layout{grid-template-columns:1fr;}}
+.drift-canvas-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;}
+.drift-controls{display:flex;flex-direction:column;gap:16px;}
+.drift-slider-group label{display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;font-weight:600;margin-bottom:6px;}
+.drift-slider-group label span{font-family:'JetBrains Mono',monospace;color:var(--blue3);font-size:0.88rem;}
+input[type=range]{width:100%;accent-color:var(--blue);height:4px;cursor:pointer;border-radius:2px;}
+.drift-score-card{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;margin-top:4px;}
+.drift-score-val{font-size:2.4rem;font-weight:800;font-family:'JetBrains Mono',monospace;transition:color 0.3s;}
+.drift-score-lbl{font-size:0.78rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--dimmer);margin-top:4px;}
+.drift-verdict{font-size:0.88rem;font-weight:700;margin-top:10px;transition:color 0.3s;}
+.drift-legend{display:flex;gap:16px;margin-top:12px;font-size:0.78rem;color:var(--dim);}
+.drift-legend span{display:flex;align-items:center;gap:6px;}
+.drift-swatch{width:12px;height:3px;border-radius:2px;display:inline-block;}
+
+/* alert builder */
+.alert-builder{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.alert-builder-header{padding:16px 20px;border-bottom:1px solid var(--border);background:var(--bg3);font-size:0.88rem;font-weight:700;}
+.alert-rules{padding:20px;display:flex;flex-direction:column;gap:12px;}
+.alert-rule{
+  display:flex;align-items:center;gap:12px;padding:14px 16px;
+  border-radius:10px;border:1px solid var(--border);background:var(--card);
+  flex-wrap:wrap;
+}
+.alert-metric-select,.alert-op-select,.alert-thresh{
+  padding:7px 12px;border-radius:7px;border:1px solid var(--border);
+  background:var(--bg3);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:0.85rem;cursor:pointer;transition:border-color 0.2s;
+}
+.alert-metric-select:focus,.alert-thresh:focus{outline:none;border-color:var(--blue);}
+.alert-thresh{width:80px;font-family:'JetBrains Mono',monospace;}
+.alert-op-select option{background:var(--bg3);}
+.alert-status{
+  margin-left:auto;padding:4px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;
+  font-family:'JetBrains Mono',monospace;white-space:nowrap;
+}
+.status-ok{background:rgba(74,222,128,0.12);color:var(--green);}
+.status-firing{background:rgba(248,113,113,0.15);color:var(--red);}
+.status-warn{background:rgba(251,191,36,0.15);color:var(--amber);}
+.add-rule-btn,.simulate-btn{
+  padding:10px 20px;border-radius:8px;font-size:0.85rem;font-weight:700;
+  cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.2s;
+}
+.add-rule-btn{border:1px dashed var(--border);background:transparent;color:var(--dim);}
+.add-rule-btn:hover{border-color:var(--blue);color:var(--blue);}
+.simulate-btn{border:none;background:var(--blue);color:#fff;margin-top:4px;}
+.simulate-btn:hover{background:var(--blue2);}
+.incident-log{background:var(--bg3);border-top:1px solid var(--border);padding:16px 20px;font-family:'JetBrains Mono',monospace;font-size:0.8rem;max-height:140px;overflow-y:auto;}
+.log-line{padding:2px 0;color:var(--dimmer);}
+.log-alert{color:var(--red);}
+.log-ok{color:var(--green);}
+.log-warn{color:var(--amber);}
+
+/* stack compare */
+.stack-tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap;}
+.stack-tab{padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--dim);font-size:0.84rem;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Plus Jakarta Sans',sans-serif;}
+.stack-tab.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.stack-panel{display:none;}
+.stack-panel.active{display:grid;grid-template-columns:1fr 1.4fr;gap:24px;align-items:start;}
+@media(max-width:720px){.stack-panel.active{grid-template-columns:1fr;}}
+.stack-info h3{font-size:1.1rem;font-weight:800;margin-bottom:8px;}
+.stack-info p{font-size:0.9rem;color:var(--dim);line-height:1.65;margin-bottom:14px;}
+.stack-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+.tag{padding:3px 10px;border-radius:5px;font-size:0.72rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.tag-blue{background:rgba(96,165,250,0.12);color:var(--blue);}
+.tag-green{background:rgba(74,222,128,0.12);color:var(--green);}
+.tag-gold{background:rgba(255,180,79,0.12);color:var(--gold);}
+.tag-purple{background:rgba(192,132,252,0.12);color:var(--purple);}
+.tag-red{background:rgba(248,113,113,0.12);color:var(--red);}
+.stack-pros-cons{display:flex;flex-direction:column;gap:6px;}
+.pro-con-item{display:flex;gap:8px;font-size:0.85rem;color:var(--dim);}
+.pro{color:var(--green);}.con{color:var(--red);}
+
+/* code tabs */
+.code-box{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.code-tab-row{display:flex;border-bottom:1px solid var(--border);overflow-x:auto;}
+.code-tab{padding:11px 18px;border:none;background:transparent;color:var(--dim);font-size:0.82rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;border-bottom:2px solid transparent;font-family:'Plus Jakarta Sans',sans-serif;}
+.code-tab:hover{color:var(--text);}
+.code-tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.code-body{display:none;padding:22px;overflow-x:auto;}
+.code-body.active{display:block;}
+pre{margin:0;}
+code{font-family:'JetBrains Mono',monospace;font-size:0.82rem;line-height:1.75;}
+.kw{color:#C084FC;}.fn{color:#60A5FA;}.str{color:#4ADE80;}.cm{color:#4A5D70;font-style:italic;}.num{color:#FFB44F;}.cls{color:#FF6B9D;}.dec{color:#00C9A7;}
+
+/* cheat */
+.cheat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+@media(max-width:900px){.cheat-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.cheat-grid{grid-template-columns:1fr;}}
+.cheat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.cheat-card h4{font-size:0.8rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
+.cheat-item{display:flex;gap:8px;margin-bottom:7px;font-size:0.84rem;color:var(--dim);}
+.cheat-dot{color:var(--blue3);flex-shrink:0;margin-top:2px;}
+
+footer{padding:40px 0;text-align:center;border-top:1px solid var(--border);font-size:0.82rem;color:var(--dimmer);font-family:'JetBrains Mono',monospace;letter-spacing:0.04em;}
+.mt16{margin-top:16px;}.mt24{margin-top:24px;}.mt32{margin-top:32px;}
+</style>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap">
+    <div class="hero-eyebrow">AI Training Workbook <span>·</span> Chapter 11</div>
+    <h1 class="hero-title">Your Model Is Live.<br>Now <em>Watch It.</em></h1>
+    <p class="hero-sub">Models don't fail loudly — they drift quietly. Production monitoring catches data drift, prediction degradation, and infrastructure failures before they become customer problems.</p>
+    <div class="hero-pills">
+      <span class="pill">Data Drift</span>
+      <span class="pill">Concept Drift</span>
+      <span class="pill">Prometheus</span>
+      <span class="pill">Grafana</span>
+      <span class="pill">Evidently AI</span>
+      <span class="pill">W&amp;B</span>
+      <span class="pill">PSI Score</span>
+      <span class="pill">Alerting</span>
+    </div>
+  </div>
+</div>
+
+<!-- WHY MONITOR -->
+<section>
+  <div class="wrap">
+    <div class="section-label">The Problem</div>
+    <h2 class="section-title">Three Ways Models Fail in Silence</h2>
+    <p class="section-sub">A model that was 94% accurate at launch may be 71% accurate six months later — and your loss function will never tell you.</p>
+    <div class="grid3">
+      <div class="card" style="border-top:3px solid var(--blue);">
+        <div style="font-size:2rem;margin-bottom:12px;">📉</div>
+        <h3 style="color:var(--blue3);">Data Drift</h3>
+        <p>The <em>distribution of inputs</em> shifts away from training data. Users start writing differently, a new product is added, a sensor drifts. The model answers on data it's never seen.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--amber);">
+        <div style="font-size:2rem;margin-bottom:12px;">🌀</div>
+        <h3 style="color:var(--amber);">Concept Drift</h3>
+        <p>The <em>relationship between inputs and labels</em> changes. "Urgent" emails used to be from the CEO — now they're phishing. The world changed; your model's priors didn't.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--coral);">
+        <div style="font-size:2rem;margin-bottom:12px;">💥</div>
+        <h3 style="color:var(--coral);">Infrastructure Failure</h3>
+        <p>Memory leak after 72 hours. GPU OOM on long inputs. Latency spikes during traffic bursts. These are purely operational — caught by infrastructure metrics, not model metrics.</p>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:28px;">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--blue);font-family:'JetBrains Mono',monospace;">91<span style="font-size:1rem;">days</span></div>
+        <div style="font-size:0.78rem;color:var(--dim);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;">Median drift detection lag without monitoring</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--red);font-family:'JetBrains Mono',monospace;">∅</div>
+        <div style="font-size:0.78rem;color:var(--dim);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;">Alerts from training loss alone</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--green);font-family:'JetBrains Mono',monospace;">4</div>
+        <div style="font-size:0.78rem;color:var(--dim);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;">Metric layers needed for full coverage</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--amber);font-family:'JetBrains Mono',monospace;">&lt;5min</div>
+        <div style="font-size:0.78rem;color:var(--dim);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;">Target alert-to-awareness time</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIVE DASHBOARD -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Live Metrics</div>
+    <h2 class="section-title">Production Dashboard</h2>
+    <p class="section-sub">A simulated live view of an inference API — metrics update every second. Watch latency spike when throughput rises, and see the error rate respond to a fault injection.</p>
+
+    <div class="dashboard">
+      <div class="dashboard-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="live-dot"></div>
+          <span class="dashboard-title">EKOS Inference API — Production</span>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="injectFault()" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(248,113,113,0.4);background:rgba(248,113,113,0.1);color:var(--red);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;">⚡ Inject Fault</button>
+          <button onclick="resetFault()" style="padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--dim);font-size:0.78rem;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;">↺ Heal</button>
+        </div>
+      </div>
+      <div class="dashboard-kpis">
+        <div class="kpi">
+          <div class="kpi-val" id="kpiLatency" style="color:var(--blue);">—</div>
+          <div class="kpi-label">P95 Latency (ms)</div>
+          <div class="kpi-delta" id="kpiLatencyDelta">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-val" id="kpiRPS" style="color:var(--teal);">—</div>
+          <div class="kpi-label">Requests / sec</div>
+          <div class="kpi-delta" id="kpiRPSDelta">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-val" id="kpiError" style="color:var(--green);">—</div>
+          <div class="kpi-label">Error Rate</div>
+          <div class="kpi-delta" id="kpiErrorDelta">—</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-val" id="kpiConf" style="color:var(--purple);">—</div>
+          <div class="kpi-label">Avg Confidence</div>
+          <div class="kpi-delta" id="kpiConfDelta">—</div>
+        </div>
+      </div>
+      <div class="dashboard-charts">
+        <div class="chart-pane">
+          <div class="chart-label">P95 Latency (ms)</div>
+          <canvas id="canvasLatency"></canvas>
+        </div>
+        <div class="chart-pane">
+          <div class="chart-label">Requests / sec</div>
+          <canvas id="canvasRPS"></canvas>
+        </div>
+        <div class="chart-pane" style="border-top:1px solid var(--border);">
+          <div class="chart-label">Error Rate (%)</div>
+          <canvas id="canvasError"></canvas>
+        </div>
+        <div class="chart-pane" style="border-top:1px solid var(--border);">
+          <div class="chart-label">Avg Model Confidence</div>
+          <canvas id="canvasConf"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DRIFT DETECTOR -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Drift Detection</div>
+    <h2 class="section-title">Population Stability Index</h2>
+    <p class="section-sub">PSI measures how much a feature's distribution has shifted since training. Move the sliders to simulate drift in the current data and watch the PSI score and verdict update live.</p>
+
+    <div class="drift-layout">
+      <div class="drift-canvas-wrap">
+        <canvas id="driftCanvas" width="480" height="220" style="width:100%;height:auto;"></canvas>
+        <div class="drift-legend">
+          <span><span class="drift-swatch" style="background:var(--blue);"></span>Reference (training)</span>
+          <span><span class="drift-swatch" style="background:var(--coral);"></span>Current (production)</span>
+        </div>
+      </div>
+
+      <div class="drift-controls">
+        <div class="drift-slider-group">
+          <label>Distribution mean shift <span id="meanShiftVal">0.0</span>σ</label>
+          <input type="range" min="0" max="30" value="0" id="meanShift" oninput="updateDrift()">
+        </div>
+        <div class="drift-slider-group">
+          <label>Distribution width change <span id="stdChangeVal">1.0</span>×</label>
+          <input type="range" min="5" max="25" value="10" id="stdChange" oninput="updateDrift()">
+        </div>
+        <div class="drift-slider-group">
+          <label>Tail weight <span id="tailVal">0.0</span></label>
+          <input type="range" min="0" max="20" value="0" id="tailWeight" oninput="updateDrift()">
+        </div>
+        <div class="drift-score-card">
+          <div class="drift-score-val" id="psiVal">0.000</div>
+          <div class="drift-score-lbl">PSI Score</div>
+          <div class="drift-verdict" id="psiVerdict">✓ No significant drift</div>
+        </div>
+        <div class="card" style="font-size:0.85rem;color:var(--dim);line-height:1.6;">
+          <strong style="color:var(--blue3);">PSI thresholds:</strong><br>
+          <span style="color:var(--green);">0 – 0.1</span> — No significant drift<br>
+          <span style="color:var(--amber);">0.1 – 0.25</span> — Monitor closely<br>
+          <span style="color:var(--red);">&gt; 0.25</span> — Major shift — consider retraining
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ALERT BUILDER -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Alerting</div>
+    <h2 class="section-title">Configure Alert Rules</h2>
+    <p class="section-sub">Define thresholds for your key metrics, then simulate a traffic spike to see which rules fire. This is the exact pattern used in Prometheus AlertManager and Grafana Alerts.</p>
+
+    <div class="alert-builder">
+      <div class="alert-builder-header">🔔 Alert Rules — EKOS Inference API</div>
+      <div class="alert-rules" id="alertRules">
+        <div class="alert-rule" data-metric="latency" data-op="gt" data-thresh="200">
+          <select class="alert-metric-select" onchange="evalAlerts()">
+            <option value="latency" selected>P95 Latency (ms)</option>
+            <option value="error">Error Rate (%)</option>
+            <option value="rps">Requests/sec</option>
+            <option value="confidence">Avg Confidence</option>
+            <option value="psi">PSI Score</option>
+          </select>
+          <select class="alert-op-select" onchange="evalAlerts()">
+            <option value="gt" selected>&gt;</option>
+            <option value="lt">&lt;</option>
+          </select>
+          <input type="number" class="alert-thresh" value="200" oninput="evalAlerts()">
+          <span style="font-size:0.82rem;color:var(--dim);">for 1 min → PagerDuty</span>
+          <span class="alert-status status-ok" id="alertStatus0">✓ OK</span>
+        </div>
+        <div class="alert-rule" data-metric="error" data-op="gt" data-thresh="5">
+          <select class="alert-metric-select" onchange="evalAlerts()">
+            <option value="latency">P95 Latency (ms)</option>
+            <option value="error" selected>Error Rate (%)</option>
+            <option value="rps">Requests/sec</option>
+            <option value="confidence">Avg Confidence</option>
+            <option value="psi">PSI Score</option>
+          </select>
+          <select class="alert-op-select" onchange="evalAlerts()">
+            <option value="gt" selected>&gt;</option>
+            <option value="lt">&lt;</option>
+          </select>
+          <input type="number" class="alert-thresh" value="5" oninput="evalAlerts()">
+          <span style="font-size:0.82rem;color:var(--dim);">for 2 min → Slack #oncall</span>
+          <span class="alert-status status-ok" id="alertStatus1">✓ OK</span>
+        </div>
+        <div class="alert-rule" data-metric="confidence" data-op="lt" data-thresh="0.70">
+          <select class="alert-metric-select" onchange="evalAlerts()">
+            <option value="latency">P95 Latency (ms)</option>
+            <option value="error">Error Rate (%)</option>
+            <option value="rps">Requests/sec</option>
+            <option value="confidence" selected>Avg Confidence</option>
+            <option value="psi">PSI Score</option>
+          </select>
+          <select class="alert-op-select" onchange="evalAlerts()">
+            <option value="gt">&gt;</option>
+            <option value="lt" selected>&lt;</option>
+          </select>
+          <input type="number" class="alert-thresh" value="0.70" step="0.01" oninput="evalAlerts()">
+          <span style="font-size:0.82rem;color:var(--dim);">for 5 min → retrain queue</span>
+          <span class="alert-status status-ok" id="alertStatus2">✓ OK</span>
+        </div>
+      </div>
+      <div style="padding:0 20px 16px;display:flex;gap:8px;align-items:center;">
+        <button class="simulate-btn" onclick="simulateSpike()">⚡ Simulate Spike</button>
+        <button class="add-rule-btn" style="padding:10px 20px;font-size:0.85rem;">+ Add Rule</button>
+        <span style="font-size:0.8rem;color:var(--dimmer);margin-left:auto;font-family:'JetBrains Mono',monospace;" id="alertSummary">All rules OK</span>
+      </div>
+      <div class="incident-log" id="incidentLog">
+        <div class="log-line">[ system ] Alert rule engine initialized. 3 rules loaded.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MONITORING STACK -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Tool Landscape</div>
+    <h2 class="section-title">Monitoring Stack Options</h2>
+    <p class="section-sub">No single tool covers everything. Most production ML systems combine infrastructure monitoring (Prometheus/Grafana) with ML-specific observability (Evidently, Arize, or W&B).</p>
+
+    <div class="stack-tabs">
+      <button class="stack-tab active" onclick="switchStack('prometheus',this)">Prometheus + Grafana</button>
+      <button class="stack-tab" onclick="switchStack('evidently',this)">Evidently AI</button>
+      <button class="stack-tab" onclick="switchStack('wandb',this)">W&amp;B</button>
+      <button class="stack-tab" onclick="switchStack('arize',this)">Arize</button>
+    </div>
+
+    <div id="stackPanel-prometheus" class="stack-panel active">
+      <div class="stack-info">
+        <h3>Prometheus + Grafana</h3>
+        <p>The open-source standard for infrastructure monitoring. Prometheus scrapes metrics from your FastAPI service via the <code class="mono">/metrics</code> endpoint; Grafana renders dashboards and fires alerts.</p>
+        <div class="stack-tags">
+          <span class="tag tag-green">Open source</span>
+          <span class="tag tag-blue">Infrastructure</span>
+          <span class="tag tag-gold">Self-hosted</span>
+          <span class="tag tag-blue">PromQL</span>
+        </div>
+        <div class="stack-pros-cons">
+          <div class="pro-con-item"><span class="pro">✓</span> Industry standard — massive community, integrations everywhere</div>
+          <div class="pro-con-item"><span class="pro">✓</span> Free forever; runs in your infra with full data control</div>
+          <div class="pro-con-item"><span class="pro">✓</span> Best for latency, throughput, error rate, GPU utilization</div>
+          <div class="pro-con-item"><span class="con">✗</span> No built-in drift detection or prediction monitoring</div>
+          <div class="pro-con-item"><span class="con">✗</span> PromQL learning curve; dashboards require manual setup</div>
+        </div>
+      </div>
+      <div class="code-box">
+        <div style="padding:14px 18px 8px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);">FastAPI + prometheus-fastapi-instrumentator</div>
+        <div style="padding:0 18px 18px;"><pre><code><span class="kw">from</span> fastapi <span class="kw">import</span> <span class="cls">FastAPI</span>
+<span class="kw">from</span> prometheus_fastapi_instrumentator <span class="kw">import</span> <span class="cls">Instrumentator</span>
+<span class="kw">from</span> prometheus_client <span class="kw">import</span> Histogram, Counter, Gauge
+
+app = <span class="cls">FastAPI</span>()
+
+<span class="cm"># Auto-instrument: latency, request count, response size</span>
+<span class="cls">Instrumentator</span>().instrument(app).expose(app)
+
+<span class="cm"># Custom ML metrics</span>
+CONFIDENCE = Histogram(
+    <span class="str">"model_confidence"</span>,
+    <span class="str">"Model output confidence scores"</span>,
+    buckets=[<span class="num">0.5</span>,<span class="num">0.6</span>,<span class="num">0.7</span>,<span class="num">0.8</span>,<span class="num">0.9</span>,<span class="num">0.95</span>,<span class="num">1.0</span>]
+)
+DRIFT_SCORE = Gauge(
+    <span class="str">"feature_psi_score"</span>,
+    <span class="str">"Population stability index by feature"</span>,
+    [<span class="str">"feature_name"</span>]
+)
+PREDICTION_COUNT = Counter(
+    <span class="str">"predictions_total"</span>,
+    <span class="str">"Total predictions by label"</span>,
+    [<span class="str">"label"</span>]
+)
+
+<span class="dec">@app.post</span>(<span class="str">"/predict"</span>)
+<span class="kw">async def</span> <span class="fn">predict</span>(req: <span class="cls">PredictRequest</span>):
+    result = model(req.text)
+    label, score = result[<span class="num">0</span>][<span class="str">"label"</span>], result[<span class="num">0</span>][<span class="str">"score"</span>]
+    CONFIDENCE.observe(score)         <span class="cm"># histogram bucket</span>
+    PREDICTION_COUNT.labels(label).inc()
+    <span class="kw">return</span> {<span class="str">"label"</span>: label, <span class="str">"score"</span>: score}
+<span class="cm"># Metrics at: GET /metrics (Prometheus scrapes here)</span>
+</code></pre></div>
+      </div>
+    </div>
+
+    <div id="stackPanel-evidently" class="stack-panel">
+      <div class="stack-info">
+        <h3>Evidently AI</h3>
+        <p>Purpose-built for ML monitoring. Computes data drift, target drift, data quality, and regression/classification performance metrics — all as interactive HTML reports or JSON snapshots.</p>
+        <div class="stack-tags">
+          <span class="tag tag-green">Open source</span>
+          <span class="tag tag-purple">ML-native</span>
+          <span class="tag tag-blue">Drift detection</span>
+          <span class="tag tag-gold">Reports + UI</span>
+        </div>
+        <div class="stack-pros-cons">
+          <div class="pro-con-item"><span class="pro">✓</span> Best-in-class drift detection: PSI, KS test, Wasserstein</div>
+          <div class="pro-con-item"><span class="pro">✓</span> Beautiful HTML reports shareable with stakeholders</div>
+          <div class="pro-con-item"><span class="pro">✓</span> Cloud platform (Evidently Cloud) for continuous monitoring</div>
+          <div class="pro-con-item"><span class="con">✗</span> No infrastructure metrics — pair with Prometheus</div>
+          <div class="pro-con-item"><span class="con">✗</span> Needs reference dataset stored and accessible</div>
+        </div>
+      </div>
+      <div class="code-box">
+        <div style="padding:14px 18px 8px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);">Evidently drift report</div>
+        <div style="padding:0 18px 18px;"><pre><code><span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">from</span> evidently <span class="kw">import</span> <span class="cls">ColumnMapping</span>
+<span class="kw">from</span> evidently.report <span class="kw">import</span> <span class="cls">Report</span>
+<span class="kw">from</span> evidently.metric_preset <span class="kw">import</span> (
+    <span class="cls">DataDriftPreset</span>, <span class="cls">ClassificationPreset</span>
+)
+
+<span class="cm"># Load reference (training) + current (production) data</span>
+reference = pd.read_parquet(<span class="str">"reference.parquet"</span>)
+current   = pd.read_parquet(<span class="str">"production_last_7d.parquet"</span>)
+
+column_mapping = <span class="cls">ColumnMapping</span>(
+    target=<span class="str">"label"</span>,
+    prediction=<span class="str">"prediction"</span>,
+    text_features=[<span class="str">"text"</span>]
+)
+
+<span class="cm"># Build report — drift + classification performance</span>
+report = <span class="cls">Report</span>(metrics=[
+    <span class="cls">DataDriftPreset</span>(),
+    <span class="cls">ClassificationPreset</span>()
+])
+report.run(
+    reference_data=reference,
+    current_data=current,
+    column_mapping=column_mapping
+)
+
+report.save_html(<span class="str">"weekly_drift_report.html"</span>)
+result = report.as_dict()
+
+<span class="cm"># Check PSI for each feature</span>
+<span class="kw">for</span> metric <span class="kw">in</span> result[<span class="str">"metrics"</span>]:
+    <span class="kw">if</span> <span class="str">"drift_score"</span> <span class="kw">in</span> metric.get(<span class="str">"result"</span>, {}):
+        psi = metric[<span class="str">"result"</span>][<span class="str">"drift_score"</span>]
+        <span class="kw">if</span> psi > <span class="num">0.25</span>:
+            <span class="fn">trigger_retrain_pipeline</span>()
+</code></pre></div>
+      </div>
+    </div>
+
+    <div id="stackPanel-wandb" class="stack-panel">
+      <div class="stack-info">
+        <h3>Weights &amp; Biases (W&amp;B)</h3>
+        <p>Originally an experiment tracker, W&amp;B now covers production monitoring via Tables, Artifacts, and the new Model Registry. Best for teams already using W&amp;B for training — one platform end-to-end.</p>
+        <div class="stack-tags">
+          <span class="tag tag-gold">SaaS</span>
+          <span class="tag tag-blue">Experiment + prod</span>
+          <span class="tag tag-purple">Model registry</span>
+          <span class="tag tag-green">Free tier</span>
+        </div>
+        <div class="stack-pros-cons">
+          <div class="pro-con-item"><span class="pro">✓</span> One platform from training → evaluation → production</div>
+          <div class="pro-con-item"><span class="pro">✓</span> Beautiful dashboards, collaborative — great for teams</div>
+          <div class="pro-con-item"><span class="pro">✓</span> Artifact versioning links production model to training run</div>
+          <div class="pro-con-item"><span class="con">✗</span> SaaS — data leaves your infra (enterprise plan for private)</div>
+          <div class="pro-con-item"><span class="con">✗</span> Drift detection is less mature than Evidently</div>
+        </div>
+      </div>
+      <div class="code-box">
+        <div style="padding:14px 18px 8px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);">W&B production logging</div>
+        <div style="padding:0 18px 18px;"><pre><code><span class="kw">import</span> wandb
+<span class="kw">from</span> fastapi <span class="kw">import</span> BackgroundTasks
+
+<span class="cm"># Initialize once at startup (in lifespan)</span>
+run = wandb.init(
+    project=<span class="str">"ekos-production"</span>,
+    name=<span class="str">"inference-api-prod"</span>,
+    job_type=<span class="str">"production"</span>,
+    resume=<span class="str">"allow"</span>
+)
+prediction_table = wandb.Table(
+    columns=[<span class="str">"text"</span>, <span class="str">"label"</span>, <span class="str">"score"</span>, <span class="str">"latency_ms"</span>]
+)
+
+<span class="kw">async def</span> <span class="fn">log_prediction</span>(text, label, score, latency):
+    <span class="cm"># Logged as background task — doesn't slow response</span>
+    prediction_table.add_data(text, label, score, latency)
+    wandb.log({
+        <span class="str">"inference/latency_ms"</span>: latency,
+        <span class="str">"inference/confidence"</span>: score,
+        <span class="str">"inference/label_positive"</span>: <span class="num">1</span> <span class="kw">if</span> label==<span class="str">"POSITIVE"</span> <span class="kw">else</span> <span class="num">0</span>
+    })
+
+<span class="dec">@app.post</span>(<span class="str">"/predict"</span>)
+<span class="kw">async def</span> <span class="fn">predict</span>(req, bg: BackgroundTasks):
+    result = model(req.text)
+    bg.add_task(<span class="fn">log_prediction</span>,
+        req.text, result[<span class="str">"label"</span>],
+        result[<span class="str">"score"</span>], result[<span class="str">"latency_ms"</span>])
+    <span class="kw">return</span> result
+</code></pre></div>
+      </div>
+    </div>
+
+    <div id="stackPanel-arize" class="stack-panel">
+      <div class="stack-info">
+        <h3>Arize AI</h3>
+        <p>Enterprise ML observability platform. Designed for large-scale production: automatic drift alerts, explainability via SHAP, embedding drift for NLP, and root-cause analysis tied to data slices.</p>
+        <div class="stack-tags">
+          <span class="tag tag-gold">Enterprise SaaS</span>
+          <span class="tag tag-purple">Embedding drift</span>
+          <span class="tag tag-blue">SHAP explainability</span>
+          <span class="tag tag-red">Paid</span>
+        </div>
+        <div class="stack-pros-cons">
+          <div class="pro-con-item"><span class="pro">✓</span> Embedding drift — critical for LLM and NLP model monitoring</div>
+          <div class="pro-con-item"><span class="pro">✓</span> Automatic root-cause surfacing — which data slice degraded</div>
+          <div class="pro-con-item"><span class="pro">✓</span> Works at massive scale; used by Fortune 500 ML teams</div>
+          <div class="pro-con-item"><span class="con">✗</span> Expensive — pricing by events logged</div>
+          <div class="pro-con-item"><span class="con">✗</span> Overkill for small/single-model deployments</div>
+        </div>
+      </div>
+      <div class="code-box">
+        <div style="padding:14px 18px 8px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--dim);">Arize embedding drift logging</div>
+        <div style="padding:0 18px 18px;"><pre><code><span class="kw">import</span> arize
+<span class="kw">from</span> arize.api <span class="kw">import</span> <span class="cls">Client</span>
+<span class="kw">from</span> arize.utils.types <span class="kw">import</span> ModelTypes, Environments
+
+arize_client = <span class="cls">Client</span>(
+    space_key=<span class="str">"YOUR_SPACE_KEY"</span>,
+    api_key=<span class="str">"YOUR_API_KEY"</span>
+)
+
+<span class="kw">async def</span> <span class="fn">log_to_arize</span>(text, embedding, label, score, pred_id):
+    <span class="cm"># Log prediction + embedding for drift tracking</span>
+    arize_client.log(
+        model_id=<span class="str">"ekos-sentiment"</span>,
+        model_version=<span class="str">"1.0.0"</span>,
+        model_type=ModelTypes.BINARY_CLASSIFICATION,
+        environment=Environments.PRODUCTION,
+        prediction_id=str(pred_id),
+        prediction_label=label,
+        prediction_score=score,
+        features={<span class="str">"text_length"</span>: len(text)},
+        embedding_features={
+            <span class="str">"text_embedding"</span>: arize.EmbeddingColumnNames(
+                vector_column_name=embedding.tolist(),
+                data_column_name=text
+            )
+        }
+    )
+<span class="cm"># Arize automatically computes embedding drift
+# and alerts when distribution shifts detectably</span>
+</code></pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FULL CODE TABS -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Implementation</div>
+    <h2 class="section-title">Complete Monitoring Setup</h2>
+    <p class="section-sub">End-to-end code for a production monitoring stack — structured logging, Prometheus metrics, scheduled drift checks, and a retraining trigger.</p>
+
+    <div class="code-box">
+      <div class="code-tab-row">
+        <button class="code-tab active" onclick="switchCode('codeMain','logging',this)">Structured Logging</button>
+        <button class="code-tab" onclick="switchCode('codeMain','prometheus',this)">Prometheus Setup</button>
+        <button class="code-tab" onclick="switchCode('codeMain','drift',this)">Drift Scheduler</button>
+        <button class="code-tab" onclick="switchCode('codeMain','retrain',this)">Retrain Trigger</button>
+        <button class="code-tab" onclick="switchCode('codeMain','grafana',this)">Grafana Dashboard</button>
+      </div>
+
+      <div id="codeMain-logging" class="code-body active"><pre><code><span class="kw">import</span> structlog, uuid
+<span class="kw">from</span> fastapi <span class="kw">import</span> <span class="cls">Request</span>
+<span class="kw">from</span> starlette.middleware.base <span class="kw">import</span> <span class="cls">BaseHTTPMiddleware</span>
+
+<span class="cm"># Configure structlog — outputs JSON lines (ship to Datadog/Loki)</span>
+structlog.configure(
+    processors=[
+        structlog.processors.TimeStamper(fmt=<span class="str">"iso"</span>),
+        structlog.stdlib.add_log_level,
+        structlog.processors.JSONRenderer()
+    ]
+)
+logger = structlog.get_logger()
+
+<span class="kw">class</span> <span class="cls">RequestLoggingMiddleware</span>(<span class="cls">BaseHTTPMiddleware</span>):
+    <span class="kw">async def</span> <span class="fn">dispatch</span>(self, request: <span class="cls">Request</span>, call_next):
+        req_id = str(uuid.uuid4())[:<span class="num">8</span>]
+        response = <span class="kw">await</span> <span class="fn">call_next</span>(request)
+        logger.info(
+            <span class="str">"request"</span>,
+            request_id=req_id,
+            method=request.method,
+            path=request.url.path,
+            status=response.status_code,
+        )
+        response.headers[<span class="str">"X-Request-Id"</span>] = req_id
+        <span class="kw">return</span> response
+
+<span class="cm"># Structured log for each prediction:</span>
+<span class="kw">async def</span> <span class="fn">log_inference</span>(req_id, text, label, score, latency):
+    logger.info(
+        <span class="str">"inference"</span>,
+        request_id=req_id,
+        text_len=len(text),
+        label=label,
+        confidence=round(score, <span class="num">4</span>),
+        latency_ms=latency,
+        model_version=<span class="str">"1.0.0"</span>,
+    )
+<span class="cm"># JSON log line:
+# {"timestamp":"2026-08-27T14:01:33Z","level":"info",
+#  "event":"inference","request_id":"a3f2b1c0",
+#  "label":"POSITIVE","confidence":0.9871,"latency_ms":14.2}</span>
+</code></pre></div>
+
+      <div id="codeMain-prometheus" class="code-body"><pre><code><span class="kw">from</span> prometheus_client <span class="kw">import</span> (
+    Histogram, Counter, Gauge, generate_latest
+)
+<span class="kw">from</span> fastapi <span class="kw">import</span> <span class="cls">Response</span>
+
+<span class="cm"># ── Define metrics ────────────────────────────────</span>
+REQUEST_LATENCY = Histogram(
+    <span class="str">"inference_latency_seconds"</span>,
+    <span class="str">"End-to-end request latency"</span>,
+    buckets=[<span class="num">.005</span>,<span class="num">.01</span>,<span class="num">.025</span>,<span class="num">.05</span>,<span class="num">.1</span>,<span class="num">.25</span>,<span class="num">.5</span>,<span class="num">1</span>,<span class="num">2.5</span>]
+)
+PREDICTIONS = Counter(
+    <span class="str">"predictions_total"</span>,
+    <span class="str">"Predictions by label and model version"</span>,
+    [<span class="str">"label"</span>, <span class="str">"model_version"</span>]
+)
+CONFIDENCE = Histogram(
+    <span class="str">"prediction_confidence"</span>,
+    <span class="str">"Model output confidence 0-1"</span>,
+    buckets=[<span class="num">.5</span>,<span class="num">.6</span>,<span class="num">.7</span>,<span class="num">.75</span>,<span class="num">.8</span>,<span class="num">.85</span>,<span class="num">.9</span>,<span class="num">.95</span>,<span class="num">.99</span>]
+)
+PSI_SCORE = Gauge(
+    <span class="str">"feature_psi_score"</span>,
+    <span class="str">"Population Stability Index by feature"</span>,
+    [<span class="str">"feature"</span>]
+)
+MODEL_LOADED = Gauge(<span class="str">"model_loaded"</span>, <span class="str">"1 if model is loaded"</span>)
+
+<span class="cm"># ── Expose metrics endpoint ───────────────────────</span>
+<span class="dec">@app.get</span>(<span class="str">"/metrics"</span>)
+<span class="kw">async def</span> <span class="fn">metrics</span>():
+    <span class="kw">return</span> <span class="cls">Response</span>(
+        <span class="fn">generate_latest</span>(),
+        media_type=<span class="str">"text/plain"</span>
+    )
+
+<span class="cm"># ── Instrument the predict route ──────────────────</span>
+<span class="dec">@app.post</span>(<span class="str">"/predict"</span>)
+<span class="kw">async def</span> <span class="fn">predict</span>(req):
+    <span class="kw">with</span> REQUEST_LATENCY.time():
+        result = model(req.text)
+    label, score = result[<span class="str">"label"</span>], result[<span class="str">"score"</span>]
+    PREDICTIONS.labels(label, <span class="str">"1.0.0"</span>).inc()
+    CONFIDENCE.observe(score)
+    <span class="kw">return</span> result
+</code></pre></div>
+
+      <div id="codeMain-drift" class="code-body"><pre><code><span class="kw">import</span> asyncio, pandas <span class="kw">as</span> pd
+<span class="kw">from</span> evidently.report <span class="kw">import</span> <span class="cls">Report</span>
+<span class="kw">from</span> evidently.metric_preset <span class="kw">import</span> <span class="cls">DataDriftPreset</span>
+<span class="kw">from</span> apscheduler.schedulers.asyncio <span class="kw">import</span> <span class="cls">AsyncIOScheduler</span>
+
+reference_df = pd.read_parquet(<span class="str">"reference_data.parquet"</span>)
+
+<span class="kw">async def</span> <span class="fn">run_drift_check</span>():
+    <span class="cm"># Pull last 24h of production predictions from DB</span>
+    current_df = <span class="kw">await</span> <span class="fn">fetch_recent_predictions</span>(hours=<span class="num">24</span>)
+
+    <span class="kw">if</span> len(current_df) < <span class="num">100</span>:
+        logger.warning(<span class="str">"drift_check_skipped"</span>, reason=<span class="str">"insufficient data"</span>)
+        <span class="kw">return</span>
+
+    report = <span class="cls">Report</span>(metrics=[<span class="cls">DataDriftPreset</span>()])
+    report.run(
+        reference_data=reference_df,
+        current_data=current_df
+    )
+    result = report.as_dict()
+
+    <span class="kw">for</span> metric <span class="kw">in</span> result[<span class="str">"metrics"</span>]:
+        r = metric.get(<span class="str">"result"</span>, {})
+        feature = r.get(<span class="str">"column_name"</span>)
+        psi     = r.get(<span class="str">"drift_score"</span>, <span class="num">0</span>)
+
+        <span class="kw">if</span> feature:
+            PSI_SCORE.labels(feature).set(psi)  <span class="cm"># → Prometheus</span>
+            <span class="kw">if</span> psi > <span class="num">0.25</span>:
+                logger.warning(<span class="str">"drift_detected"</span>, feature=feature, psi=psi)
+                <span class="kw">await</span> <span class="fn">alert_slack</span>(f<span class="str">"Drift on {feature}: PSI={psi:.3f}"</span>)
+
+<span class="cm"># Run drift check every 6 hours</span>
+scheduler = <span class="cls">AsyncIOScheduler</span>()
+scheduler.add_job(<span class="fn">run_drift_check</span>, <span class="str">"interval"</span>, hours=<span class="num">6</span>)
+scheduler.start()
+</code></pre></div>
+
+      <div id="codeMain-retrain" class="code-body"><pre><code><span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass
+<span class="kw">from</span> enum <span class="kw">import</span> Enum
+
+<span class="kw">class</span> <span class="cls">RetrainReason</span>(str, Enum):
+    DRIFT         = <span class="str">"data_drift"</span>
+    PERFORMANCE   = <span class="str">"performance_degradation"</span>
+    SCHEDULE      = <span class="str">"scheduled"</span>
+    MANUAL        = <span class="str">"manual_trigger"</span>
+
+<span class="dec">@dataclass</span>
+<span class="kw">class</span> <span class="cls">RetrainTrigger</span>:
+    reason: <span class="cls">RetrainReason</span>
+    metric_name: str
+    metric_value: float
+    threshold: float
+
+<span class="cm"># ── Trigger evaluation logic ─────────────────────</span>
+RETRAIN_RULES = [
+    (<span class="str">"psi_text_length"</span>,  <span class="str">"gt"</span>, <span class="num">0.25</span>, <span class="cls">RetrainReason</span>.DRIFT),
+    (<span class="str">"avg_confidence"</span>,   <span class="str">"lt"</span>, <span class="num">0.70</span>, <span class="cls">RetrainReason</span>.PERFORMANCE),
+    (<span class="str">"weekly_f1_score"</span>,  <span class="str">"lt"</span>, <span class="num">0.88</span>, <span class="cls">RetrainReason</span>.PERFORMANCE),
+]
+
+<span class="kw">async def</span> <span class="fn">evaluate_retrain_triggers</span>(metrics: dict):
+    <span class="kw">for</span> name, op, threshold, reason <span class="kw">in</span> RETRAIN_RULES:
+        val = metrics.get(name, <span class="num">0</span>)
+        triggered = (op == <span class="str">"gt"</span> <span class="kw">and</span> val > threshold) <span class="kw">or</span> \
+                    (op == <span class="str">"lt"</span> <span class="kw">and</span> val < threshold)
+        <span class="kw">if</span> triggered:
+            trigger = <span class="cls">RetrainTrigger</span>(
+                reason=reason, metric_name=name,
+                metric_value=val, threshold=threshold
+            )
+            <span class="kw">await</span> <span class="fn">dispatch_retrain_job</span>(trigger)
+            logger.warning(<span class="str">"retrain_triggered"</span>,
+                reason=reason, metric=name, val=val)
+
+<span class="kw">async def</span> <span class="fn">dispatch_retrain_job</span>(trigger: <span class="cls">RetrainTrigger</span>):
+    <span class="cm"># Push to your training pipeline (Airflow, Prefect, Modal)</span>
+    payload = {
+        <span class="str">"trigger"</span>: trigger.reason,
+        <span class="str">"base_model"</span>: <span class="str">"distilbert-base-uncased"</span>,
+        <span class="str">"dataset_version"</span>: <span class="str">"latest"</span>,
+        <span class="str">"notes"</span>: f<span class="str">"{trigger.metric_name}={trigger.metric_value:.3f}"</span>
+    }
+    <span class="kw">await</span> <span class="fn">post_to_training_api</span>(<span class="str">"/retrain"</span>, payload)
+</code></pre></div>
+
+      <div id="codeMain-grafana" class="code-body"><pre><code><span class="cm">// Grafana dashboard JSON — paste into Dashboard > Import
+// Queries use PromQL against Prometheus datasource</span>
+
+{
+  <span class="str">"title"</span>: <span class="str">"EKOS Inference Monitoring"</span>,
+  <span class="str">"panels"</span>: [
+    {
+      <span class="str">"title"</span>: <span class="str">"P95 Latency"</span>,
+      <span class="str">"type"</span>: <span class="str">"timeseries"</span>,
+      <span class="str">"targets"</span>: [{
+        <span class="str">"expr"</span>: <span class="str">"histogram_quantile(0.95, rate(inference_latency_seconds_bucket[5m]))"</span>
+      }],
+      <span class="str">"thresholds"</span>: {<span class="str">"steps"</span>: [
+        {<span class="str">"color"</span>: <span class="str">"green"</span>, <span class="str">"value"</span>: <span class="kw">null</span>},
+        {<span class="str">"color"</span>: <span class="str">"yellow"</span>, <span class="str">"value"</span>: <span class="num">0.15</span>},
+        {<span class="str">"color"</span>: <span class="str">"red"</span>,    <span class="str">"value"</span>: <span class="num">0.25</span>}
+      ]}
+    },
+    {
+      <span class="str">"title"</span>: <span class="str">"Avg Model Confidence"</span>,
+      <span class="str">"type"</span>: <span class="str">"stat"</span>,
+      <span class="str">"targets"</span>: [{
+        <span class="str">"expr"</span>: <span class="str">"rate(prediction_confidence_sum[5m]) / rate(prediction_confidence_count[5m])"</span>
+      }]
+    },
+    {
+      <span class="str">"title"</span>: <span class="str">"PSI by Feature"</span>,
+      <span class="str">"type"</span>: <span class="str">"bargauge"</span>,
+      <span class="str">"targets"</span>: [{
+        <span class="str">"expr"</span>: <span class="str">"feature_psi_score"</span>,
+        <span class="str">"legendFormat"</span>: <span class="str">"{{feature}}"</span>
+      }],
+      <span class="str">"thresholds"</span>: {<span class="str">"steps"</span>: [
+        {<span class="str">"color"</span>: <span class="str">"green"</span>,  <span class="str">"value"</span>: <span class="kw">null</span>},
+        {<span class="str">"color"</span>: <span class="str">"yellow"</span>, <span class="str">"value"</span>: <span class="num">0.10</span>},
+        {<span class="str">"color"</span>: <span class="str">"red"</span>,    <span class="str">"value"</span>: <span class="num">0.25</span>}
+      ]}
+    }
+  ]
+}
+</code></pre></div>
+    </div>
+  </div>
+</section>
+
+<!-- CHEAT SHEET -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Quick Reference</div>
+    <h2 class="section-title">Monitoring Cheat Sheet</h2>
+    <div class="cheat-grid">
+      <div class="cheat-card">
+        <h4>4 Metric Layers</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span><strong>Infrastructure</strong> — latency, throughput, error rate, CPU/GPU</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><strong>Model</strong> — confidence, label distribution, perplexity</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><strong>Data</strong> — PSI, KS test, feature distribution shift</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><strong>Business</strong> — downstream KPIs, human review rates, $impact</div>
+      </div>
+      <div class="cheat-card">
+        <h4>PSI Thresholds</h4>
+        <div class="cheat-item"><span class="cheat-dot" style="color:var(--green);">›</span><strong style="color:var(--green);">0 – 0.1</strong> — No significant shift, monitor normally</div>
+        <div class="cheat-item"><span class="cheat-dot" style="color:var(--amber);">›</span><strong style="color:var(--amber);">0.1 – 0.25</strong> — Moderate drift, investigate features</div>
+        <div class="cheat-item"><span class="cheat-dot" style="color:var(--red);">›</span><strong style="color:var(--red);">&gt; 0.25</strong> — Major drift — trigger retraining pipeline</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Run PSI on every numerical feature and embedding</div>
+      </div>
+      <div class="cheat-card">
+        <h4>Alert Cadence</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Latency P95 &gt; 200ms for 1 min → PagerDuty</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Error rate &gt; 5% for 2 min → Slack oncall</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Avg confidence &lt; 0.70 for 5 min → retrain queue</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>PSI &gt; 0.25 on any feature → data team alert</div>
+      </div>
+      <div class="cheat-card">
+        <h4>Logging Rules</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Always structured JSON — ship to Loki, Datadog, CloudWatch</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Include: request_id, model_version, latency, label, confidence</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Never log raw PII — hash or truncate user text</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Log asynchronously (BackgroundTasks) — never block response</div>
+      </div>
+      <div class="cheat-card">
+        <h4>Retrain Triggers</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span>PSI &gt; 0.25 on any feature (data drift)</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Avg confidence drops 5+ points vs baseline</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Labeled F1 drops below acceptance threshold</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Time-based: retrain monthly minimum regardless</div>
+      </div>
+      <div class="cheat-card">
+        <h4>Stack by Scale</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span><strong>Solo / MVP</strong> — W&B free + structured logging</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><strong>Team / Production</strong> — Prometheus + Grafana + Evidently</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><strong>Enterprise</strong> — Arize or Fiddler for embedding + SHAP</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Always pair infra monitoring with ML-specific monitoring</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Chapter 11 — Monitoring · AI Training Workbook · Jawnvion LLC
+  </div>
+</footer>
+
+<script>
+/* ── code tabs ── */
+function switchCode(panelId, key, btn) {
+  btn.closest('.code-box').querySelectorAll('.code-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  btn.closest('.code-box').querySelectorAll('.code-body').forEach(p => p.classList.remove('active'));
+  document.getElementById(panelId + '-' + key).classList.add('active');
+}
+
+/* ── stack tabs ── */
+function switchStack(key, btn) {
+  document.querySelectorAll('.stack-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.stack-panel').forEach(p => { p.classList.remove('active'); p.style.display='none'; });
+  const el = document.getElementById('stackPanel-' + key);
+  el.classList.add('active'); el.style.display = '';
+}
+document.querySelectorAll('.stack-panel').forEach(p => { if (!p.classList.contains('active')) p.style.display='none'; });
+
+/* ══════════════════════════════════════
+   LIVE DASHBOARD
+══════════════════════════════════════ */
+const HIST = 60;
+let latencyData = [], rpsData = [], errorData = [], confData = [];
+let isFault = false;
+let prevLatency = 42, prevRps = 28, prevError = 0.3, prevConf = 0.921;
+
+function randn(mean, std) {
+  let u = 0, v = 0;
+  while (!u) u = Math.random();
+  while (!v) v = Math.random();
+  return mean + std * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function nextPoint() {
+  if (isFault) {
+    prevLatency = clamp(prevLatency + randn(25, 15), 80, 800);
+    prevRps     = clamp(prevRps     + randn(-2, 4), 5, 80);
+    prevError   = clamp(prevError   + randn(1.5, 1), 0, 30);
+    prevConf    = clamp(prevConf    + randn(-0.008, 0.005), 0.40, 0.99);
+  } else {
+    prevLatency = clamp(prevLatency + randn(0, 4), 18, 120);
+    prevRps     = clamp(prevRps     + randn(0, 3), 8, 60);
+    prevError   = clamp(prevError   + randn(0, 0.08), 0, 3.5);
+    prevConf    = clamp(prevConf    + randn(0, 0.003), 0.80, 0.99);
+  }
+  return { latency: prevLatency, rps: prevRps, error: prevError, conf: prevConf };
+}
+
+function pushData(arr, val) {
+  arr.push(val);
+  if (arr.length > HIST) arr.shift();
+}
+
+function drawChart(canvasId, data, color, min, max, warningThresh, critThresh) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width  = rect.width  * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  const range = max - min;
+  const getY = v => H - ((clamp(v, min, max) - min) / range) * (H - 4) - 2;
+
+  // grid
+  ctx.strokeStyle = 'rgba(96,165,250,0.08)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = (i / 4) * H;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  if (data.length < 2) return;
+
+  // fill
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, color.replace(')', ',0.3)').replace('rgb', 'rgba'));
+  grad.addColorStop(1, color.replace(')', ',0)').replace('rgb', 'rgba'));
+  const xStep = W / (HIST - 1);
+  ctx.beginPath();
+  ctx.moveTo(0, getY(data[0]));
+  data.forEach((v, i) => ctx.lineTo(i * xStep, getY(v)));
+  ctx.lineTo((data.length - 1) * xStep, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // line
+  const last = data[data.length - 1];
+  const lineColor = critThresh && ((critThresh > 0 && last > critThresh) || (critThresh < 0 && last < -critThresh))
+    ? '#F87171'
+    : warningThresh && last > warningThresh ? '#FBBF24' : color;
+  ctx.beginPath();
+  ctx.moveTo(0, getY(data[0]));
+  data.forEach((v, i) => ctx.lineTo(i * xStep, getY(v)));
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // endpoint dot
+  ctx.beginPath();
+  ctx.arc((data.length - 1) * xStep, getY(last), 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = lineColor;
+  ctx.fill();
+}
+
+function updateKPI(id, val, fmt, deltaId, prev, goodDir) {
+  const el = document.getElementById(id);
+  const de = document.getElementById(deltaId);
+  if (!el || !de) return;
+  el.textContent = fmt(val);
+  const diff = val - prev;
+  const pct = prev !== 0 ? ((diff / prev) * 100).toFixed(1) : '0.0';
+  const isGood = goodDir === 'down' ? diff <= 0 : diff >= 0;
+  de.className = 'kpi-delta ' + (isGood ? 'delta-up' : 'delta-down');
+  de.textContent = (diff >= 0 ? '▲' : '▼') + ' ' + Math.abs(pct) + '%';
+}
+
+let prevSnapshot = { latency: 42, rps: 28, error: 0.3, conf: 0.921 };
+
+function tick() {
+  const p = nextPoint();
+  pushData(latencyData, p.latency);
+  pushData(rpsData, p.rps);
+  pushData(errorData, p.error);
+  pushData(confData, p.conf);
+
+  updateKPI('kpiLatency', p.latency, v => v.toFixed(0) + ' ms', 'kpiLatencyDelta', prevSnapshot.latency, 'down');
+  updateKPI('kpiRPS', p.rps, v => v.toFixed(1), 'kpiRPSDelta', prevSnapshot.rps, 'up');
+  updateKPI('kpiError', p.error, v => v.toFixed(2) + '%', 'kpiErrorDelta', prevSnapshot.error, 'down');
+  updateKPI('kpiConf', p.conf, v => v.toFixed(3), 'kpiConfDelta', prevSnapshot.conf, 'up');
+
+  drawChart('canvasLatency', latencyData, 'rgb(96,165,250)', 0, 500, 150, 250);
+  drawChart('canvasRPS',     rpsData,     'rgb(0,201,167)',  0, 80,  null, null);
+  drawChart('canvasError',   errorData,   'rgb(248,113,113)',0, 20,  2, 5);
+  drawChart('canvasConf',    confData,    'rgb(192,132,252)',0.4, 1.0, null, null);
+
+  prevSnapshot = { ...p };
+
+  // also eval alert rules against live data
+  liveMetrics = { latency: p.latency, rps: p.rps, error: p.error, confidence: p.conf, psi: currentPSI };
+  evalAlerts();
+}
+
+function injectFault() { isFault = true; }
+function resetFault()  { isFault = false; prevLatency = 42; prevError = 0.3; prevConf = 0.921; }
+
+// init and run
+for (let i = 0; i < HIST; i++) {
+  const p = nextPoint();
+  latencyData.push(p.latency); rpsData.push(p.rps);
+  errorData.push(p.error); confData.push(p.conf);
+}
+setInterval(tick, 1000);
+setTimeout(tick, 0);
+
+/* ══════════════════════════════════════
+   DRIFT VISUALIZER
+══════════════════════════════════════ */
+let currentPSI = 0;
+
+function gaussian(x, mu, sigma) {
+  return Math.exp(-0.5 * ((x - mu) / sigma) ** 2) / (sigma * Math.sqrt(2 * Math.PI));
+}
+
+function updateDrift() {
+  const shift = +document.getElementById('meanShift').value / 10;
+  const stdMult = +document.getElementById('stdChange').value / 10;
+  const tail = +document.getElementById('tailWeight').value / 20;
+  document.getElementById('meanShiftVal').textContent = shift.toFixed(1);
+  document.getElementById('stdChangeVal').textContent = stdMult.toFixed(1);
+  document.getElementById('tailVal').textContent = tail.toFixed(2);
+
+  const canvas = document.getElementById('driftCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height - 30;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const refMu = 0, refSig = 1;
+  const curMu = shift, curSig = refSig * stdMult;
+  const xMin = -4, xMax = 4 + shift;
+  const nBins = 20;
+  const binW = (xMax - xMin) / nBins;
+  let refBins = [], curBins = [];
+  let refSum = 0, curSum = 0;
+
+  for (let i = 0; i < nBins; i++) {
+    const x = xMin + (i + 0.5) * binW;
+    const r = gaussian(x, refMu, refSig);
+    const c = gaussian(x, curMu, curSig) + tail * Math.exp(-2 * (x - (xMax - 0.5)) ** 2);
+    refBins.push(r); curBins.push(c);
+    refSum += r; curSum += c;
+  }
+  refBins = refBins.map(v => v / refSum);
+  curBins = curBins.map(v => v / curSum);
+
+  // compute PSI
+  let psi = 0;
+  for (let i = 0; i < nBins; i++) {
+    const A = Math.max(refBins[i], 1e-6);
+    const E = Math.max(curBins[i], 1e-6);
+    psi += (A - E) * Math.log(A / E);
+  }
+  currentPSI = psi;
+
+  // draw
+  const barW = (W - 40) / nBins;
+  const maxVal = Math.max(...refBins, ...curBins);
+  const scaleY = v => H - 20 - (v / maxVal) * (H - 40);
+
+  refBins.forEach((v, i) => {
+    const x = 20 + i * barW;
+    ctx.fillStyle = 'rgba(96,165,250,0.4)';
+    ctx.fillRect(x, scaleY(v), barW - 1, H - 20 - scaleY(v));
+  });
+  curBins.forEach((v, i) => {
+    const x = 20 + i * barW;
+    ctx.fillStyle = 'rgba(255,107,157,0.4)';
+    ctx.fillRect(x + barW * 0.15, scaleY(v) - 2, barW * 0.7, H - 20 - scaleY(v) + 2);
+  });
+
+  // smooth lines
+  function drawLine(bins, color) {
+    ctx.beginPath();
+    bins.forEach((v, i) => {
+      const x = 20 + (i + 0.5) * barW;
+      const y = scaleY(v);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke();
+  }
+  drawLine(refBins, 'rgba(96,165,250,0.9)');
+  drawLine(curBins, 'rgba(255,107,157,0.9)');
+
+  // PSI display
+  const psiEl = document.getElementById('psiVal');
+  const verdEl = document.getElementById('psiVerdict');
+  psiEl.textContent = psi.toFixed(3);
+  if (psi < 0.1) {
+    psiEl.style.color = 'var(--green)';
+    verdEl.style.color = 'var(--green)';
+    verdEl.textContent = '✓ No significant drift';
+  } else if (psi < 0.25) {
+    psiEl.style.color = 'var(--amber)';
+    verdEl.style.color = 'var(--amber)';
+    verdEl.textContent = '⚠ Moderate drift — monitor closely';
+  } else {
+    psiEl.style.color = 'var(--red)';
+    verdEl.style.color = 'var(--red)';
+    verdEl.textContent = '🚨 Major drift — consider retraining';
+  }
+}
+updateDrift();
+
+/* ══════════════════════════════════════
+   ALERT BUILDER
+══════════════════════════════════════ */
+let liveMetrics = { latency: 42, rps: 28, error: 0.3, confidence: 0.921, psi: 0 };
+let logLines = ['[ system ] Alert rule engine initialized. 3 rules loaded.'];
+
+function evalAlerts() {
+  const rules = document.querySelectorAll('.alert-rule');
+  let firingCount = 0;
+  rules.forEach((rule, idx) => {
+    const metric = rule.querySelector('.alert-metric-select').value;
+    const op     = rule.querySelector('.alert-op-select').value;
+    const thresh = parseFloat(rule.querySelector('.alert-thresh').value);
+    const val    = liveMetrics[metric] || 0;
+    const firing = op === 'gt' ? val > thresh : val < thresh;
+    const statusEl = document.getElementById('alertStatus' + idx);
+    if (!statusEl) return;
+    if (firing) {
+      statusEl.className = 'alert-status status-firing';
+      statusEl.textContent = '🔴 FIRING';
+      firingCount++;
+    } else {
+      statusEl.className = 'alert-status status-ok';
+      statusEl.textContent = '✓ OK';
+    }
+  });
+  const sumEl = document.getElementById('alertSummary');
+  if (sumEl) sumEl.textContent = firingCount > 0 ? `${firingCount} rule${firingCount>1?'s':''} firing` : 'All rules OK';
+}
+
+function logAlert(msg, type) {
+  const now = new Date();
+  const ts = now.toTimeString().slice(0,8);
+  logLines.push(`[ ${ts} ] ${msg}`);
+  if (logLines.length > 20) logLines = logLines.slice(-20);
+  const log = document.getElementById('incidentLog');
+  if (!log) return;
+  log.innerHTML = logLines.map((l, i) => {
+    const cls = l.includes('FIRING') ? 'log-alert' : l.includes('resolved') ? 'log-ok' : l.includes('WARN') ? 'log-warn' : 'log-line';
+    return `<div class="${cls}">${l}</div>`;
+  }).join('');
+  log.scrollTop = log.scrollHeight;
+}
+
+function simulateSpike() {
+  const oldMetrics = { ...liveMetrics };
+  liveMetrics = { latency: 380, rps: 52, error: 12.4, confidence: 0.63, psi: 0.31 };
+  evalAlerts();
+  logAlert('[ FIRING ] P95 Latency = 380ms (threshold 200ms)', 'alert');
+  logAlert('[ FIRING ] Error Rate = 12.4% (threshold 5%)', 'alert');
+  logAlert('[ WARN   ] Avg Confidence = 0.630 (threshold 0.70)', 'warn');
+  logAlert('[ FIRING ] PSI = 0.310 (threshold 0.25)', 'alert');
+  setTimeout(() => {
+    liveMetrics = oldMetrics;
+    evalAlerts();
+    logAlert('[ OK     ] All alerts resolved after spike subsided', 'ok');
+  }, 6000);
+}
+
+evalAlerts();
+
+</script>
+
+<!-- JAWNVION FOOTER -->
+<footer style="border-top:1px solid #1A2E4A;padding:32px 28px;margin-top:80px;text-align:center;background:#080E1B;">
+  <div style="max-width:960px;margin:0 auto;">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.15em;color:#00C9A7;text-transform:uppercase;margin-bottom:8px;">JAWNVION™ LLC</div>
+    <div style="font-size:13px;color:#5E7A9A;line-height:1.6;">
+      AI Engineer's Workbook — Interactive Lab Companion<br>
+      © 2026 JAWNVION LLC. All Rights Reserved. Unauthorized reproduction or redistribution is prohibited.<br>
+      <a href="mailto:peter@jawnvion.com" style="color:#00C9A7;text-decoration:none;">peter@jawnvion.com</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

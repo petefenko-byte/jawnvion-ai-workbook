@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JAWNVION LLC | Chapter 2 — Dataset Collection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080E1B;
+    --surface: #0F1A2E;
+    --surface2: #162035;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #E8EDF5;
+    --muted: #8899B4;
+    --accent: #F43F5E;
+    --accent-dim: rgba(244,63,94,0.15);
+    --accent-glow: rgba(244,63,94,0.25);
+    --teal: #00C9A7;
+    --gold: #FFB44F;
+    --purple: #C084FC;
+    --navy-text: #B8C8E0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    line-height: 1.65;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .page-header {
+    background: linear-gradient(180deg, rgba(244,63,94,0.08) 0%, transparent 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 40px 40px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .ch-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .page-header h1 {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  .page-header h1 span { color: var(--accent); }
+
+  .page-header p {
+    color: var(--navy-text);
+    font-size: 16px;
+    max-width: 600px;
+    margin-bottom: 24px;
+  }
+
+  .meta-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── PROGRESS DOTS ── */
+  .progress-bar {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+
+  .dot-wrap { display: flex; align-items: center; }
+
+  .dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: default;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+
+  .dot.done { background: var(--teal); color: #000; }
+  .dot.active { background: var(--accent); color: #fff; box-shadow: 0 0 12px var(--accent-glow); transform: scale(1.15); }
+  .dot.future { background: var(--surface2); color: var(--muted); border: 1px solid var(--border2); }
+
+  .dot-line { width: 18px; height: 1px; background: var(--border2); flex-shrink: 0; }
+
+  /* ── MAIN ── */
+  .main { max-width: 900px; margin: 0 auto; padding: 48px 40px 80px; }
+
+  .section { margin-bottom: 56px; }
+
+  .section-label {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .section-label .num {
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+  }
+
+  .section-label h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .section p.intro {
+    color: var(--navy-text);
+    margin-bottom: 20px;
+    font-size: 15px;
+  }
+
+  /* ── DATASET SIZE CALCULATOR ── */
+  .calc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 640px) { .calc-grid { grid-template-columns: 1fr; } }
+
+  .calc-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .calc-card label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .calc-card select, .calc-card input[type="range"] {
+    width: 100%;
+  }
+
+  .calc-card select {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 8px 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    appearance: none;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .range-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    margin-top: 6px;
+    display: block;
+  }
+
+  .calc-result {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 24px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  @media (max-width: 560px) { .calc-result { grid-template-columns: 1fr; } }
+
+  .result-stat { text-align: center; }
+
+  .result-stat .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--accent);
+    display: block;
+  }
+
+  .result-stat .label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 4px;
+  }
+
+  .result-note {
+    grid-column: 1 / -1;
+    background: var(--accent-dim);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--navy-text);
+    border-left: 3px solid var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.5;
+  }
+
+  /* ── QUALITY FILTER SIMULATOR ── */
+  .filter-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+
+  .filter-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    width: 180px;
+    flex-shrink: 0;
+  }
+
+  .filter-slider-wrap { flex: 1; min-width: 120px; }
+
+  .filter-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    width: 48px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .filter-result-bar {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .filter-result-bar .label { font-size: 13px; color: var(--muted); font-weight: 600; }
+
+  .filter-result-bar .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--teal);
+  }
+
+  .filter-quality-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+
+  .filter-quality-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--teal));
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+
+  /* ── SOURCE COMPARISON TABLE ── */
+  .source-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  .source-table th {
+    background: var(--surface2);
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    text-align: left;
+    font-family: 'JetBrains Mono', monospace;
+    border-bottom: 1px solid var(--border2);
+  }
+
+  .source-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--navy-text);
+    vertical-align: middle;
+  }
+
+  .source-table tr:last-child td { border-bottom: none; }
+  .source-table tr:hover td { background: var(--surface2); }
+
+  .source-name { font-weight: 700; color: var(--text); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .badge.free { background: rgba(0,201,167,0.15); color: var(--teal); }
+  .badge.paid { background: rgba(255,180,79,0.15); color: var(--gold); }
+  .badge.scrape { background: rgba(192,132,252,0.15); color: var(--purple); }
+  .badge.high { background: rgba(0,201,167,0.15); color: var(--teal); }
+  .badge.med { background: rgba(255,180,79,0.15); color: var(--gold); }
+  .badge.low { background: rgba(244,63,94,0.15); color: var(--accent); }
+
+  .star-rating { color: var(--gold); letter-spacing: 2px; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+
+  /* ── DEDUP VISUALIZER ── */
+  .dedup-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+  }
+
+  .dedup-controls { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+
+  .dedup-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  .dedup-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .dedup-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+  .dedup-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    min-height: 180px;
+  }
+
+  .dedup-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--navy-text);
+    transition: all 0.3s;
+    line-height: 1.4;
+    cursor: default;
+    position: relative;
+  }
+
+  .dedup-card.duplicate {
+    opacity: 0.3;
+    border-color: var(--accent);
+    text-decoration: line-through;
+  }
+
+  .dedup-card.near-dup { border-color: var(--gold); background: rgba(255,180,79,0.06); }
+  .dedup-card.kept { border-color: var(--teal); }
+
+  .dedup-stats { display: flex; gap: 20px; margin-top: 16px; flex-wrap: wrap; }
+
+  .dedup-stat { font-size: 13px; }
+  .dedup-stat strong { font-family: 'JetBrains Mono', monospace; }
+  .dedup-stat .kept-c { color: var(--teal); }
+  .dedup-stat .dup-c { color: var(--accent); }
+  .dedup-stat .near-c { color: var(--gold); }
+
+  /* ── HF DATASET BROWSER ── */
+  .hf-search {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .hf-input {
+    flex: 1;
+    min-width: 200px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 10px 14px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 14px;
+  }
+
+  .hf-input:focus { outline: none; border-color: var(--accent); }
+
+  .hf-filter {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    appearance: none;
+  }
+
+  .hf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+
+  .hf-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .hf-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+  .hf-card-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .hf-card-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    line-height: 1.45;
+  }
+
+  .hf-card-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .hf-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .hf-pill.task { color: var(--accent); border-color: var(--accent-dim); background: var(--accent-dim); }
+  .hf-pill.size { color: var(--teal); border-color: rgba(0,201,167,0.2); background: rgba(0,201,167,0.08); }
+
+  /* ── CHECKLIST ── */
+  .checklist-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+  }
+
+  .checklist-progress-bar {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .checklist-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+    border-radius: 4px;
+    padding: 10px 8px;
+  }
+
+  .check-item:last-child { border-bottom: none; }
+  .check-item:hover { background: var(--surface2); }
+
+  .check-box {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border2);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+  }
+
+  .check-item.checked .check-box {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .check-item.checked .check-box::after { content: '✓'; font-size: 12px; color: #fff; font-weight: 700; }
+
+  .check-text { font-size: 14px; color: var(--navy-text); }
+  .check-item.checked .check-text { text-decoration: line-through; color: var(--muted); }
+  .check-sub { font-size: 12px; color: var(--muted); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+
+  .check-progress-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+    margin-bottom: 8px;
+  }
+
+  /* ── CODE TABS ── */
+  .code-tabs { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+
+  .code-tab-bar { display: flex; border-bottom: 1px solid var(--border); background: var(--surface2); }
+
+  .code-tab {
+    padding: 10px 18px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+
+  .code-tab:hover { color: var(--text); }
+  .code-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .code-pane { display: none; padding: 20px 24px; }
+  .code-pane.active { display: block; }
+
+  pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    white-space: pre;
+    overflow-x: auto;
+    color: var(--navy-text);
+  }
+
+  .kw { color: #C084FC; }
+  .str { color: #00C9A7; }
+  .cm { color: #4A5A72; font-style: italic; }
+  .fn { color: #FFB44F; }
+  .num { color: #F43F5E; }
+  .cls { color: #60A5FA; }
+  .imp { color: #F43F5E; font-weight: 700; }
+
+  /* ── NAV ── */
+  .chapter-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 64px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .nav-btn {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .nav-btn.primary:hover { background: #e03355; border-color: #e03355; color: #fff; }
+
+  hr.section-div { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="ch-badge">JAWNVION LLC · AI Training Workbook · CH.02</div>
+  <h1>Dataset <span>Collection</span></h1>
+  <p>The quality of your dataset determines the ceiling of your model. Learn how to size, source, filter, and deduplicate training data for any AI task.</p>
+  <div class="meta-pills">
+    <span class="pill">~35 min</span>
+    <span class="pill">Interactive</span>
+    <span class="pill">5 Tools</span>
+    <span class="pill">Beginner → Intermediate</span>
+  </div>
+</div>
+
+<div class="progress-bar">
+  <div class="dot-wrap"><div class="dot done">1</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot active">2</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">3</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">4</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">5</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">6</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">7</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">8</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">9</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">10</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">11</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">12</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">13</div><div class="dot-line"></div></div>
+  <div class="dot-wrap"><div class="dot future">14</div></div>
+</div>
+
+<div class="main">
+
+  <!-- ── SECTION 1: DATASET SIZE CALCULATOR ── -->
+  <div class="section">
+    <div class="section-label">
+      <span class="num">01</span>
+      <h2>Dataset Size Calculator</h2>
+    </div>
+    <p class="intro">Dataset size requirements vary dramatically by task and model size. Use this calculator to estimate the minimum, target, and production-grade sample counts for your use case.</p>
+
+    <div class="calc-grid">
+      <div class="calc-card">
+        <label>Task Type</label>
+        <select id="taskType" onchange="calcSize()">
+          <option value="classify">Text Classification</option>
+          <option value="ner">Named Entity Recognition</option>
+          <option value="qa">Question Answering</option>
+          <option value="gen">Text Generation</option>
+          <option value="summ">Summarization</option>
+          <option value="instruct">Instruction Following</option>
+          <option value="embed">Embedding / Retrieval</option>
+        </select>
+      </div>
+
+      <div class="calc-card">
+        <label>Number of Classes / Categories</label>
+        <input type="range" id="numClasses" min="2" max="100" value="5" oninput="calcSize()">
+        <span class="range-val" id="classVal">5 classes</span>
+      </div>
+
+      <div class="calc-card">
+        <label>Model Approach</label>
+        <select id="approach" onchange="calcSize()">
+          <option value="ft">Fine-tuning pretrained model</option>
+          <option value="full">Training from scratch</option>
+          <option value="fewshot">Few-shot / prompting</option>
+          <option value="rag">RAG / retrieval only</option>
+        </select>
+      </div>
+
+      <div class="calc-card">
+        <label>Target Accuracy / Quality</label>
+        <input type="range" id="targetAcc" min="70" max="99" value="85" oninput="calcSize()">
+        <span class="range-val" id="accVal">85% accuracy</span>
+      </div>
+    </div>
+
+    <div class="calc-result" id="calcResult">
+      <div class="result-stat">
+        <span class="val" id="minSamples">—</span>
+        <div class="label">Minimum</div>
+      </div>
+      <div class="result-stat">
+        <span class="val" id="targetSamples">—</span>
+        <div class="label">Target</div>
+      </div>
+      <div class="result-stat">
+        <span class="val" id="prodSamples">—</span>
+        <div class="label">Production-Grade</div>
+      </div>
+      <div class="result-note" id="calcNote">Select your task and model approach above.</div>
+    </div>
+  </div>
+
+  <hr class="section-div">
+
+  <!-- ── SECTION 2: DATA SOURCE COMPARISON ── -->
+  <div class="section">
+    <div class="section-label">
+      <span class="num">02</span>
+      <h2>Data Source Comparison</h2>
+    </div>
+    <p class="intro">Not all data sources are equal. The table below compares common sources across accessibility, quality, volume, and licensing risk.</p>
+
+    <div class="table-wrap">
+      <table class="source-table">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Access</th>
+            <th>Quality</th>
+            <th>Volume</th>
+            <th>License Risk</th>
+            <th>Best For</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="source-name">HuggingFace Hub</td>
+            <td><span class="badge free">Free</span></td>
+            <td><span class="badge high">High</span></td>
+            <td>Varies</td>
+            <td><span class="badge high">Low</span></td>
+            <td>Most NLP tasks</td>
+          </tr>
+          <tr>
+            <td class="source-name">Common Crawl</td>
+            <td><span class="badge free">Free</span></td>
+            <td><span class="badge low">Low–Med</span></td>
+            <td>Petabytes</td>
+            <td><span class="badge med">Medium</span></td>
+            <td>Pretraining LLMs</td>
+          </tr>
+          <tr>
+            <td class="source-name">Wikipedia / Wikidata</td>
+            <td><span class="badge free">Free</span></td>
+            <td><span class="badge high">High</span></td>
+            <td>Billions tokens</td>
+            <td><span class="badge high">Low</span></td>
+            <td>Factual grounding</td>
+          </tr>
+          <tr>
+            <td class="source-name">GitHub (public repos)</td>
+            <td><span class="badge free">Free</span></td>
+            <td><span class="badge high">High</span></td>
+            <td>Terabytes</td>
+            <td><span class="badge med">Medium</span></td>
+            <td>Code generation</td>
+          </tr>
+          <tr>
+            <td class="source-name">ArXiv / PubMed</td>
+            <td><span class="badge free">Free</span></td>
+            <td><span class="badge high">High</span></td>
+            <td>Millions papers</td>
+            <td><span class="badge high">Low</span></td>
+            <td>Scientific domain</td>
+          </tr>
+          <tr>
+            <td class="source-name">Synthetic (LLM-generated)</td>
+            <td><span class="badge free">Free</span></td>
+            <td><span class="badge med">Med–High</span></td>
+            <td>Unlimited</td>
+            <td><span class="badge med">Medium</span></td>
+            <td>Instruction tuning</td>
+          </tr>
+          <tr>
+            <td class="source-name">Proprietary / Internal</td>
+            <td><span class="badge scrape">Private</span></td>
+            <td><span class="badge high">High</span></td>
+            <td>Domain-limited</td>
+            <td><span class="badge high">Low</span></td>
+            <td>Domain-specific FT</td>
+          </tr>
+          <tr>
+            <td class="source-name">Web Scraping</td>
+            <td><span class="badge scrape">Custom</span></td>
+            <td><span class="badge med">Variable</span></td>
+            <td>Unlimited</td>
+            <td><span class="badge low">High</span></td>
+            <td>Domain-specific (careful)</td>
+          </tr>
+          <tr>
+            <td class="source-name">Data Marketplaces</td>
+            <td><span class="badge paid">Paid</span></td>
+            <td><span class="badge high">High</span></td>
+            <td>Varies</td>
+            <td><span class="badge high">Low</span></td>
+            <td>Medical, legal, finance</td>
+          </tr>
+          <tr>
+            <td class="source-name">Crowd-sourced (MTurk etc.)</td>
+            <td><span class="badge paid">Paid</span></td>
+            <td><span class="badge med">Medium</span></td>
+            <td>Scalable</td>
+            <td><span class="badge high">Low</span></td>
+            <td>Classification labels</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr class="section-div">
+
+  <!-- ── SECTION 3: QUALITY FILTER SIMULATOR ── -->
+  <div class="section">
+    <div class="section-label">
+      <span class="num">03</span>
+      <h2>Quality Filter Simulator</h2>
+    </div>
+    <p class="intro">Raw web data is noisy. Each filter below removes a fraction of your corpus — drag the sliders to see how they interact and what survives.</p>
+
+    <div class="filter-panel">
+      <div class="filter-row">
+        <span class="filter-name">Language filter (non-target)</span>
+        <div class="filter-slider-wrap">
+          <input type="range" min="0" max="30" value="18" id="f1" oninput="updateFilters()">
+        </div>
+        <span class="filter-pct" id="f1v">18%</span>
+      </div>
+      <div class="filter-row">
+        <span class="filter-name">Deduplication</span>
+        <div class="filter-slider-wrap">
+          <input type="range" min="0" max="50" value="30" id="f2" oninput="updateFilters()">
+        </div>
+        <span class="filter-pct" id="f2v">30%</span>
+      </div>
+      <div class="filter-row">
+        <span class="filter-name">Quality heuristics (perplexity, length)</span>
+        <div class="filter-slider-wrap">
+          <input type="range" min="0" max="40" value="20" id="f3" oninput="updateFilters()">
+        </div>
+        <span class="filter-pct" id="f3v">20%</span>
+      </div>
+      <div class="filter-row">
+        <span class="filter-name">Toxicity / safety filter</span>
+        <div class="filter-slider-wrap">
+          <input type="range" min="0" max="20" value="5" id="f4" oninput="updateFilters()">
+        </div>
+        <span class="filter-pct" id="f4v">5%</span>
+      </div>
+      <div class="filter-row">
+        <span class="filter-name">PII / privacy redaction</span>
+        <div class="filter-slider-wrap">
+          <input type="range" min="0" max="15" value="3" id="f5" oninput="updateFilters()">
+        </div>
+        <span class="filter-pct" id="f5v">3%</span>
+      </div>
+    </div>
+
+    <div class="filter-result-bar" id="filterResult">
+      <div>
+        <div class="label">Starting corpus (100B tokens)</div>
+        <div class="filter-quality-bar"><div class="filter-quality-fill" id="qualityFill" style="width:100%"></div></div>
+      </div>
+      <div class="value" id="filterSurvive">—</div>
+    </div>
+  </div>
+
+  <hr class="section-div">
+
+  <!-- ── SECTION 4: DEDUPLICATION VISUALIZER ── -->
+  <div class="section">
+    <div class="section-label">
+      <span class="num">04</span>
+      <h2>Deduplication Visualizer</h2>
+    </div>
+    <p class="intro">Duplicate and near-duplicate documents inflate apparent dataset size while harming generalization. Click a strategy to see which documents survive.</p>
+
+    <div class="dedup-container">
+      <div class="dedup-controls">
+        <button class="dedup-btn active" id="btn-none" onclick="applyDedup('none')">No Dedup</button>
+        <button class="dedup-btn" id="btn-exact" onclick="applyDedup('exact')">Exact Match</button>
+        <button class="dedup-btn" id="btn-minhash" onclick="applyDedup('minhash')">MinHash LSH</button>
+        <button class="dedup-btn" id="btn-semantic" onclick="applyDedup('semantic')">Semantic Dedup</button>
+      </div>
+      <div class="dedup-grid" id="dedupGrid"></div>
+      <div class="dedup-stats" id="dedupStats"></div>
+    </div>
+  </div>
+
+  <hr class="section-div">
+
+  <!-- ── SECTION 5: HF DATASET BROWSER ── -->
+  <div class="section">
+    <div class="section-label">
+      <span class="num">05</span>
+      <h2>HuggingFace Dataset Browser</h2>
+    </div>
+    <p class="intro">Browse curated high-quality datasets from HuggingFace Hub, filtered by task type. Click any card for dataset details and a direct link.</p>
+
+    <div class="hf-search">
+      <input type="text" class="hf-input" id="hfSearch" placeholder="Search datasets…" oninput="filterHF()">
+      <select class="hf-filter" id="hfTask" onchange="filterHF()">
+        <option value="all">All Tasks</option>
+        <option value="classification">Classification</option>
+        <option value="generation">Generation</option>
+        <option value="qa">QA</option>
+        <option value="ner">NER</option>
+        <option value="code">Code</option>
+        <option value="instruct">Instruction</option>
+        <option value="embed">Embedding</option>
+      </select>
+    </div>
+
+    <div class="hf-grid" id="hfGrid"></div>
+  </div>
+
+  <hr class="section-div">
+
+  <!-- ── SECTION 6: CODE TABS ── -->
+  <div class="section">
+    <div class="section-label">
+      <span class="num">06</span>
+      <h2>Code Reference</h2>
+    </div>
+    <p class="intro">Ready-to-run scripts for the three most common dataset collection tasks.</p>
+
+    <div class="code-tabs">
+      <div class="code-tab-bar">
+        <div class="code-tab active" onclick="showCode('hf')">HF Dataset Load</div>
+        <div class="code-tab" onclick="showCode('dedup')">MinHash Dedup</div>
+        <div class="code-tab" onclick="showCode('quality')">Quality Filter</div>
+      </div>
+
+      <div class="code-pane active" id="pane-hf">
+<pre><span class="cm"># Load and explore a dataset from HuggingFace Hub</span>
+<span class="kw">from</span> datasets <span class="kw">import</span> load_dataset, DatasetInfo
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+<span class="cm"># Load a dataset (streaming=True avoids downloading everything)</span>
+ds = <span class="fn">load_dataset</span>(
+    <span class="str">"allenai/dolma"</span>,
+    split=<span class="str">"train"</span>,
+    streaming=<span class="kw">True</span>,
+    trust_remote_code=<span class="kw">True</span>
+)
+
+<span class="cm"># Inspect the first few samples</span>
+<span class="kw">for</span> i, sample <span class="kw">in</span> <span class="fn">enumerate</span>(ds):
+    <span class="fn">print</span>(sample[<span class="str">"text"</span>][:<span class="num">200</span>])
+    <span class="kw">if</span> i >= <span class="num">4</span>:
+        <span class="kw">break</span>
+
+<span class="cm"># Load a full dataset and convert to pandas</span>
+ds_full = <span class="fn">load_dataset</span>(<span class="str">"stanfordnlp/imdb"</span>)
+df = ds_full[<span class="str">"train"</span>].<span class="fn">to_pandas</span>()
+<span class="fn">print</span>(df.<span class="fn">describe</span>())
+<span class="fn">print</span>(<span class="str">f"Classes: {df['label'].<span class="fn">unique</span>()}"</span>)
+
+<span class="cm"># Filter by column value</span>
+positive_only = ds_full[<span class="str">"train"</span>].<span class="fn">filter</span>(
+    <span class="kw">lambda</span> x: x[<span class="str">"label"</span>] == <span class="num">1</span>
+)
+<span class="fn">print</span>(<span class="str">f"Positive samples: {<span class="fn">len</span>(positive_only)}"</span>)</pre>
+      </div>
+
+      <div class="code-pane" id="pane-dedup">
+<pre><span class="cm"># MinHash LSH deduplication with datasketch</span>
+<span class="kw">from</span> datasketch <span class="kw">import</span> MinHash, MinHashLSH
+<span class="kw">import</span> re
+
+<span class="kw">def</span> <span class="fn">get_shingles</span>(text: <span class="cls">str</span>, k: <span class="cls">int</span> = <span class="num">5</span>) -> <span class="fn">set</span>:
+    <span class="str">"""Generate k-shingles from text for MinHash."""</span>
+    text = re.<span class="fn">sub</span>(<span class="str">r'\s+'</span>, <span class="str">' '</span>, text.<span class="fn">lower</span>())
+    <span class="kw">return</span> {text[i:i+k] <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(text) - k + <span class="num">1</span>)}
+
+<span class="kw">def</span> <span class="fn">build_minhash</span>(text: <span class="cls">str</span>, num_perm: <span class="cls">int</span> = <span class="num">128</span>) -> <span class="cls">MinHash</span>:
+    m = <span class="cls">MinHash</span>(num_perm=num_perm)
+    <span class="kw">for</span> shingle <span class="kw">in</span> <span class="fn">get_shingles</span>(text):
+        m.<span class="fn">update</span>(shingle.<span class="fn">encode</span>(<span class="str">'utf8'</span>))
+    <span class="kw">return</span> m
+
+<span class="cm"># Build LSH index — threshold=0.8 → 80% similarity = near-dup</span>
+lsh = <span class="cls">MinHashLSH</span>(threshold=<span class="num">0.8</span>, num_perm=<span class="num">128</span>)
+seen_ids = <span class="fn">set</span>()
+kept = []
+
+<span class="kw">for</span> i, doc <span class="kw">in</span> <span class="fn">enumerate</span>(documents):
+    mh = <span class="fn">build_minhash</span>(doc[<span class="str">"text"</span>])
+    result = lsh.<span class="fn">query</span>(mh)
+
+    <span class="kw">if not</span> result:               <span class="cm"># no similar doc in index</span>
+        lsh.<span class="fn">insert</span>(<span class="str">f"doc_{i}"</span>, mh)
+        kept.<span class="fn">append</span>(doc)
+    <span class="cm"># else: near-dup detected — skip</span>
+
+<span class="fn">print</span>(<span class="str">f"Kept {<span class="fn">len</span>(kept)}/{<span class="fn">len</span>(documents)} ({<span class="fn">len</span>(kept)/<span class="fn">len</span>(documents)*<span class="num">100</span>:.1f}%)"</span>)</pre>
+      </div>
+
+      <div class="code-pane" id="pane-quality">
+<pre><span class="cm"># Quality heuristic filters (C4-style)</span>
+<span class="kw">import</span> re
+<span class="kw">from</span> typing <span class="kw">import</span> Optional
+
+<span class="kw">def</span> <span class="fn">passes_quality</span>(text: <span class="cls">str</span>) -> <span class="cls">bool</span>:
+    <span class="str">"""
+    Returns True if the document passes all quality heuristics.
+    Based on C4 / Dolma quality filters.
+    """</span>
+    words = text.<span class="fn">split</span>()
+
+    <span class="cm"># Minimum and maximum length</span>
+    <span class="kw">if not</span> (<span class="num">50</span> <= <span class="fn">len</span>(words) <= <span class="num">100_000</span>):
+        <span class="kw">return False</span>
+
+    <span class="cm"># Ends with terminal punctuation</span>
+    <span class="kw">if</span> text.<span class="fn">rstrip</span>()[-<span class="num">1</span>] <span class="kw">not in</span> <span class="str">'.!?'</span>:
+        <span class="kw">return False</span>
+
+    <span class="cm"># At least 80% of lines must end with letter or punctuation</span>
+    lines = [l <span class="kw">for</span> l <span class="kw">in</span> text.<span class="fn">splitlines</span>() <span class="kw">if</span> l.<span class="fn">strip</span>()]
+    good = <span class="fn">sum</span>(<span class="num">1</span> <span class="kw">for</span> l <span class="kw">in</span> lines <span class="kw">if</span> re.<span class="fn">search</span>(<span class="str">r'[\w.!?]$'</span>, l))
+    <span class="kw">if</span> good / <span class="fn">max</span>(<span class="fn">len</span>(lines), <span class="num">1</span>) < <span class="num">0.8</span>:
+        <span class="kw">return False</span>
+
+    <span class="cm"># Curly-brace check — likely code or template noise</span>
+    <span class="kw">if</span> text.<span class="fn">count</span>(<span class="str">'{'</span>) > <span class="num">10</span>:
+        <span class="kw">return False</span>
+
+    <span class="cm"># "Lorem ipsum" lorem-flag</span>
+    <span class="kw">if</span> <span class="str">'lorem ipsum'</span> <span class="kw">in</span> text.<span class="fn">lower</span>():
+        <span class="kw">return False</span>
+
+    <span class="kw">return True</span>
+
+<span class="cm"># Apply filter across dataset</span>
+clean = [doc <span class="kw">for</span> doc <span class="kw">in</span> corpus <span class="kw">if</span> <span class="fn">passes_quality</span>(doc[<span class="str">"text"</span>])]
+<span class="fn">print</span>(<span class="str">f"Survived: {<span class="fn">len</span>(clean)}/{<span class="fn">len</span>(corpus)} ({<span class="fn">len</span>(clean)/<span class="fn">len</span>(corpus)*<span class="num">100</span>:.1f}%)"</span>)</pre>
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-div">
+
+  <!-- ── CHECKLIST ── -->
+  <div class="section">
+    <div class="section-label">
+      <span class="num">07</span>
+      <h2>Chapter Checklist</h2>
+    </div>
+
+    <div class="checklist-wrap">
+      <div class="check-progress-label" id="clLabel">0 / 7 complete</div>
+      <div class="checklist-progress-bar">
+        <div class="checklist-progress-fill" id="clFill" style="width:0%"></div>
+      </div>
+
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">Determined minimum dataset size for my task</div>
+          <div class="check-sub">Use the calculator above</div>
+        </div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">Identified primary data source(s)</div>
+          <div class="check-sub">HuggingFace, internal, synthetic, or scraping</div>
+        </div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">Confirmed licensing and usage rights</div>
+          <div class="check-sub">Apache 2.0, CC BY, commercial use permitted</div>
+        </div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">Applied language and quality filters</div>
+          <div class="check-sub">perplexity, length, terminal punctuation</div>
+        </div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">Ran deduplication (exact + near-duplicate)</div>
+          <div class="check-sub">MinHash LSH at 0.8 threshold minimum</div>
+        </div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">Verified class balance across labels</div>
+          <div class="check-sub">No class should be &lt;10% of total without upsampling</div>
+        </div>
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"></div>
+        <div>
+          <div class="check-text">Split into train / validation / test sets</div>
+          <div class="check-sub">80 / 10 / 10 default; stratified by label</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── NAVIGATION ── -->
+  <div class="chapter-nav">
+    <a href="#" class="nav-btn">← Ch.01 Problem Identification</a>
+    <a href="#" class="nav-btn primary">Ch.03 Data Preprocessing →</a>
+  </div>
+
+</div>
+
+<script>
+// ── DATASET SIZE CALCULATOR ──
+const SIZE_CONFIGS = {
+  classify:  { base: 500,   mult: 200,  fullMult: 3,   ragMult: 0.1, fewMult: 0, note: "Per-class minimums apply — multiply by number of classes." },
+  ner:       { base: 1000,  mult: 300,  fullMult: 5,   ragMult: 0.2, fewMult: 0.05, note: "Token-level labels require more examples per entity type." },
+  qa:        { base: 2000,  mult: 100,  fullMult: 4,   ragMult: 1.5, fewMult: 0.1, note: "QA pairs; RAG retrieval corpus scales separately." },
+  gen:       { base: 5000,  mult: 50,   fullMult: 10,  ragMult: 0,   fewMult: 0.2, note: "Tokens matter more than samples — target 100M+ tokens for quality generation." },
+  summ:      { base: 10000, mult: 0,    fullMult: 5,   ragMult: 0,   fewMult: 0.3, note: "Source–summary pairs; document length affects token budget significantly." },
+  instruct:  { base: 3000,  mult: 0,    fullMult: 8,   ragMult: 0,   fewMult: 0.5, note: "Instruction-response pairs; diversity of tasks matters more than sheer volume." },
+  embed:     { base: 10000, mult: 0,    fullMult: 6,   ragMult: 1.0, fewMult: 0,   note: "Contrastive pairs (anchor, positive, negative); triplet loss needs many negatives." }
+};
+
+function fmtNum(n) {
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(0) + 'K';
+  return String(n);
+}
+
+function calcSize() {
+  const task = document.getElementById('taskType').value;
+  const nc = parseInt(document.getElementById('numClasses').value);
+  const approach = document.getElementById('approach').value;
+  const acc = parseInt(document.getElementById('targetAcc').value);
+
+  document.getElementById('classVal').textContent = nc + (nc === 1 ? ' class' : ' classes');
+  document.getElementById('accVal').textContent = acc + '% accuracy';
+
+  const cfg = SIZE_CONFIGS[task];
+  let base = cfg.base + cfg.mult * nc;
+
+  let ftMin   = Math.round(base * (1 + (acc-70)/60));
+  let ftTarget= Math.round(ftMin * 3);
+  let ftProd  = Math.round(ftMin * 10);
+
+  let min, target, prod;
+  if (approach === 'full')    { min = ftMin * cfg.fullMult; target = ftTarget * cfg.fullMult; prod = ftProd * cfg.fullMult; }
+  else if (approach === 'fewshot') { min = Math.max(5, Math.round(ftMin * cfg.fewMult)); target = min * 3; prod = min * 10; }
+  else if (approach === 'rag')     { min = Math.max(50, Math.round(ftMin * cfg.ragMult)); target = min * 5; prod = min * 20; }
+  else { min = ftMin; target = ftTarget; prod = ftProd; }
+
+  document.getElementById('minSamples').textContent = fmtNum(min);
+  document.getElementById('targetSamples').textContent = fmtNum(target);
+  document.getElementById('prodSamples').textContent = fmtNum(prod);
+  document.getElementById('calcNote').textContent = cfg.note;
+}
+
+calcSize();
+
+// ── QUALITY FILTER SIMULATOR ──
+function updateFilters() {
+  const ids = ['f1','f2','f3','f4','f5'];
+  let survive = 1.0;
+  ids.forEach(id => {
+    const val = parseInt(document.getElementById(id).value);
+    document.getElementById(id + 'v').textContent = val + '%';
+    survive *= (1 - val / 100);
+  });
+
+  const pct = Math.max(0, survive * 100);
+  const tokens = (pct / 100 * 100).toFixed(1);
+  document.getElementById('filterSurvive').textContent = tokens + 'B tokens';
+  document.getElementById('qualityFill').style.width = pct + '%';
+}
+
+updateFilters();
+
+// ── DEDUPLICATION VISUALIZER ──
+const DOCS = [
+  { id: 0,  text: 'The quick brown fox jumps',      exact: false, near: false },
+  { id: 1,  text: 'The quick brown fox leaps',      exact: false, near: true  },
+  { id: 2,  text: 'Neural networks learn weights',  exact: false, near: false },
+  { id: 3,  text: 'Neural networks learn weights',  exact: true,  near: true  },
+  { id: 4,  text: 'Training data quality matters',  exact: false, near: false },
+  { id: 5,  text: 'A model learns from examples',   exact: false, near: false },
+  { id: 6,  text: 'A model learns from examples',   exact: true,  near: true  },
+  { id: 7,  text: 'Deep learning needs big data',   exact: false, near: false },
+  { id: 8,  text: 'Deep learning needs large data', exact: false, near: true  },
+  { id: 9,  text: 'Transformers use attention',     exact: false, near: false },
+  { id: 10, text: 'Transformers use self-attention', exact: false, near: true  },
+  { id: 11, text: 'Language models predict tokens', exact: false, near: false },
+  { id: 12, text: 'Language models predict tokens', exact: true,  near: true  },
+  { id: 13, text: 'Fine-tuning updates all weights', exact: false, near: false },
+  { id: 14, text: 'Fine-tuning adjusts all weights', exact: false, near: true  },
+  { id: 15, text: 'RLHF aligns models with humans', exact: false, near: false },
+  { id: 16, text: 'Evaluation needs held-out data',  exact: false, near: false },
+  { id: 17, text: 'Evaluation requires test sets',   exact: false, near: true  },
+  { id: 18, text: 'Dataset balance prevents bias',   exact: false, near: false },
+  { id: 19, text: 'Dataset balance prevents bias',   exact: true,  near: true  },
+];
+
+function applyDedup(mode) {
+  document.querySelectorAll('.dedup-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + mode).classList.add('active');
+
+  const grid = document.getElementById('dedupGrid');
+  grid.innerHTML = '';
+
+  let kept = 0, dups = 0, nearDups = 0;
+  const seenExact = new Set();
+
+  DOCS.forEach(doc => {
+    const card = document.createElement('div');
+    card.className = 'dedup-card';
+    card.textContent = doc.text;
+
+    if (mode === 'none') {
+      card.classList.add('kept');
+      kept++;
+    } else if (mode === 'exact') {
+      if (doc.exact && seenExact.has(doc.text)) {
+        card.classList.add('duplicate');
+        dups++;
+      } else {
+        seenExact.add(doc.text);
+        card.classList.add('kept');
+        kept++;
+      }
+    } else if (mode === 'minhash') {
+      if (doc.exact && seenExact.has(doc.text)) {
+        card.classList.add('duplicate');
+        dups++;
+      } else if (doc.near && !doc.exact) {
+        card.classList.add('near-dup');
+        nearDups++;
+        // kept for review
+        kept++;
+      } else {
+        seenExact.add(doc.text);
+        card.classList.add('kept');
+        kept++;
+      }
+    } else if (mode === 'semantic') {
+      if (doc.exact && seenExact.has(doc.text)) {
+        card.classList.add('duplicate');
+        dups++;
+      } else if (doc.near) {
+        card.classList.add('duplicate');
+        dups++;
+      } else {
+        seenExact.add(doc.text);
+        card.classList.add('kept');
+        kept++;
+      }
+    }
+
+    grid.appendChild(card);
+  });
+
+  const stats = document.getElementById('dedupStats');
+  stats.innerHTML = `
+    <div class="dedup-stat"><strong class="kept-c">${kept}</strong> kept</div>
+    <div class="dedup-stat"><strong class="dup-c">${dups}</strong> duplicates removed</div>
+    ${mode === 'minhash' ? `<div class="dedup-stat"><strong class="near-c">${nearDups}</strong> near-dups flagged</div>` : ''}
+    <div class="dedup-stat"><strong>${((kept/DOCS.length)*100).toFixed(0)}%</strong> retention rate</div>
+  `;
+}
+
+applyDedup('none');
+
+// ── HF DATASET BROWSER ──
+const HF_DATASETS = [
+  { name: 'stanfordnlp/imdb',    desc: '50K movie reviews, binary sentiment classification.', task: 'classification', size: '3.5M tokens', license: 'Apache-2.0' },
+  { name: 'fancyzhx/ag_news',    desc: '120K news articles across 4 categories.', task: 'classification', size: '31M tokens', license: 'Apache-2.0' },
+  { name: 'rajpurkar/squad_v2',  desc: '150K QA pairs, includes unanswerable questions.', task: 'qa', size: '35M tokens', license: 'CC BY-SA 4.0' },
+  { name: 'google-research-datasets/natural_questions', desc: 'Real Google search questions with Wikipedia answers.', task: 'qa', size: '350M tokens', license: 'Apache-2.0' },
+  { name: 'conll2003',           desc: 'NER benchmark: PER, ORG, LOC, MISC entities.', task: 'ner', size: '4M tokens', license: 'DUA' },
+  { name: 'tner/ontonotes5',     desc: '18 entity types, multi-domain NER.', task: 'ner', size: '12M tokens', license: 'LDC' },
+  { name: 'codeparrot/github-code', desc: '115B tokens of code across 32 languages.', task: 'code', size: '115B tokens', license: 'Mixed' },
+  { name: 'bigcode/the-stack-v2', desc: 'Deduplicated code in 600+ languages.', task: 'code', size: '3T tokens', license: 'Apache-2.0' },
+  { name: 'tatsu-lab/alpaca',    desc: '52K instruction-following pairs from GPT-3.5.', task: 'instruct', size: '20M tokens', license: 'Apache-2.0' },
+  { name: 'HuggingFaceH4/ultrachat_200k', desc: '200K multi-turn chat conversations.', task: 'instruct', size: '100M tokens', license: 'MIT' },
+  { name: 'allenai/dolma',       desc: '3T token open dataset for LLM pretraining.', task: 'generation', size: '3T tokens', license: 'Apache-2.0' },
+  { name: 'EleutherAI/pile',     desc: '825GB diverse text from 22 data sources.', task: 'generation', size: '825GB', license: 'MIT' },
+  { name: 'Salesforce/wikitext', desc: 'High-quality Wikipedia articles.', task: 'generation', size: '100M tokens', license: 'CC BY-SA 4.0' },
+  { name: 'mteb/msmarco',        desc: '8.8M passages for passage retrieval benchmarking.', task: 'embed', size: '4B tokens', license: 'Apache-2.0' },
+  { name: 'BeIR/nfcorpus',       desc: 'Nutrition facts corpus for medical IR.', task: 'embed', size: '10M tokens', license: 'CC BY' },
+];
+
+function filterHF() {
+  const q = document.getElementById('hfSearch').value.toLowerCase();
+  const t = document.getElementById('hfTask').value;
+  const grid = document.getElementById('hfGrid');
+  grid.innerHTML = '';
+
+  HF_DATASETS
+    .filter(d => (t === 'all' || d.task === t) && (!q || d.name.toLowerCase().includes(q) || d.desc.toLowerCase().includes(q)))
+    .forEach(d => {
+      const card = document.createElement('div');
+      card.className = 'hf-card';
+      card.innerHTML = `
+        <div class="hf-card-name">${d.name}</div>
+        <div class="hf-card-desc">${d.desc}</div>
+        <div class="hf-card-meta">
+          <span class="hf-pill task">${d.task}</span>
+          <span class="hf-pill size">${d.size}</span>
+          <span class="hf-pill">${d.license}</span>
+        </div>
+      `;
+      card.onclick = () => window.open('https://huggingface.co/datasets/' + d.name, '_blank');
+      grid.appendChild(card);
+    });
+}
+
+filterHF();
+
+// ── CODE TABS ──
+function showCode(tab) {
+  document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.code-pane').forEach(p => p.classList.remove('active'));
+  document.querySelector(`[onclick="showCode('${tab}')"]`).classList.add('active');
+  document.getElementById('pane-' + tab).classList.add('active');
+}
+
+// ── CHECKLIST ──
+function toggleCheck(item) {
+  item.classList.toggle('checked');
+  const items = document.querySelectorAll('.check-item');
+  const done = document.querySelectorAll('.check-item.checked').length;
+  document.getElementById('clLabel').textContent = done + ' / ' + items.length + ' complete';
+  document.getElementById('clFill').style.width = (done / items.length * 100) + '%';
+}
+
+</script>
+
+<!-- JAWNVION FOOTER -->
+<footer style="border-top:1px solid #1A2E4A;padding:32px 28px;margin-top:80px;text-align:center;background:#080E1B;">
+  <div style="max-width:960px;margin:0 auto;">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.15em;color:#00C9A7;text-transform:uppercase;margin-bottom:8px;">JAWNVION™ LLC</div>
+    <div style="font-size:13px;color:#5E7A9A;line-height:1.6;">
+      AI Engineer's Workbook — Interactive Lab Companion<br>
+      © 2026 JAWNVION LLC. All Rights Reserved. Unauthorized reproduction or redistribution is prohibited.<br>
+      <a href="mailto:peter@jawnvion.com" style="color:#00C9A7;text-decoration:none;">peter@jawnvion.com</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

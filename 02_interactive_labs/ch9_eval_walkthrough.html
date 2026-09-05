@@ -1,0 +1,1293 @@
+<!doctype html>
+<title>JAWNVION LLC | Chapter 9 — Evaluation</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* ── tokens ── */
+:root {
+  --navy:   #080E1B;
+  --navy2:  #0D1525;
+  --navy3:  #111D30;
+  --gold:   #FFB44F;
+  --gold2:  #FFA020;
+  --gold3:  #FFD080;
+  --teal:   #00C9A7;
+  --purple: #C084FC;
+  --coral:  #FF6B9D;
+  --blue:   #60A5FA;
+  --green:  #4ADE80;
+  --red:    #F87171;
+  --dim:    rgba(255,255,255,0.55);
+  --dimmer: rgba(255,255,255,0.3);
+  --border: rgba(255,180,79,0.18);
+  --card:   rgba(255,180,79,0.04);
+  --card2:  rgba(255,180,79,0.08);
+  --bg: var(--navy);
+  --bg2: var(--navy2);
+  --bg3: var(--navy3);
+  --text: #F0EDE8;
+  --accent: var(--gold);
+  --accent2: var(--gold2);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --navy:   #FFF8ED;
+    --navy2:  #FFF3DF;
+    --navy3:  #FDEBC8;
+    --border: rgba(180,100,0,0.18);
+    --card:   rgba(180,100,0,0.04);
+    --card2:  rgba(180,100,0,0.08);
+    --bg: var(--navy);
+    --bg2: var(--navy2);
+    --bg3: var(--navy3);
+    --text: #1A1200;
+    --dim: rgba(0,0,0,0.55);
+    --dimmer: rgba(0,0,0,0.3);
+    --gold2: #D07000;
+    --accent2: #B86000;
+  }
+}
+:root[data-theme="dark"] {
+  --navy: #080E1B; --navy2: #0D1525; --navy3: #111D30;
+  --border: rgba(255,180,79,0.18); --card: rgba(255,180,79,0.04);
+  --card2: rgba(255,180,79,0.08); --bg: var(--navy); --bg2: var(--navy2);
+  --bg3: var(--navy3); --text: #F0EDE8; --dim: rgba(255,255,255,0.55);
+  --dimmer: rgba(255,255,255,0.3); --gold2: #FFA020; --accent2: var(--gold2);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* ── layout ── */
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+/* ── hero ── */
+.hero {
+  min-height: 540px;
+  display: flex; align-items: center;
+  background: radial-gradient(ellipse 90% 70% at 60% 40%, rgba(255,180,79,0.12) 0%, transparent 70%),
+              radial-gradient(ellipse 60% 50% at 20% 80%, rgba(192,132,252,0.08) 0%, transparent 60%),
+              var(--bg);
+  padding: 80px 0 60px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent, transparent 79px,
+    rgba(255,180,79,0.04) 80px
+  );
+  pointer-events: none;
+}
+.hero-inner { display: flex; flex-direction: column; gap: 28px; }
+.hero-eyebrow {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--gold);
+  font-family: 'JetBrains Mono', monospace;
+}
+.hero-eyebrow span { color: var(--dimmer); }
+.hero-title {
+  font-size: clamp(2.8rem, 6vw, 4.5rem);
+  font-weight: 800; line-height: 1.08;
+  text-wrap: balance;
+  letter-spacing: -0.02em;
+}
+.hero-title em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold3) 50%, var(--coral) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-sub {
+  font-size: 1.1rem; color: var(--dim); max-width: 580px; line-height: 1.65;
+}
+.hero-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill {
+  padding: 5px 14px; border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--card2);
+  font-size: 0.78rem; font-weight: 600; color: var(--gold3);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em;
+}
+
+/* ── section ── */
+section { padding: 72px 0; }
+section + section { border-top: 1px solid var(--border); }
+.section-label {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--gold);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 10px;
+}
+.section-title {
+  font-size: clamp(1.7rem, 3.5vw, 2.4rem);
+  font-weight: 800; letter-spacing: -0.02em; line-height: 1.15;
+  text-wrap: balance; margin-bottom: 16px;
+}
+.section-sub {
+  color: var(--dim); font-size: 1.05rem; max-width: 640px; line-height: 1.65;
+  margin-bottom: 40px;
+}
+
+/* ── cards ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+}
+.card-grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+.card-grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; }
+@media(max-width:720px){
+  .card-grid-3,.card-grid-2 { grid-template-columns: 1fr; }
+}
+.card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+.card p  { font-size: 0.9rem; color: var(--dim); line-height: 1.6; }
+
+/* ── why eval ── */
+.why-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+@media(max-width:720px){ .why-grid { grid-template-columns: 1fr; } }
+.why-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px; padding: 28px 24px;
+  border-top: 3px solid var(--gold);
+}
+.why-icon { font-size: 2rem; margin-bottom: 14px; }
+.why-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; color: var(--gold3); }
+.why-card p  { font-size: 0.88rem; color: var(--dim); line-height: 1.6; }
+
+/* ── metric families tabs ── */
+.tab-row { display: flex; gap: 4px; margin-bottom: 24px; flex-wrap: wrap; }
+.tab-btn {
+  padding: 8px 20px; border-radius: 8px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--dim); font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.tab-btn:hover { color: var(--text); border-color: var(--gold); }
+.tab-btn.active {
+  background: var(--gold); color: var(--navy);
+  border-color: var(--gold);
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── metric table ── */
+.metric-table { width: 100%; border-collapse: collapse; }
+.metric-table th {
+  text-align: left; padding: 12px 16px;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--gold);
+  border-bottom: 1px solid var(--border);
+}
+.metric-table td {
+  padding: 14px 16px; font-size: 0.88rem;
+  border-bottom: 1px solid rgba(255,180,79,0.08);
+  vertical-align: top;
+}
+.metric-table tr:last-child td { border-bottom: none; }
+.metric-table td:first-child { font-weight: 600; color: var(--gold3); font-family: 'JetBrains Mono', monospace; }
+.metric-table td:nth-child(2) { color: var(--dim); }
+.metric-table td:nth-child(3) { color: var(--dimmer); font-size: 0.82rem; }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 0.72rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+}
+.badge-teal { background: rgba(0,201,167,0.15); color: var(--teal); }
+.badge-gold { background: rgba(255,180,79,0.15); color: var(--gold); }
+.badge-purple { background: rgba(192,132,252,0.15); color: var(--purple); }
+.badge-coral { background: rgba(255,107,157,0.15); color: var(--coral); }
+
+/* ── confusion matrix ── */
+.cm-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+@media(max-width:720px){ .cm-layout { grid-template-columns: 1fr; } }
+.cm-sliders { display: flex; flex-direction: column; gap: 20px; }
+.slider-group label { display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; font-weight: 600; margin-bottom: 8px; }
+.slider-group label span { font-family: 'JetBrains Mono', monospace; color: var(--gold3); font-size: 0.9rem; font-weight: 700; }
+input[type=range] {
+  width: 100%; accent-color: var(--gold);
+  height: 4px; cursor: pointer; border-radius: 2px;
+}
+.cm-grid {
+  display: grid; grid-template-columns: auto 1fr 1fr;
+  gap: 2px; align-items: center;
+}
+.cm-cell {
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; font-weight: 700; transition: all 0.3s;
+  font-family: 'JetBrains Mono', monospace;
+}
+.cm-header { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); text-align: center; padding: 6px; }
+.cm-label  { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); padding: 6px 10px 6px 0; white-space: nowrap; }
+.cm-tp { background: rgba(74,222,128,0.2); color: var(--green); padding: 20px; min-height: 80px; }
+.cm-fn { background: rgba(248,113,113,0.15); color: var(--red); padding: 20px; min-height: 80px; }
+.cm-fp { background: rgba(248,113,113,0.15); color: var(--red); padding: 20px; min-height: 80px; }
+.cm-tn { background: rgba(74,222,128,0.2); color: var(--green); padding: 20px; min-height: 80px; }
+.cm-sub { font-size: 0.65rem; font-weight: 400; color: var(--dimmer); margin-top: 4px; display: block; text-transform: uppercase; letter-spacing: 0.06em; }
+.metrics-out { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-top: 20px; }
+.metric-out-card {
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px;
+  text-align: center;
+}
+.metric-out-card .val {
+  font-size: 1.6rem; font-weight: 800; color: var(--gold);
+  font-family: 'JetBrains Mono', monospace;
+}
+.metric-out-card .lbl { font-size: 0.72rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+.cm-formula { font-size: 0.78rem; color: var(--dimmer); font-family: 'JetBrains Mono', monospace; margin-top: 6px; }
+
+/* ── ROUGE demo ── */
+.rouge-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media(max-width:720px){ .rouge-layout { grid-template-columns: 1fr; } }
+.rouge-textarea {
+  width: 100%; padding: 14px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--bg2);
+  color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.9rem; resize: vertical; min-height: 100px; line-height: 1.6;
+}
+.rouge-textarea:focus { outline: none; border-color: var(--gold); }
+.rouge-label { font-size: 0.78rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; display: block; }
+.rouge-scores { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 16px; }
+.rouge-score-card {
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px; text-align: center;
+}
+.rouge-score-card .rval { font-size: 1.8rem; font-weight: 800; color: var(--gold3); font-family: 'JetBrains Mono', monospace; }
+.rouge-score-card .rlbl { font-size: 0.7rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+.rouge-desc { font-size: 0.78rem; color: var(--dimmer); margin-top: 6px; }
+
+/* ── benchmark ── */
+.bench-chart { display: flex; flex-direction: column; gap: 14px; }
+.bench-row { display: flex; align-items: center; gap: 16px; }
+.bench-model { font-size: 0.85rem; font-weight: 600; width: 160px; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; }
+.bench-bar-wrap { flex: 1; background: var(--bg3); border-radius: 6px; overflow: hidden; height: 28px; position: relative; }
+.bench-bar { height: 100%; border-radius: 6px; transition: width 1.2s cubic-bezier(0.22,1,0.36,1); display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; color: var(--navy); width: 0; }
+.bench-tabs { display: flex; gap: 4px; margin-bottom: 24px; flex-wrap: wrap; }
+.bench-tab { padding: 6px 16px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--dim); font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Plus Jakarta Sans', sans-serif; }
+.bench-tab:hover { color: var(--text); border-color: var(--gold); }
+.bench-tab.active { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+.bench-legend { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+.bench-legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--dim); }
+.bench-legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+/* ── llm judge ── */
+.judge-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+@media(max-width:720px){ .judge-layout { grid-template-columns: 1fr; } }
+.judge-box {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px;
+}
+.judge-box h4 { font-size: 0.8rem; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+.response-radio { display: flex; flex-direction: column; gap: 10px; }
+.radio-label {
+  display: flex; align-items: flex-start; gap: 12px; cursor: pointer;
+  padding: 12px; border-radius: 8px; border: 1px solid transparent;
+  transition: all 0.2s;
+}
+.radio-label:hover { border-color: var(--border); background: var(--card); }
+.radio-label input { margin-top: 3px; accent-color: var(--gold); }
+.radio-label .resp-text { font-size: 0.88rem; color: var(--dim); line-height: 1.5; }
+.judge-btn {
+  display: block; width: 100%; margin-top: 16px; padding: 12px;
+  background: var(--gold); color: var(--navy); border: none; border-radius: 8px;
+  font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.judge-btn:hover { background: var(--gold3); }
+.judge-result {
+  margin-top: 16px; padding: 14px; border-radius: 8px;
+  background: var(--card2); border: 1px solid var(--border);
+  font-size: 0.88rem; line-height: 1.65; color: var(--text);
+  display: none;
+}
+.judge-result.visible { display: block; }
+.judge-score { font-size: 1.3rem; font-weight: 800; color: var(--gold); font-family: 'JetBrains Mono', monospace; }
+
+/* ── eval pipeline viz ── */
+.pipeline-steps { display: flex; flex-direction: column; gap: 0; }
+.pipeline-step {
+  display: flex; gap: 20px; align-items: stretch;
+  cursor: pointer;
+}
+.pipeline-step-left {
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+}
+.pipeline-step-num {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 2px solid var(--border); background: var(--bg2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700; color: var(--dim);
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0; transition: all 0.3s;
+}
+.pipeline-step.active .pipeline-step-num {
+  border-color: var(--gold); background: var(--gold); color: var(--navy);
+}
+.pipeline-connector {
+  width: 2px; flex: 1; background: var(--border); margin: 4px auto; min-height: 16px;
+}
+.pipeline-step:last-child .pipeline-connector { display: none; }
+.pipeline-step-content {
+  flex: 1; padding: 0 0 24px 0;
+}
+.pipeline-step-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; transition: color 0.3s; }
+.pipeline-step.active .pipeline-step-title { color: var(--gold); }
+.pipeline-step-body {
+  font-size: 0.87rem; color: var(--dim); line-height: 1.6;
+  display: none;
+}
+.pipeline-step.active .pipeline-step-body { display: block; }
+
+/* ── code tabs ── */
+.code-tabs { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.code-tab-row { display: flex; border-bottom: 1px solid var(--border); overflow-x: auto; }
+.code-tab {
+  padding: 12px 20px; border: none; background: transparent;
+  color: var(--dim); font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  white-space: nowrap; transition: all 0.2s; border-bottom: 2px solid transparent;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.code-tab:hover { color: var(--text); }
+.code-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.code-body { display: none; padding: 24px; overflow-x: auto; }
+.code-body.active { display: block; }
+pre { margin: 0; }
+code { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.75; }
+.kw  { color: #C084FC; }
+.fn  { color: #60A5FA; }
+.str { color: #4ADE80; }
+.cm  { color: #6B7E99; font-style: italic; }
+.num { color: #FFB44F; }
+.cls { color: #FF6B9D; }
+
+/* ── cheat sheet ── */
+.cheat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+@media(max-width:900px){ .cheat-grid { grid-template-columns: repeat(2,1fr); } }
+@media(max-width:560px){ .cheat-grid { grid-template-columns: 1fr; } }
+.cheat-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px;
+}
+.cheat-card h4 { font-size: 0.82rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+.cheat-item { display: flex; gap: 8px; margin-bottom: 8px; font-size: 0.85rem; color: var(--dim); }
+.cheat-dot { color: var(--gold3); flex-shrink: 0; margin-top: 2px; }
+
+/* ── footer ── */
+footer {
+  padding: 40px 0; text-align: center;
+  border-top: 1px solid var(--border);
+  font-size: 0.82rem; color: var(--dimmer);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em;
+}
+
+/* ── util ── */
+.mt8  { margin-top: 8px; }
+.mt16 { margin-top: 16px; }
+.mt24 { margin-top: 24px; }
+.mt32 { margin-top: 32px; }
+.highlight { color: var(--gold3); font-weight: 700; }
+</style>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap">
+    <div class="hero-inner">
+      <div class="hero-eyebrow">
+        AI Training Workbook <span>·</span> Chapter 9
+      </div>
+      <h1 class="hero-title">
+        You Can't Improve<br>What You Don't <em>Measure</em>
+      </h1>
+      <p class="hero-sub">
+        Model evaluation separates hunches from evidence. Learn the metrics, build intuition with interactive demos, and walk away with a complete eval pipeline you can run today.
+      </p>
+      <div class="hero-pills">
+        <span class="pill">Precision & Recall</span>
+        <span class="pill">F1 Score</span>
+        <span class="pill">BLEU / ROUGE</span>
+        <span class="pill">BERTScore</span>
+        <span class="pill">Perplexity</span>
+        <span class="pill">MMLU</span>
+        <span class="pill">LLM-as-Judge</span>
+        <span class="pill">HF Evaluate</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WHY EVAL -->
+<section>
+  <div class="wrap">
+    <div class="section-label">The Problem</div>
+    <h2 class="section-title">Three Things That Break Without Eval</h2>
+    <p class="section-sub">Training a model without evaluating it is like navigating without instruments — you feel confident until you're not.</p>
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-icon">🎯</div>
+        <h3>No Direction</h3>
+        <p>Without metrics you don't know if changes help or hurt. Loss goes down — but does the model actually answer better? Vibe checks don't scale to 10,000 examples.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">📉</div>
+        <h3>Silent Regressions</h3>
+        <p>A new checkpoint improves one capability while silently breaking another. Automated eval suites catch this before you ship it.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">🧪</div>
+        <h3>No Reproducibility</h3>
+        <p>If you can't measure it, you can't reproduce it. A reproducible eval harness lets you compare runs, share results, and build trust with stakeholders.</p>
+      </div>
+    </div>
+
+    <!-- quick stats -->
+    <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:12px; margin-top:32px;">
+      <div class="card" style="text-align:center; border-top: 2px solid var(--gold);">
+        <div style="font-size:1.8rem; font-weight:800; color:var(--gold); font-family:'JetBrains Mono',monospace;">57</div>
+        <div style="font-size:0.78rem; color:var(--dim); margin-top:4px; text-transform:uppercase; letter-spacing:0.06em;">tasks in BIG-Bench</div>
+      </div>
+      <div class="card" style="text-align:center; border-top: 2px solid var(--teal);">
+        <div style="font-size:1.8rem; font-weight:800; color:var(--teal); font-family:'JetBrains Mono',monospace;">14K</div>
+        <div style="font-size:0.78rem; color:var(--dim); margin-top:4px; text-transform:uppercase; letter-spacing:0.06em;">MMLU questions</div>
+      </div>
+      <div class="card" style="text-align:center; border-top: 2px solid var(--purple);">
+        <div style="font-size:1.8rem; font-weight:800; color:var(--purple); font-family:'JetBrains Mono',monospace;">164</div>
+        <div style="font-size:0.78rem; color:var(--dim); margin-top:4px; text-transform:uppercase; letter-spacing:0.06em;">HumanEval problems</div>
+      </div>
+      <div class="card" style="text-align:center; border-top: 2px solid var(--coral);">
+        <div style="font-size:1.8rem; font-weight:800; color:var(--coral); font-family:'JetBrains Mono',monospace;">∞</div>
+        <div style="font-size:0.78rem; color:var(--dim); margin-top:4px; text-transform:uppercase; letter-spacing:0.06em;">LLM-as-judge scales</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- METRIC FAMILIES -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Core Metrics</div>
+    <h2 class="section-title">Know Your Metric Families</h2>
+    <p class="section-sub">The right metric depends on your task type. Classification, generation, and alignment each have their own vocabulary.</p>
+
+    <div class="tab-row" id="metricTabRow">
+      <button class="tab-btn active" onclick="switchTab('metricTabRow','metricPanel','classification',this)">Classification</button>
+      <button class="tab-btn" onclick="switchTab('metricTabRow','metricPanel','generation',this)">Text Generation</button>
+      <button class="tab-btn" onclick="switchTab('metricTabRow','metricPanel','lm',this)">Language Model</button>
+      <button class="tab-btn" onclick="switchTab('metricTabRow','metricPanel','alignment',this)">Alignment / RLHF</button>
+    </div>
+
+    <div style="background:var(--bg2); border:1px solid var(--border); border-radius:14px; overflow:hidden; overflow-x:auto;">
+      <div id="metricPanel-classification" class="tab-panel active">
+        <table class="metric-table">
+          <tr><th>Metric</th><th>What It Measures</th><th>When to Use</th></tr>
+          <tr><td>Accuracy</td><td>Fraction of correct predictions overall</td><td>Balanced datasets only — misleading on skewed class distributions</td></tr>
+          <tr><td>Precision</td><td>Of predicted positives, how many are actually positive</td><td>When false positives are costly (spam filter, fraud)</td></tr>
+          <tr><td>Recall</td><td>Of actual positives, how many did we catch</td><td>When false negatives are costly (cancer detection, safety)</td></tr>
+          <tr><td>F1</td><td>Harmonic mean of precision and recall</td><td>Imbalanced classes — the go-to default for NLP classification</td></tr>
+          <tr><td>ROC-AUC</td><td>Area under the receiver operating curve across all thresholds</td><td>Binary tasks where threshold-independence matters</td></tr>
+          <tr><td>MCC</td><td>Matthews correlation — robust to class imbalance</td><td>Highly skewed datasets; single number that captures all four quadrants</td></tr>
+        </table>
+      </div>
+      <div id="metricPanel-generation" class="tab-panel">
+        <table class="metric-table">
+          <tr><th>Metric</th><th>What It Measures</th><th>When to Use</th></tr>
+          <tr><td>BLEU</td><td>N-gram precision vs. reference — modified for brevity penalty</td><td>Machine translation; fast, interpretable, but surface-level</td></tr>
+          <tr><td>ROUGE-1/2/L</td><td>N-gram and longest-common-subsequence recall vs. reference</td><td>Summarization — standard benchmark metric</td></tr>
+          <tr><td>METEOR</td><td>Precision + recall with stemming, synonyms, and word order</td><td>Translation; correlates better with human judgments than BLEU</td></tr>
+          <tr><td>BERTScore</td><td>Contextual embedding similarity between candidate and reference</td><td>When semantic equivalence matters more than exact n-gram overlap</td></tr>
+          <tr><td>ChrF</td><td>Character n-gram F-score — language-agnostic</td><td>Morphologically rich languages; better than BLEU for low-resource MT</td></tr>
+          <tr><td>MAUVE</td><td>KL divergence between generated and reference text distributions</td><td>Open-ended generation quality; coherence and diversity together</td></tr>
+        </table>
+      </div>
+      <div id="metricPanel-lm" class="tab-panel">
+        <table class="metric-table">
+          <tr><th>Metric</th><th>What It Measures</th><th>When to Use</th></tr>
+          <tr><td>Perplexity</td><td>Geometric mean of inverse token probabilities — lower = more fluent</td><td>Language model training; domain adaptation; fluency checks</td></tr>
+          <tr><td>MMLU</td><td>Accuracy across 57 academic subjects (0-shot / 5-shot)</td><td>General knowledge; the de facto benchmark for base model capability</td></tr>
+          <tr><td>HumanEval</td><td>Pass@k on 164 Python programming problems</td><td>Code generation; measures functional correctness, not style</td></tr>
+          <tr><td>HellaSwag</td><td>Commonsense NLI — pick the most plausible continuation</td><td>Reasoning; hard for models, easy for humans</td></tr>
+          <tr><td>TruthfulQA</td><td>Whether model gives truthful answers to adversarially chosen Qs</td><td>Hallucination and calibration testing</td></tr>
+          <tr><td>GSM8K</td><td>Grade-school math problems with multi-step reasoning</td><td>Arithmetic and chain-of-thought reasoning</td></tr>
+        </table>
+      </div>
+      <div id="metricPanel-alignment" class="tab-panel">
+        <table class="metric-table">
+          <tr><th>Metric</th><th>What It Measures</th><th>When to Use</th></tr>
+          <tr><td>Win Rate</td><td>% of pairwise comparisons where your model beats a baseline</td><td>RLHF / DPO evaluation; the primary signal for alignment</td></tr>
+          <tr><td>Reward Score</td><td>Average score from the reward model on held-out prompts</td><td>Tracking training signal quality; watching for reward hacking</td></tr>
+          <tr><td>KL Divergence</td><td>Distance from the reference policy — controls over-optimization</td><td>PPO training; too much KL = capability degradation</td></tr>
+          <tr><td>AlpacaEval</td><td>Win rate vs. text-davinci-003 judged by GPT-4</td><td>Instruction-following; widely used open leaderboard</td></tr>
+          <tr><td>MT-Bench</td><td>GPT-4 rated score on 80 multi-turn conversations</td><td>Chat quality; covers reasoning, math, coding, writing</td></tr>
+          <tr><td>Refusal Rate</td><td>% of safety prompts correctly refused vs. % of benign Qs refused</td><td>Safety/helpfulness tradeoff; both directions matter</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONFUSION MATRIX BUILDER -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Interactive Demo</div>
+    <h2 class="section-title">Confusion Matrix Builder</h2>
+    <p class="section-sub">Drag the sliders to set your TP/FP/TN/FN counts and watch Precision, Recall, F1, and Accuracy update in real time.</p>
+
+    <div class="cm-layout">
+      <div>
+        <div class="cm-sliders">
+          <div class="slider-group">
+            <label>True Positives (TP) <span id="tpVal">70</span></label>
+            <input type="range" min="0" max="200" value="70" id="tpSlider" oninput="updateCM()">
+          </div>
+          <div class="slider-group">
+            <label>False Positives (FP) <span id="fpVal">20</span></label>
+            <input type="range" min="0" max="200" value="20" id="fpSlider" oninput="updateCM()">
+          </div>
+          <div class="slider-group">
+            <label>False Negatives (FN) <span id="fnVal">30</span></label>
+            <input type="range" min="0" max="200" value="30" id="fnSlider" oninput="updateCM()">
+          </div>
+          <div class="slider-group">
+            <label>True Negatives (TN) <span id="tnVal">80</span></label>
+            <input type="range" min="0" max="200" value="80" id="tnSlider" oninput="updateCM()">
+          </div>
+        </div>
+
+        <div class="metrics-out mt24">
+          <div class="metric-out-card">
+            <div class="val" id="precVal">—</div>
+            <div class="lbl">Precision</div>
+            <div class="cm-formula">TP / (TP + FP)</div>
+          </div>
+          <div class="metric-out-card">
+            <div class="val" id="recVal">—</div>
+            <div class="lbl">Recall</div>
+            <div class="cm-formula">TP / (TP + FN)</div>
+          </div>
+          <div class="metric-out-card">
+            <div class="val" id="f1Val">—</div>
+            <div class="lbl">F1 Score</div>
+            <div class="cm-formula">2·P·R / (P + R)</div>
+          </div>
+          <div class="metric-out-card">
+            <div class="val" id="accVal">—</div>
+            <div class="lbl">Accuracy</div>
+            <div class="cm-formula">(TP + TN) / Total</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="margin-bottom:8px; font-size:0.78rem; font-weight:700; color:var(--dim); text-transform:uppercase; letter-spacing:0.08em; text-align:center;">Predicted</div>
+        <div class="cm-grid">
+          <div></div>
+          <div class="cm-header">Positive</div>
+          <div class="cm-header">Negative</div>
+
+          <div class="cm-label">Actual Positive</div>
+          <div class="cm-cell cm-tp" id="cmTP">
+            <div>
+              <div id="cmTPval">70</div>
+              <span class="cm-sub">TP</span>
+            </div>
+          </div>
+          <div class="cm-cell cm-fn" id="cmFN">
+            <div>
+              <div id="cmFNval">30</div>
+              <span class="cm-sub">FN</span>
+            </div>
+          </div>
+
+          <div class="cm-label">Actual Negative</div>
+          <div class="cm-cell cm-fp" id="cmFP">
+            <div>
+              <div id="cmFPval">20</div>
+              <span class="cm-sub">FP</span>
+            </div>
+          </div>
+          <div class="cm-cell cm-tn" id="cmTN">
+            <div>
+              <div id="cmTNval">80</div>
+              <span class="cm-sub">TN</span>
+            </div>
+          </div>
+        </div>
+        <p class="mt16" style="font-size:0.82rem; color:var(--dimmer); line-height:1.6;">
+          <strong style="color:var(--green);">Green cells</strong> = correct predictions.
+          <strong style="color:var(--red);">Red cells</strong> = errors.<br>
+          FP = "cried wolf". FN = "missed the wolf".
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROUGE DEMO -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Generation Metrics</div>
+    <h2 class="section-title">ROUGE Score Demo</h2>
+    <p class="section-sub">Type a reference summary and a model-generated summary. See ROUGE-1 (unigrams), ROUGE-2 (bigrams), and ROUGE-L (longest common subsequence) computed live.</p>
+
+    <div class="rouge-layout">
+      <div>
+        <span class="rouge-label">Reference (ground truth)</span>
+        <textarea class="rouge-textarea" id="refText" oninput="computeRouge()" placeholder="The quick brown fox jumps over the lazy dog near the river bank.">The quick brown fox jumps over the lazy dog near the river bank.</textarea>
+      </div>
+      <div>
+        <span class="rouge-label">Hypothesis (model output)</span>
+        <textarea class="rouge-textarea" id="hypText" oninput="computeRouge()" placeholder="A fast brown fox leaps over the sleepy dog by the river.">A fast brown fox leaps over the sleepy dog by the river.</textarea>
+      </div>
+    </div>
+
+    <div class="rouge-scores">
+      <div class="rouge-score-card">
+        <div class="rval" id="r1val">—</div>
+        <div class="rlbl">ROUGE-1</div>
+        <div class="rouge-desc">Unigram overlap (F1)</div>
+      </div>
+      <div class="rouge-score-card">
+        <div class="rval" id="r2val">—</div>
+        <div class="rlbl">ROUGE-2</div>
+        <div class="rouge-desc">Bigram overlap (F1)</div>
+      </div>
+      <div class="rouge-score-card">
+        <div class="rval" id="rlval">—</div>
+        <div class="rlbl">ROUGE-L</div>
+        <div class="rouge-desc">LCS-based (F1)</div>
+      </div>
+    </div>
+
+    <div class="card mt24" style="max-width:600px;">
+      <h3 style="color:var(--gold3);">💡 ROUGE Limitations</h3>
+      <p>ROUGE only measures surface n-gram overlap — "fast" and "quick" score zero despite being synonyms. <strong class="highlight">BERTScore</strong> uses contextual embeddings to handle paraphrase. Use ROUGE as a fast proxy; use BERTScore or human eval for production decisions.</p>
+    </div>
+  </div>
+</section>
+
+<!-- BENCHMARK LEADERBOARD -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Benchmarks</div>
+    <h2 class="section-title">Model Benchmark Comparison</h2>
+    <p class="section-sub">Public benchmark scores for a cross-section of models. Switch benchmarks to see how rankings shift — a model that leads on MMLU may trail on HumanEval.</p>
+
+    <div class="bench-tabs" id="benchTabs">
+      <button class="bench-tab active" onclick="switchBench('mmlu',this)">MMLU</button>
+      <button class="bench-tab" onclick="switchBench('humaneval',this)">HumanEval</button>
+      <button class="bench-tab" onclick="switchBench('gsm8k',this)">GSM8K</button>
+      <button class="bench-tab" onclick="switchBench('hellaswag',this)">HellaSwag</button>
+    </div>
+
+    <div id="benchChart" class="bench-chart"></div>
+
+    <p class="mt16" style="font-size:0.8rem; color:var(--dimmer); line-height:1.6;">
+      ⚠️ Scores are approximations from published reports for illustrative purposes. Benchmarks evolve rapidly; always verify against primary sources. "Benchmark saturation" — models being trained on benchmark data — is a known problem; prefer held-out eval sets for production decisions.
+    </p>
+  </div>
+</section>
+
+<!-- LLM AS JUDGE -->
+<section>
+  <div class="wrap">
+    <div class="section-label">LLM-as-Judge</div>
+    <h2 class="section-title">AI Evaluating AI</h2>
+    <p class="section-sub">When you can't enumerate every correct answer, use a capable LLM as a judge. See a live example — pick a response, then see the kind of structured reasoning a judge model produces.</p>
+
+    <div class="judge-layout">
+      <div class="judge-box">
+        <h4>🧪 Prompt to Model</h4>
+        <p style="font-size:0.88rem; color:var(--dim); line-height:1.6; padding:12px; background:var(--bg3); border-radius:8px; border-left:3px solid var(--gold);">
+          Explain the difference between precision and recall in 2 sentences, for a non-technical audience.
+        </p>
+        <h4 style="margin-top:20px;">📋 Pick a Response</h4>
+        <div class="response-radio">
+          <label class="radio-label">
+            <input type="radio" name="resp" value="a" checked>
+            <span class="resp-text"><strong style="color:var(--gold3);">Response A:</strong> Precision is how often you're right when you say yes. Recall is how often you catch all the yeses there are — even the ones you might have missed.</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="resp" value="b">
+            <span class="resp-text"><strong style="color:var(--blue);">Response B:</strong> Precision and recall are statistical metrics used in binary classification tasks. Precision equals true positives divided by the sum of true positives and false positives.</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="resp" value="c">
+            <span class="resp-text"><strong style="color:var(--purple);">Response C:</strong> Think of a fisherman. Precision is the fraction of fish in the net that are the right kind. Recall is the fraction of all right-kind fish in the lake that ended up in the net.</span>
+          </label>
+        </div>
+        <button class="judge-btn" onclick="runJudge()">▶ Run Judge Model</button>
+      </div>
+
+      <div>
+        <div class="judge-box" style="height:100%;">
+          <h4>🤖 Judge Model Output</h4>
+          <div class="judge-result" id="judgeResult">
+          </div>
+          <p id="judgePlaceholder" style="font-size:0.88rem; color:var(--dimmer); line-height:1.6;">
+            Pick a response and click "Run Judge Model" to see structured evaluation with scores, rationale, and criteria breakdown.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-grid-3 mt24">
+      <div class="card">
+        <h3>✅ Best Practices</h3>
+        <p>Use rubrics, not just "which is better." Score 1–5 on specific criteria: accuracy, clarity, completeness. Ask the judge to explain before scoring.</p>
+      </div>
+      <div class="card">
+        <h3>⚠️ Position Bias</h3>
+        <p>LLM judges tend to prefer whichever response is listed first. Always run pairwise comparisons in both orders and average the results.</p>
+      </div>
+      <div class="card">
+        <h3>🔁 Self-Evaluation</h3>
+        <p>Avoid using the same model to judge its own outputs — it will rate itself higher. Use a separate, ideally stronger model as the judge.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EVAL PIPELINE -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Full Pipeline</div>
+    <h2 class="section-title">Running a Complete Eval</h2>
+    <p class="section-sub">Click any step to expand the detail, then check the code tabs below for working implementations.</p>
+
+    <div style="display:grid; grid-template-columns:1fr 1.6fr; gap:40px; align-items:start;">
+      <div class="pipeline-steps" id="pipelineSteps">
+        <div class="pipeline-step active" onclick="togglePipeline(0)">
+          <div class="pipeline-step-left">
+            <div class="pipeline-step-num">1</div>
+            <div class="pipeline-connector"></div>
+          </div>
+          <div class="pipeline-step-content">
+            <div class="pipeline-step-title">Define Task & Metric</div>
+            <div class="pipeline-step-body">Choose your task type first: classification, summarization, code gen, or open-ended QA. Your task type determines the metric family. For supervised tasks, also decide on your split strategy — never eval on training data.</div>
+          </div>
+        </div>
+        <div class="pipeline-step" onclick="togglePipeline(1)">
+          <div class="pipeline-step-left">
+            <div class="pipeline-step-num">2</div>
+            <div class="pipeline-connector"></div>
+          </div>
+          <div class="pipeline-step-content">
+            <div class="pipeline-step-title">Prepare Eval Dataset</div>
+            <div class="pipeline-step-body">Curate a held-out test set — never tuned on, never seen. Aim for 200–2,000 examples covering failure modes, edge cases, and the full distribution you care about. Check for contamination with your training data.</div>
+          </div>
+        </div>
+        <div class="pipeline-step" onclick="togglePipeline(2)">
+          <div class="pipeline-step-left">
+            <div class="pipeline-step-num">3</div>
+            <div class="pipeline-connector"></div>
+          </div>
+          <div class="pipeline-step-content">
+            <div class="pipeline-step-title">Run Inference</div>
+            <div class="pipeline-step-body">Generate model outputs for every eval example. Use deterministic settings (temperature=0 or fixed seed) so results are reproducible. Log inputs, outputs, and metadata (model version, timestamp) in a structured format.</div>
+          </div>
+        </div>
+        <div class="pipeline-step" onclick="togglePipeline(3)">
+          <div class="pipeline-step-left">
+            <div class="pipeline-step-num">4</div>
+            <div class="pipeline-connector"></div>
+          </div>
+          <div class="pipeline-step-content">
+            <div class="pipeline-step-title">Compute Metrics</div>
+            <div class="pipeline-step-body">Use HuggingFace evaluate, sacrebleu, or bert-score — don't hand-roll BLEU. For LLM-as-judge, structure the prompt with explicit rubrics and parse the scores programmatically.</div>
+          </div>
+        </div>
+        <div class="pipeline-step" onclick="togglePipeline(4)">
+          <div class="pipeline-step-left">
+            <div class="pipeline-step-num">5</div>
+            <div class="pipeline-connector"></div>
+          </div>
+          <div class="pipeline-step-content">
+            <div class="pipeline-step-title">Error Analysis</div>
+            <div class="pipeline-step-body">Metrics alone don't tell you what to fix. Manually review the worst 20–50 examples. Cluster failures by type. The pattern you find here drives your next training decision more than any aggregate number.</div>
+          </div>
+        </div>
+        <div class="pipeline-step" onclick="togglePipeline(5)">
+          <div class="pipeline-step-left">
+            <div class="pipeline-step-num">6</div>
+            <div class="pipeline-connector"></div>
+          </div>
+          <div class="pipeline-step-content">
+            <div class="pipeline-step-title">Log & Track</div>
+            <div class="pipeline-step-body">Log every run with W&B, MLflow, or similar. Store the metric, model checkpoint, eval dataset version, and hyperparameters. Reproducibility is a prerequisite for improvement — if you can't reproduce a result, you can't build on it.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- code tabs -->
+      <div class="code-tabs">
+        <div class="code-tab-row">
+          <button class="code-tab active" onclick="switchCode('codePanel','setup',this)">Setup</button>
+          <button class="code-tab" onclick="switchCode('codePanel','clf',this)">Classification</button>
+          <button class="code-tab" onclick="switchCode('codePanel','gen',this)">Generation</button>
+          <button class="code-tab" onclick="switchCode('codePanel','perp',this)">Perplexity</button>
+          <button class="code-tab" onclick="switchCode('codePanel','judge',this)">LLM Judge</button>
+        </div>
+
+        <div id="codePanel-setup" class="code-body active"><pre><code><span class="cm"># Install HuggingFace evaluate + dependencies</span>
+pip install evaluate datasets sacrebleu
+pip install bert-score rouge-score
+
+<span class="cm"># For LLM-as-judge (OpenAI SDK or HF)</span>
+pip install openai  <span class="cm"># or transformers</span>
+
+<span class="kw">import</span> evaluate
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> datasets <span class="kw">import</span> load_dataset
+
+<span class="cm"># Load a metric by name</span>
+rouge  = evaluate.load(<span class="str">"rouge"</span>)
+bertscore = evaluate.load(<span class="str">"bertscore"</span>)
+f1_metric = evaluate.load(<span class="str">"f1"</span>)
+
+<span class="cm"># Load your eval split</span>
+dataset = load_dataset(<span class="str">"your_dataset"</span>, split=<span class="str">"test"</span>)
+</code></pre></div>
+
+        <div id="codePanel-clf" class="code-body"><pre><code><span class="kw">from</span> evaluate <span class="kw">import</span> load
+<span class="kw">from</span> transformers <span class="kw">import</span> <span class="cls">pipeline</span>
+
+<span class="cm"># Load model + metrics</span>
+clf = <span class="fn">pipeline</span>(<span class="str">"text-classification"</span>,
+               model=<span class="str">"your-fine-tuned-model"</span>)
+f1  = load(<span class="str">"f1"</span>)
+acc = load(<span class="str">"accuracy"</span>)
+
+predictions, references = [], []
+
+<span class="kw">for</span> example <span class="kw">in</span> eval_dataset:
+    out = clf(example[<span class="str">"text"</span>])[<span class="num">0</span>]
+    predictions.append(
+        <span class="num">1</span> <span class="kw">if</span> out[<span class="str">"label"</span>] == <span class="str">"POSITIVE"</span> <span class="kw">else</span> <span class="num">0</span>
+    )
+    references.append(example[<span class="str">"label"</span>])
+
+<span class="cm"># Compute all at once</span>
+results = {
+    <span class="str">"f1"</span>: f1.compute(
+        predictions=predictions,
+        references=references,
+        average=<span class="str">"macro"</span>
+    ),
+    <span class="str">"accuracy"</span>: acc.compute(
+        predictions=predictions,
+        references=references
+    ),
+}
+<span class="fn">print</span>(results)
+</code></pre></div>
+
+        <div id="codePanel-gen" class="code-body"><pre><code><span class="kw">from</span> evaluate <span class="kw">import</span> load
+
+rouge     = load(<span class="str">"rouge"</span>)
+bertscore = load(<span class="str">"bertscore"</span>)
+
+<span class="cm"># Assume preds = [generated summaries]
+#         refs  = [reference summaries]</span>
+
+rouge_scores = rouge.compute(
+    predictions=preds,
+    references=refs,
+    use_stemmer=<span class="kw">True</span>
+)
+<span class="fn">print</span>(<span class="str">"ROUGE-1:"</span>, rouge_scores[<span class="str">"rouge1"</span>])
+<span class="fn">print</span>(<span class="str">"ROUGE-L:"</span>, rouge_scores[<span class="str">"rougeL"</span>])
+
+<span class="cm"># BERTScore (requires model download)</span>
+bert_scores = bertscore.compute(
+    predictions=preds,
+    references=refs,
+    lang=<span class="str">"en"</span>,
+    model_type=<span class="str">"microsoft/deberta-xlarge-mnli"</span>
+)
+<span class="fn">print</span>(<span class="str">"BERTScore F1 (mean):"</span>,
+      np.mean(bert_scores[<span class="str">"f1"</span>]))
+</code></pre></div>
+
+        <div id="codePanel-perp" class="code-body"><pre><code><span class="kw">import</span> torch
+<span class="kw">from</span> transformers <span class="kw">import</span> <span class="cls">AutoModelForCausalLM</span>, <span class="cls">AutoTokenizer</span>
+
+model_id = <span class="str">"your-model-id"</span>
+tokenizer = <span class="cls">AutoTokenizer</span>.from_pretrained(model_id)
+model = <span class="cls">AutoModelForCausalLM</span>.from_pretrained(
+    model_id, device_map=<span class="str">"auto"</span>
+)
+
+<span class="kw">def</span> <span class="fn">perplexity</span>(text: str) -> float:
+    inputs = tokenizer(
+        text, return_tensors=<span class="str">"pt"</span>
+    ).to(model.device)
+    <span class="kw">with</span> torch.no_grad():
+        loss = model(**inputs, labels=inputs[<span class="str">"input_ids"</span>]).loss
+    <span class="kw">return</span> torch.exp(loss).item()
+
+<span class="cm"># Lower = more fluent / in-distribution</span>
+<span class="fn">print</span>(<span class="fn">perplexity</span>(<span class="str">"The model explains the data well."</span>))
+
+<span class="cm"># Batch perplexity with HF evaluate</span>
+<span class="kw">from</span> evaluate <span class="kw">import</span> load
+perp_metric = load(<span class="str">"perplexity"</span>, module_type=<span class="str">"metric"</span>)
+scores = perp_metric.compute(
+    model_id=model_id,
+    predictions=[<span class="str">"text1"</span>, <span class="str">"text2"</span>]
+)
+<span class="fn">print</span>(scores[<span class="str">"mean_perplexity"</span>])
+</code></pre></div>
+
+        <div id="codePanel-judge" class="code-body"><pre><code><span class="kw">from</span> openai <span class="kw">import</span> <span class="cls">OpenAI</span>
+<span class="kw">import</span> json
+
+client = <span class="cls">OpenAI</span>()
+
+JUDGE_PROMPT = <span class="str">"""
+You are an expert evaluator. Score the response on:
+1. Accuracy (1-5)
+2. Clarity (1-5)
+3. Completeness (1-5)
+
+Question: {question}
+Response: {response}
+
+Return JSON only: {{"scores": {{"accuracy": N, "clarity": N,
+"completeness": N}}, "rationale": "..."}}
+"""</span>
+
+<span class="kw">def</span> <span class="fn">judge</span>(question: str, response: str) -> dict:
+    prompt = JUDGE_PROMPT.format(
+        question=question, response=response
+    )
+    out = client.chat.completions.create(
+        model=<span class="str">"gpt-4o"</span>,
+        messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: prompt}],
+        temperature=<span class="num">0</span>,        <span class="cm"># deterministic</span>
+        response_format={<span class="str">"type"</span>: <span class="str">"json_object"</span>}
+    )
+    <span class="kw">return</span> json.loads(out.choices[<span class="num">0</span>].message.content)
+
+<span class="cm"># Aggregate win rates</span>
+<span class="kw">def</span> <span class="fn">win_rate</span>(questions, model_a_resps, model_b_resps):
+    wins = <span class="num">0</span>
+    <span class="kw">for</span> q, a, b <span class="kw">in</span> zip(questions, model_a_resps, model_b_resps):
+        sa = <span class="fn">judge</span>(q, a)[<span class="str">"scores"</span>]
+        sb = <span class="fn">judge</span>(q, b)[<span class="str">"scores"</span>]
+        score_a = sum(sa.values())
+        score_b = sum(sb.values())
+        <span class="kw">if</span> score_a > score_b: wins += <span class="num">1</span>
+    <span class="kw">return</span> wins / len(questions)
+</code></pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHEAT SHEET -->
+<section>
+  <div class="wrap">
+    <div class="section-label">Quick Reference</div>
+    <h2 class="section-title">Eval Cheat Sheet</h2>
+    <p class="section-sub">The practical rules for picking and running evals in production ML.</p>
+    <div class="cheat-grid">
+      <div class="cheat-card">
+        <h4>Picking Your Metric</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Classification + balanced → Accuracy</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Classification + imbalanced → F1 (macro)</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Summarization → ROUGE-L + BERTScore</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Translation → BLEU / METEOR / ChrF</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Code generation → Pass@k (HumanEval style)</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Open-ended → LLM-as-judge win rate</div>
+      </div>
+      <div class="cheat-card">
+        <h4>Eval Dataset Rules</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Never eval on training data — ever</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Check for contamination before benchmarking</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Cover edge cases, not just the easy distribution</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Version your eval set like your model</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>200+ examples for reliable signal; 1,000+ for slicing</div>
+      </div>
+      <div class="cheat-card">
+        <h4>LLM Judge Tips</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Use rubrics — "score 1–5 on X" beats "which is better"</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Ask for chain-of-thought before the score</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Swap A/B order and average to cancel position bias</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Don't use the same model to judge itself</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Parse JSON scores programmatically — don't parse prose</div>
+      </div>
+      <div class="cheat-card">
+        <h4>Perplexity Rules</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Lower perplexity = more fluent, more in-distribution</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Compare only on same tokenizer and context length</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Watch for perplexity ≠ quality in instruction-tuned models</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Useful for domain shift detection</div>
+      </div>
+      <div class="cheat-card">
+        <h4>Benchmark Gotchas</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Benchmark saturation: scores keep rising, real capability lags</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Data contamination: if test set was in pretraining, scores lie</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Prompt sensitivity: MMLU score varies ±5% with phrasing</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span>Always report few-shot settings (0-shot vs 5-shot differ widely)</div>
+      </div>
+      <div class="cheat-card">
+        <h4>Key Libraries</h4>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code style="font-size:0.8rem; color:var(--teal);">evaluate</code> — HF unified metric API</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code style="font-size:0.8rem; color:var(--teal);">lm-evaluation-harness</code> — EleutherAI benchmarks</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code style="font-size:0.8rem; color:var(--teal);">bert-score</code> — contextual similarity</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code style="font-size:0.8rem; color:var(--teal);">sacrebleu</code> — reproducible BLEU</div>
+        <div class="cheat-item"><span class="cheat-dot">›</span><code style="font-size:0.8rem; color:var(--teal);">wandb</code> — eval tracking + dashboards</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Chapter 9 — Model Evaluation · AI Training Workbook · Jawnvion LLC
+  </div>
+</footer>
+
+<script>
+/* ── tab switching ── */
+function switchTab(rowId, panelId, key, btn) {
+  document.querySelectorAll('#' + rowId + ' .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('[id^="' + panelId + '-"]').forEach(p => p.classList.remove('active'));
+  document.getElementById(panelId + '-' + key).classList.add('active');
+}
+function switchCode(panelId, key, btn) {
+  btn.closest('.code-tabs').querySelectorAll('.code-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  btn.closest('.code-tabs').querySelectorAll('.code-body').forEach(p => p.classList.remove('active'));
+  document.getElementById(panelId + '-' + key).classList.add('active');
+}
+
+/* ── confusion matrix ── */
+function updateCM() {
+  const tp = +document.getElementById('tpSlider').value;
+  const fp = +document.getElementById('fpSlider').value;
+  const fn = +document.getElementById('fnSlider').value;
+  const tn = +document.getElementById('tnSlider').value;
+  document.getElementById('tpVal').textContent = tp;
+  document.getElementById('fpVal').textContent = fp;
+  document.getElementById('fnVal').textContent = fn;
+  document.getElementById('tnVal').textContent = tn;
+  document.getElementById('cmTPval').textContent = tp;
+  document.getElementById('cmFPval').textContent = fp;
+  document.getElementById('cmFNval').textContent = fn;
+  document.getElementById('cmTNval').textContent = tn;
+  const prec = tp + fp > 0 ? tp / (tp + fp) : 0;
+  const rec  = tp + fn > 0 ? tp / (tp + fn) : 0;
+  const f1   = prec + rec > 0 ? 2 * prec * rec / (prec + rec) : 0;
+  const acc  = tp + fp + fn + tn > 0 ? (tp + tn) / (tp + fp + fn + tn) : 0;
+  document.getElementById('precVal').textContent = (prec * 100).toFixed(1) + '%';
+  document.getElementById('recVal').textContent  = (rec  * 100).toFixed(1) + '%';
+  document.getElementById('f1Val').textContent   = f1.toFixed(3);
+  document.getElementById('accVal').textContent  = (acc  * 100).toFixed(1) + '%';
+  // color the F1 card
+  const f1Card = document.getElementById('f1Val').closest('.metric-out-card');
+  f1Card.style.borderColor = f1 > 0.7 ? 'var(--teal)' : f1 > 0.4 ? 'var(--gold)' : 'var(--coral)';
+  document.getElementById('f1Val').style.color   = f1 > 0.7 ? 'var(--teal)' : f1 > 0.4 ? 'var(--gold)' : 'var(--coral)';
+}
+updateCM();
+
+/* ── ROUGE ── */
+function tokenize(text) {
+  return text.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean);
+}
+function ngrams(tokens, n) {
+  const out = {};
+  for (let i = 0; i <= tokens.length - n; i++) {
+    const g = tokens.slice(i, i + n).join(' ');
+    out[g] = (out[g] || 0) + 1;
+  }
+  return out;
+}
+function ngramF1(ref, hyp, n) {
+  const rg = ngrams(ref, n), hg = ngrams(hyp, n);
+  let overlap = 0;
+  for (const [k, v] of Object.entries(hg)) overlap += Math.min(v, rg[k] || 0);
+  const p = Object.values(hg).reduce((a,b)=>a+b,0);
+  const r = Object.values(rg).reduce((a,b)=>a+b,0);
+  if (!p || !r) return 0;
+  const prec = overlap / p, rec = overlap / r;
+  return prec + rec > 0 ? 2 * prec * rec / (prec + rec) : 0;
+}
+function lcs(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length:m+1}, () => new Array(n+1).fill(0));
+  for (let i=1;i<=m;i++) for (let j=1;j<=n;j++)
+    dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1]+1 : Math.max(dp[i-1][j], dp[i][j-1]);
+  return dp[m][n];
+}
+function rougeL(ref, hyp) {
+  const l = lcs(ref, hyp);
+  if (!hyp.length || !ref.length) return 0;
+  const p = l / hyp.length, r = l / ref.length;
+  return p + r > 0 ? 2 * p * r / (p + r) : 0;
+}
+function computeRouge() {
+  const ref = tokenize(document.getElementById('refText').value);
+  const hyp = tokenize(document.getElementById('hypText').value);
+  document.getElementById('r1val').textContent = (ngramF1(ref,hyp,1)*100).toFixed(1)+'%';
+  document.getElementById('r2val').textContent = (ngramF1(ref,hyp,2)*100).toFixed(1)+'%';
+  document.getElementById('rlval').textContent = (rougeL(ref,hyp)*100).toFixed(1)+'%';
+}
+computeRouge();
+
+/* ── benchmarks ── */
+const benchData = {
+  mmlu: [
+    {model:'Claude 3.5 Sonnet', score:88.7, color:'#FFB44F'},
+    {model:'GPT-4o',            score:87.2, color:'#60A5FA'},
+    {model:'Gemini 1.5 Pro',    score:85.9, color:'#4ADE80'},
+    {model:'Llama 3.1 405B',    score:85.1, color:'#C084FC'},
+    {model:'Mistral Large',     score:81.2, color:'#FF6B9D'},
+    {model:'Claude 3 Haiku',    score:75.2, color:'#FFD080'},
+  ],
+  humaneval: [
+    {model:'GPT-4o',            score:90.2, color:'#60A5FA'},
+    {model:'Claude 3.5 Sonnet', score:92.0, color:'#FFB44F'},
+    {model:'Gemini 1.5 Pro',    score:84.1, color:'#4ADE80'},
+    {model:'Llama 3.1 405B',    score:89.0, color:'#C084FC'},
+    {model:'Mistral Large',     score:74.0, color:'#FF6B9D'},
+    {model:'Claude 3 Haiku',    score:75.9, color:'#FFD080'},
+  ],
+  gsm8k: [
+    {model:'GPT-4o',            score:95.8, color:'#60A5FA'},
+    {model:'Claude 3.5 Sonnet', score:96.4, color:'#FFB44F'},
+    {model:'Gemini 1.5 Pro',    score:91.7, color:'#4ADE80'},
+    {model:'Llama 3.1 405B',    score:96.8, color:'#C084FC'},
+    {model:'Mistral Large',     score:88.2, color:'#FF6B9D'},
+    {model:'Claude 3 Haiku',    score:88.9, color:'#FFD080'},
+  ],
+  hellaswag: [
+    {model:'GPT-4o',            score:95.3, color:'#60A5FA'},
+    {model:'Claude 3.5 Sonnet', score:95.0, color:'#FFB44F'},
+    {model:'Gemini 1.5 Pro',    score:92.1, color:'#4ADE80'},
+    {model:'Llama 3.1 405B',    score:95.1, color:'#C084FC'},
+    {model:'Mistral Large',     score:89.2, color:'#FF6B9D'},
+    {model:'Claude 3 Haiku',    score:88.7, color:'#FFD080'},
+  ]
+};
+
+let currentBench = 'mmlu';
+function switchBench(key, btn) {
+  document.querySelectorAll('.bench-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentBench = key;
+  renderBench();
+}
+function renderBench() {
+  const data = [...benchData[currentBench]].sort((a,b) => b.score - a.score);
+  const chart = document.getElementById('benchChart');
+  chart.innerHTML = '';
+  data.forEach(d => {
+    const row = document.createElement('div');
+    row.className = 'bench-row';
+    row.innerHTML = `
+      <div class="bench-model">${d.model}</div>
+      <div class="bench-bar-wrap">
+        <div class="bench-bar" style="background:${d.color}; width:0;" data-target="${d.score}">
+          ${d.score.toFixed(1)}%
+        </div>
+      </div>
+    `;
+    chart.appendChild(row);
+  });
+  requestAnimationFrame(() => {
+    chart.querySelectorAll('.bench-bar').forEach(bar => {
+      bar.style.width = bar.dataset.target + '%';
+    });
+  });
+}
+renderBench();
+
+/* ── LLM judge ── */
+const judgeData = {
+  a: {
+    winner: 'Response A',
+    score: '13/15',
+    scores: {accuracy: 5, clarity: 4, completeness: 4},
+    rationale: `Response A succeeds on all three criteria. "When you say yes" captures precision intuitively; "catch all the yeses there are" precisely describes recall without jargon. It's honest about the tradeoff (you can miss some). Appropriate for a non-technical audience.`
+  },
+  b: {
+    winner: 'Response B',
+    score: '6/15',
+    scores: {accuracy: 5, clarity: 1, completeness: 4},
+    rationale: `Response B is technically correct but completely ignores the "non-technical audience" constraint. The formal definition ("true positives divided by...") requires ML background. Accuracy: 5. Clarity for the specified audience: 1. Completeness: technically present but inaccessible.`
+  },
+  c: {
+    winner: 'Response C',
+    score: '14/15',
+    scores: {accuracy: 5, clarity: 5, completeness: 4},
+    rationale: `Response C uses an excellent concrete analogy (fisherman/net/lake) that makes both concepts tangible and memorable. The analogy is accurate and maps cleanly: net contents = predictions, right-kind fish in net = precision, all right-kind fish in lake = recall. Slightly stronger than A for clarity.`
+  }
+};
+
+function runJudge() {
+  const val = document.querySelector('input[name="resp"]:checked').value;
+  const d = judgeData[val];
+  const res = document.getElementById('judgeResult');
+  const ph  = document.getElementById('judgePlaceholder');
+  res.innerHTML = `
+    <div style="margin-bottom:12px;">
+      <span style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--dim);">Overall Score</span><br>
+      <span class="judge-score">${d.score}</span>
+      <span style="font-size:0.8rem; color:var(--dim); margin-left:6px;">(accuracy + clarity + completeness)</span>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px;">
+      ${Object.entries(d.scores).map(([k,v]) => `
+        <div style="text-align:center; background:var(--bg3); border-radius:8px; padding:8px;">
+          <div style="font-size:1.1rem; font-weight:800; color:var(--gold); font-family:'JetBrains Mono',monospace;">${v}/5</div>
+          <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--dim);">${k}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div style="font-size:0.82rem; font-weight:700; color:var(--dim); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">Rationale</div>
+    <p style="font-size:0.88rem; color:var(--text); line-height:1.65;">${d.rationale}</p>
+  `;
+  res.classList.add('visible');
+  ph.style.display = 'none';
+}
+
+/* ── pipeline steps ── */
+function togglePipeline(idx) {
+  const steps = document.querySelectorAll('.pipeline-step');
+  steps.forEach((s, i) => {
+    if (i === idx) s.classList.toggle('active');
+    else s.classList.remove('active');
+  });
+}
+
+</script>
+
+<!-- JAWNVION FOOTER -->
+<footer style="border-top:1px solid #1A2E4A;padding:32px 28px;margin-top:80px;text-align:center;background:#080E1B;">
+  <div style="max-width:960px;margin:0 auto;">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;letter-spacing:.15em;color:#00C9A7;text-transform:uppercase;margin-bottom:8px;">JAWNVION™ LLC</div>
+    <div style="font-size:13px;color:#5E7A9A;line-height:1.6;">
+      AI Engineer's Workbook — Interactive Lab Companion<br>
+      © 2026 JAWNVION LLC. All Rights Reserved. Unauthorized reproduction or redistribution is prohibited.<br>
+      <a href="mailto:peter@jawnvion.com" style="color:#00C9A7;text-decoration:none;">peter@jawnvion.com</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
